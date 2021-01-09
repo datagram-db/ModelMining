@@ -3,7 +3,7 @@ Pure data payload extraction method and encoding.
 """
 
 
-from deviancecommon import read_XES_log, split_log_train_test
+from .deviancecommon import read_XES_log, split_log_train_test
 
 from opyenxes.model import XAttributeBoolean, XAttributeLiteral, XAttributeTimestamp, XAttributeDiscrete, \
     XAttributeContinuous
@@ -843,7 +843,7 @@ def build_dataframes(train_data, test_data, settings):
 
     # Save onehot transformations
     # Write transformations into file
-    with open("../data/onehot_transformations.txt", "w") as f:
+    with open("data/onehot_transformations.txt", "w") as f:
         for i, selection in enumerate(selected_one_hot):
             f.write("Feature:" + selection + "\n")
 

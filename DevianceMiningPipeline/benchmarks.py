@@ -3,7 +3,7 @@ This collects different ExperimentRunner instantiations to run experiments.
 """
 
 from ExperimentRunner import ExperimentRunner
-
+from PayloadType import PayloadType
 
 def synth3():
     INP_PATH = "logs/"
@@ -198,16 +198,14 @@ def sepsis_er_data():
     payload = True
     payload_settings = "sepsis_settings.cfg"
 
-    reencode = False
-
 
     for nr, i in enumerate((5, 15, 25)):
         ex = ExperimentRunner(experiment_name=EXP_NAME, output_file=results_file, results_folder=results_folder,
                               inp_path=INP_PATH,
                               log_name=LOG_NAME, output_folder=OUTPUTFOLDER, log_template=log_path_seq,
                               dt_max_depth=10, dt_min_leaf=5, selection_method="coverage", coverage_threshold=i,
-                              sequence_threshold=5, payload=payload, payload_settings=payload_settings,
-                              reencode=reencode)
+                              sequence_threshold=5, payload=payload, payload_settings=payload_settings
+                             )
 
         with open("train_" + results_file, "a+") as f:
             f.write("\n")
@@ -459,9 +457,7 @@ def output_pos_neg_test():
 
 
 def sepsis_er_dwd():
-
-
-    INP_PATH = "logs/"
+    INP_PATH = "data/logs"
     EXP_NAME = "sepsis_er"
     LOG_NAME = "sepsis_tagged_er.xes"
     OUTPUTFOLDER = "SepsisDWD/"
@@ -481,7 +477,6 @@ def sepsis_er_dwd():
                     "lifecycle: transition"
     ]
     }
-    reencode = False
 
     for nr, i in enumerate((5, 15, 25)):
         ex = ExperimentRunner(experiment_name=EXP_NAME, output_file=results_file, results_folder=results_folder,
@@ -489,7 +484,7 @@ def sepsis_er_dwd():
                               log_name=LOG_NAME, output_folder=OUTPUTFOLDER, log_template=log_path_seq,
                               dt_max_depth=5, dt_min_leaf=5, selection_method="coverage", coverage_threshold=i,
                               sequence_threshold=5, payload_type=payload_type, payload=payload, payload_settings=payload_settings,
-                              reencode=reencode, payload_dwd_settings=payload_dwd_settings)
+                               payload_dwd_settings=payload_dwd_settings)
 
         with open("train_" + results_file, "a+") as f:
             f.write("\n")
@@ -500,8 +495,6 @@ def sepsis_er_dwd():
             ex.prepare_cross_validation()
             ex.prepare_data()
         ex.train_and_eval_benchmark()
-
-
 
 def bpi2011_dwd_data_cc():
     INP_PATH = "logs/"

@@ -2,10 +2,10 @@
 Last version for data-aware declare mining
 """
 
-from declaretemplates_data import *
-from deviancecommon import read_XES_log, xes_to_data_positional
-from declaredevmining import split_log_train_test, extract_unique_events_transformed
-from declaredevmining import filter_candidates_by_support, count_classes
+from .declaretemplates_data import *
+from .deviancecommon import read_XES_log, xes_to_data_positional
+from .declaredevmining import split_log_train_test, extract_unique_events_transformed
+from .declaredevmining import filter_candidates_by_support, count_classes
 
 from skfeature.function.similarity_based import fisher_score
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder

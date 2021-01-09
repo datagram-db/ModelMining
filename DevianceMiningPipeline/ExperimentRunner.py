@@ -19,12 +19,11 @@ from sklearn.feature_selection import SelectKBest, chi2
 from opyenxes.data_out.XesXmlSerializer import XesXmlSerializer
 from opyenxes.factory.XFactory import XFactory
 
-from deviancecommon import read_XES_log
-from baseline_runner import run_baseline
-from declaredevmining import run_deviance_new
-from sequence_runner import run_sequences
-
-from ddm_newmethod_fixed_new import run_declare_with_data
+from .deviancecommon import read_XES_log
+from .baseline_runner import run_baseline
+from .declaredevmining import run_deviance_new
+from .sequence_runner import run_sequences
+from .ddm_newmethod_fixed_new import run_declare_with_data
 
 from sklearn.preprocessing import StandardScaler
 
@@ -33,11 +32,18 @@ from skfeature.function.similarity_based import fisher_score
 from sklearn.decomposition import PCA
 from collections import defaultdict
 
-
-from payload_extractor import run_payload_extractor
+from .payload_extractor import run_payload_extractor
 
 import arff
 
+def read_generic_log(results_folder, split_nr, encoding):
+    split = "split" + str(split_nr)
+    file_loc = os.path.join(results_folder, split, encoding)
+    train_path = os.path.join(file_loc, encoding+"_train.csv")
+    test_path = os.path.join(file_loc, encoding+"_test.csv")
+    train_df = pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False)
+    test_df = pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False)
+    return train_df, test_df
 
 def fisher_calculation(X, y):
     # Calculates fisher score
@@ -313,10 +319,10 @@ class ExperimentRunner:
                     break  # edge case
                 new_log.append(log[i])
 
-            with open(output_folder + "/" + log_name[:-4] + "_" + str(log_nr + 1) + ".xes", "w") as file:
+            with open(os.path.join(output_folder,  log_name[:-4] + "_" + str(log_nr + 1) + ".xes"), "w") as file:
                 XesXmlSerializer().serialize(new_log, file)
 
-            with open("logs/" + log_name[:-4] + "_" + str(log_nr + 1) + ".xes", "w") as file:
+            with open("data/logs/" + log_name[:-4] + "_" + str(log_nr + 1) + ".xes", "w") as file:
                 XesXmlSerializer().serialize(new_log, file)
 
     @staticmethod
@@ -326,26 +332,27 @@ class ExperimentRunner:
 
             # first level
             for i in range(1, 6):
-                os.makedirs(directory + "/" + "split" + str(i))
+                current_dir = os.path.join(directory, "split"+ str(i))
+                #os.makedirs(current_dir) --> See documentation: this is completely useless, as it will be created with the first leaf creation
 
                 # second level
-                os.makedirs(directory + "/" + "split" + str(i) + "/" + "base")
-                os.makedirs(directory + "/" + "split" + str(i) + "/" + "declare")
-                os.makedirs(directory + "/" + "split" + str(i) + "/" + "mr")
-                os.makedirs(directory + "/" + "split" + str(i) + "/" + "mra")
-                os.makedirs(directory + "/" + "split" + str(i) + "/" + "tr")
-                os.makedirs(directory + "/" + "split" + str(i) + "/" + "tra")
+                os.makedirs(os.path.join(current_dir, "base"))
+                os.makedirs(os.path.join(current_dir, "declare"))
+                os.makedirs(os.path.join(current_dir, "mr"))
+                os.makedirs(os.path.join(current_dir, "mra"))
+                os.makedirs(os.path.join(current_dir, "tr"))
+                os.makedirs(os.path.join(current_dir, "tra"))
 
                 if payload:
                     if payload_type == "normal" or "both":
-                        os.makedirs(directory + "/" + "split" + str(i) + "/" + "payload")
+                        os.makedirs(os.path.join(current_dir, "payload"))
                     if payload_type == "dwd" or "both":
-                        os.makedirs(directory + "/" + "split" + str(i) + "/" + "dwd")
+                        os.makedirs(os.path.join(current_dir, "dwd"))
 
     @staticmethod
     def cross_validation_pipeline(inp_path, log_name, output_folder):
         # 1. Load file
-        log = read_XES_log(inp_path + "/" + log_name)
+        log = read_XES_log(os.path.join(inp_path, log_name))
 
         # 2. Randomize order of traces.
         shuffle(log)
@@ -355,59 +362,64 @@ class ExperimentRunner:
 
     @staticmethod
     def read_baseline_log(results_folder, split_nr):
-        split = "split" + str(split_nr)
-        encoding = "base"
-
-        file_loc = results_folder + "/" + split + "/" + encoding
-        train_path = file_loc + "/" + "baseline_train.csv"
-        test_path = file_loc + "/" + "baseline_test.csv"
-        train_df = pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False)
-        test_df = pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False)
-
-        return train_df, test_df
+        return(read_generic_log(results_folder, split_nr, "baseline"))
+        # split = "split" + str(split_nr)
+        # encoding = "base"
+        #
+        # file_loc = os.path.join(results_folder, split, encoding)
+        # train_path = os.path.join(file_loc, "baseline_train.csv")
+        # test_path = os.path.join(file_loc, "baseline_test.csv")
+        # train_df = pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False)
+        # test_df = pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False)
+        #
+        # return train_df, test_df
 
     @staticmethod
     def read_payload_log(results_folder, split_nr):
-        split = "split" + str(split_nr)
-        encoding = "payload"
-
-        file_loc = results_folder + "/" + split + "/" + encoding
-        train_path = file_loc + "/" + "payload_train.csv"
-        test_path = file_loc + "/" + "payload_test.csv"
-        train_df = pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False)
-        test_df = pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False)
-
-        return train_df, test_df
+        return(read_generic_log(results_folder, split_nr, "payload"))
+        # split = "split" + str(split_nr)
+        # encoding = "payload"
+        #
+        # file_loc = os.path.join(results_folder, split, encoding)
+        # train_path = os.path.join(file_loc, "payload_train.csv")
+        # test_path = os.path.join(file_loc, "payload_test.csv")
+        # train_df = pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False)
+        # test_df = pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False)
+        #
+        # return train_df, test_df
 
     @staticmethod
     def read_declare_with_data_log(results_folder, split_nr):
-        split = "split" + str(split_nr)
-        encoding = "dwd"
-
-        file_loc = results_folder + "/" + split + "/" + encoding
-        train_path = file_loc + "/" + "dwd_train.csv"
-        test_path = file_loc + "/" + "dwd_test.csv"
-        train_df = pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False)
-        test_df = pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False)
-
-        return train_df, test_df
+        return(read_generic_log(results_folder, split_nr, "dwd"))
+        # split = "split" + str(split_nr)
+        # encoding = "dwd"
+        #
+        # file_loc =  os.path.join(results_folder, split, encoding)
+        # train_path = os.path.join(file_loc, "dwd_train.csv")
+        # test_path = os.path.join(file_loc, "dwd_test.csv")
+        # train_df = pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False)
+        # test_df = pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False)
+        #
+        # return train_df, test_df
 
 
     @staticmethod
     def read_declare_log(results_folder, split_nr):
-        split = "split" + str(split_nr)
-        encoding = "declare"
-
-        file_loc = results_folder + "/" + split + "/" + encoding
-        train_path = file_loc + "/" + "declare_train.csv"
-        test_path = file_loc + "/" + "declare_test.csv"
-        train_df = pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False)
-        test_df = pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False)
-
-        return train_df, test_df
+        return(read_generic_log(results_folder, split_nr, "declare"))
+        # split = "split" + str(split_nr)
+        # encoding = "declare"
+        #
+        # file_loc = results_folder + "/" + split + "/" + encoding
+        # train_path = file_loc + "/" + "declare_train.csv"
+        # test_path = file_loc + "/" + "declare_test.csv"
+        # train_df = pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False)
+        # test_df = pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False)
+        #
+        # return train_df, test_df
 
     @staticmethod
     def read_sequence_log(results_folder, encoding, split_nr):
+        print("ERROR: read_sequence_log will fail")
         split = "split" + str(split_nr)
         file_loc = results_folder + "/" + split + "/" + encoding
         train_path = file_loc + "/" + "globalLog.csv"

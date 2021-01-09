@@ -6,8 +6,10 @@
 import LogGeneration
 import RulesExtraction
 import Other
+import jsonpickle
 
-LOGS_FOLDER="data/logs/"
+LOGS_FOLDER="data/logs"
+ranges=(5, 15, 25)
 
 to_describe = {
     #"sepsis_constr": "sepsis_constraint_tagged.xes", --> missing
@@ -22,17 +24,24 @@ to_describe = {
     #"XRAY": "merged_xray.xes"
 }
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+def write_logs_01():
+    LogGeneration.write_xeses(LOGS_FOLDER)
 
+def do_benchmarks():
+    pass
+
+
+def describe_logs():
+    for key,value in to_describe.items():
+        Other.describe(key, LOGS_FOLDER, value)
+
+def run_complete_configuration_and_run(conf_file):
+    jsonpickle.decode(open(conf_file).read()).run(LOGS_FOLDER, ranges)
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    LogGeneration.write_xeses(LOGS_FOLDER)
-    for key,value in to_describe.items():
-        Other.describe(key, LOGS_FOLDER, value)
+    run_complete_configuration_and_run("sepsis_er.json")
     #RulesExtraction.get_dtrules()               ## Requires: snapshots
-    print_hi('PyCharm')
+    #print_hi('PyCharm')
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/

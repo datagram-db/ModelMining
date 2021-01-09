@@ -3,9 +3,9 @@ Main file for deviance mining
 """
 from random import shuffle
 import numpy as np
-from declaretemplates_new import *
+from .declaretemplates_new import *
 #from declaretemplates import *
-from deviancecommon import *
+from .deviancecommon import *
 import pandas as pd
 
 import shutil
@@ -303,7 +303,7 @@ def deviance_main(args, templates=None, filter_t=True, reencode=False):
 
 
 if __name__ == "__main__":
-    log_path = "logs/sepsis_tagged_er.xes"
+    log_path = "../data/logs/sepsis_tagged_er.xes"
     args = {
         "logPath": log_path,
         "labelled": True

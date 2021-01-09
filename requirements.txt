@@ -10,3 +10,6 @@ javabridge
 python-weka-wrapper3
 xes
 opyenxes
+skfeature
+arff
+jsonpickle

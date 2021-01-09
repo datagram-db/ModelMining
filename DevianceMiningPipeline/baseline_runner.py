@@ -3,9 +3,9 @@ Code to find and encode IA encoding (Individual Activities) or baseline
 
 """
 
-from deviancecommon import read_XES_log, xes_to_positional, extract_unique_events_transformed
+from .deviancecommon import read_XES_log, xes_to_positional, extract_unique_events_transformed
 import numpy as np
-from declaredevmining import split_log_train_test
+from .declaredevmining import split_log_train_test
 import pandas as pd
 
 import os, shutil
