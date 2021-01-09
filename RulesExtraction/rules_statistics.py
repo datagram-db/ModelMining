@@ -5,13 +5,9 @@ Average length of rules, average count of rules in experiment.
 """
 
 import numpy as np
-
-jrip_rules = "rules_jrip.txt"
-dt_rules = "rules_dt.txt"
-
 from collections import defaultdict
 
-def get_jriprules():
+def get_jriprules(jrip_rules = "data/rules_jrip.txt", coverages = [5, 15, 25], experiments = ["bpi2011_cc", "bpi2011_m13", "bpi2011_m16", "bpi2011_t101"]):
     with open(jrip_rules) as f:
         current_experiment = ""
         rule_lengths = []
@@ -45,21 +41,6 @@ def get_jriprules():
         exp = current_experiment.split()[2]
         coverage = current_experiment.split()[4]
         res[(exp, coverage)].append((np.mean(rule_lengths), np.mean(rule_counts)))
-
-        coverages = [5, 15, 25]
-        # """
-        encodings = [
-            "payload",
-            "baseline_payload",
-            "declare_data",
-            "sequence_data_tr",
-            "sequence_data_tra",
-            "sequence_data_mr",
-            "sequence_data_mra",
-            "hybrid_data",
-        ]
-        experiments = ["bpi2011_cc", "bpi2011_m13", "bpi2011_m16", "bpi2011_t101"]
-
         for exp in experiments:
             print(exp)
             for coverage in coverages:
@@ -68,7 +49,7 @@ def get_jriprules():
                 print()
 
 
-def get_dtrules():
+def get_dtrules(dt_rules = "data/rules_dt.txt", coverages = [5, 15, 25], experiments = ["bpi2011_cc", "bpi2011_m13", "bpi2011_m16", "bpi2011_t101"]):
     with open(dt_rules) as f:
         current_experiment = ""
         rule_lengths = []
@@ -100,16 +81,9 @@ def get_dtrules():
         exp = current_experiment.split()[2]
         coverage = current_experiment.split()[4]
         res[(exp, coverage)].append((np.mean(rule_lengths), np.mean(rule_counts)))
-
-        coverages = [5, 15, 25]
-        experiments = ["bpi2011_cc", "bpi2011_m13", "bpi2011_m16", "bpi2011_t101"]
-
         for exp in experiments:
             print(exp)
             for coverage in coverages:
                 for a, b in res[(exp, str(coverage))]:
                     print(a, b)
                 print()
-
-
-get_dtrules()

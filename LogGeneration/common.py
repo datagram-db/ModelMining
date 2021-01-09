@@ -2,7 +2,7 @@
 Common methods for creation of xes log and traces
 """
 
-import xes
+from .xes3 import *
 import datetime
 from random import shuffle
 
@@ -96,14 +96,14 @@ Timestamp has to be in iso format
 Outputs xes.Trace class object consisting of such structure
 """
 def create_xes_trace(trace_dict, config):
-    xes_trace = xes.Trace()
+    xes_trace = Trace()
 
     ## Add trace metadata
     trace_name = trace_dict["name"]
     deviant = trace_dict["deviant"]
 
-    xes_trace.add_attribute(xes.Attribute(type="string", key="concept:name", value=trace_name))
-    xes_trace.add_attribute(xes.Attribute(type=config["type"], key=config["label"],
+    xes_trace.add_attribute(Attribute(type="string", key="concept:name", value=trace_name))
+    xes_trace.add_attribute(Attribute(type=config["type"], key=config["label"],
                                           value=config["deviant"] if deviant else config["nondeviant"]))
 
     ## Add events
@@ -115,12 +115,12 @@ def create_xes_trace(trace_dict, config):
         event_lifecycle = event["lifecycle:transition"]
 
 
-        xes_event = xes.Event()
+        xes_event = Event()
         xes_event.attributes = [
-            xes.Attribute(type="date",   key="time:timestamp", value=event_timestamp),
-            xes.Attribute(type="string", key="concept:name", value=event_name),
-            xes.Attribute(type="string", key="org:resource", value=event_resource),
-            xes.Attribute(type="string", key="lifecycle:transition", value=event_lifecycle)
+            Attribute(type="date",   key="time:timestamp", value=event_timestamp),
+            Attribute(type="string", key="concept:name", value=event_name),
+            Attribute(type="string", key="org:resource", value=event_resource),
+            Attribute(type="string", key="lifecycle:transition", value=event_lifecycle)
         ]
         xes_trace.add_event(xes_event)
     return xes_trace
@@ -131,11 +131,11 @@ Function to create xes log with following global attributes:
 Label and Date
 """
 def create_xes_log(config):
-    xes_log = xes.Log()
+    xes_log = Log()
     # Add log attributes
-    xes_log.add_global_event_attribute(xes.Attribute(type="date", key="time:timestamp", value=datetime.datetime.now().astimezone().isoformat()))
+    xes_log.add_global_event_attribute(Attribute(type="date", key="time:timestamp", value=datetime.datetime.now().astimezone().isoformat()))
     #xes_log.add_global_trace_attributes(xes.Attribute(type="int", key="Label", value="0")) # For deviant, nondeviant case.
-    xes_log.add_global_trace_attributes(xes.Attribute(type=config["type"], key=config["label"], value=config["nondeviant"])) # For deviant, nondeviant case.
+    xes_log.add_global_trace_attributes(Attribute(type=config["type"], key=config["label"], value=config["nondeviant"])) # For deviant, nondeviant case.
 
     return xes_log
 

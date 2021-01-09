@@ -13,7 +13,7 @@ Generation models:
     Markov models, (bpmn models)
 """
 
-import xes
+import xes3 as xes
 import random
 import datetime
 from random import choices, randint, shuffle
@@ -68,7 +68,7 @@ def gen_xes_log_dev(events_lists):
         xes.Attribute(type="date", key="time:timestamp", value=startTime.astimezone().isoformat()))
     log.add_global_trace_attributes(xes.Attribute(type="int", key="Label", value="0"))
 
-    open("multi.xes", "w").write(str(log))
+    open("data/multi.xes", "w").write(str(log))
 
 
 def gen_trace(trace, deviant):

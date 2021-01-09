@@ -843,7 +843,7 @@ def build_dataframes(train_data, test_data, settings):
 
     # Save onehot transformations
     # Write transformations into file
-    with open("onehot_transformations.txt", "w") as f:
+    with open("../data/onehot_transformations.txt", "w") as f:
         for i, selection in enumerate(selected_one_hot):
             f.write("Feature:" + selection + "\n")
 

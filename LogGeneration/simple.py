@@ -1,7 +1,7 @@
 """
 This file describes testing scenarios
 """
-from common import create_xes_log, generate_activity_names, generate_trace_names, TimestampGenerator, LogGenerator
+from .common import create_xes_log, generate_activity_names, generate_trace_names, TimestampGenerator, LogGenerator
 from random import shuffle, sample, choice, randint
 
 """

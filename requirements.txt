@@ -1,4 +1,12 @@
 pandas
 seaborn
-matplotlib.pyplot
+pip
+matplotlib
 numpy
+jupyter
+weka
+sklearn
+javabridge
+python-weka-wrapper3
+xes
+opyenxes
