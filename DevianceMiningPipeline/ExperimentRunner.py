@@ -197,7 +197,7 @@ class ExperimentRunner:
             os.mkdir(output_folder)
 
         self.log_template = log_template
-        self.log_path = self.output_folder + log_template
+        self.log_path = os.path.join(self.output_folder, log_template)
         self.log_path_seq = log_template
 
         self.train_output_file = "train_" + output_file
@@ -322,8 +322,8 @@ class ExperimentRunner:
             with open(os.path.join(output_folder,  log_name[:-4] + "_" + str(log_nr + 1) + ".xes"), "w") as file:
                 XesXmlSerializer().serialize(new_log, file)
 
-            with open("data/logs/" + log_name[:-4] + "_" + str(log_nr + 1) + ".xes", "w") as file:
-                XesXmlSerializer().serialize(new_log, file)
+            #with open("data/logs/" + log_name[:-4] + "_" + str(log_nr + 1) + ".xes", "w") as file:
+            #    XesXmlSerializer().serialize(new_log, file)
 
     @staticmethod
     def create_folder_structure(directory, payload=False, payload_type=None):
@@ -336,7 +336,7 @@ class ExperimentRunner:
                 #os.makedirs(current_dir) --> See documentation: this is completely useless, as it will be created with the first leaf creation
 
                 # second level
-                os.makedirs(os.path.join(current_dir, "base"))
+                os.makedirs(os.path.join(current_dir, "baseline"))
                 os.makedirs(os.path.join(current_dir, "declare"))
                 os.makedirs(os.path.join(current_dir, "mr"))
                 os.makedirs(os.path.join(current_dir, "mra"))
@@ -1394,7 +1394,7 @@ class ExperimentRunner:
         self.create_folder_structure(self.results_folder, payload=self.payload, payload_type=self.payload_type)
         run_baseline(self.experiment_name, self.log_path, self.results_folder)
         run_deviance_new(self.log_path, self.results_folder, reencode=self.reencode)
-        run_sequences(self.log_path_seq, self.results_folder, sequence_threshold=self.sequence_threshold)
+        run_sequences(self.inp_path, self.log_path_seq, self.results_folder, self.err_logger, sequence_threshold=self.sequence_threshold)
 
         if self.payload:
             if self.payload_type == "normal" or self.payload_type == "both":

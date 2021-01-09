@@ -7,9 +7,9 @@ from .deviancecommon import read_XES_log, xes_to_positional, extract_unique_even
 import numpy as np
 from .declaredevmining import split_log_train_test
 import pandas as pd
-
+from pathlib import Path
 import os, shutil
-
+from .pathutils import *
 
 
 def transform_log(train_log, activity_set):
@@ -71,12 +71,13 @@ def baseline(inp_folder, logPath):
 
 
 def move_baseline_files(inp_folder, output_folder, split_nr):
-    source = inp_folder # './baselineOutput/'
-    dest1 = './' + output_folder + '/split' + str(split_nr) + "/base/"
-    files = os.listdir(source
-                       )
-    for f in files:
-        shutil.move(source + f, dest1)
+    move_files(inp_folder, output_folder, split_nr, "baseline")
+    # source = inp_folder # './baselineOutput/'
+    # dest1 = os.path.join(output_folder, "split"+str(split_nr), "base")
+    # Path(dest1).mkdir(parents=True, exist_ok=True)
+    # files = os.listdir(source)
+    # for f in files:
+    #     shutil.move(source + f, dest1+os.path.sep)
 
 
 def run_baseline(experiment_name, log_path, results_folder):

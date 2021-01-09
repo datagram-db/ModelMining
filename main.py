@@ -9,6 +9,7 @@ import Other
 import jsonpickle
 
 LOGS_FOLDER="data/logs"
+DATA_EXP="data/experiments"
 ranges=(5, 15, 25)
 
 to_describe = {
@@ -36,7 +37,7 @@ def describe_logs():
         Other.describe(key, LOGS_FOLDER, value)
 
 def run_complete_configuration_and_run(conf_file):
-    jsonpickle.decode(open(conf_file).read()).run(LOGS_FOLDER, ranges)
+    jsonpickle.decode(open(conf_file).read()).run(LOGS_FOLDER, DATA_EXP, ranges, True)
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':

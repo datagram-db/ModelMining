@@ -27,24 +27,29 @@ class ConfigurationFile(object):
         f.write(jsonpickle.encode(self))
         f.close()
 
-    def run(self, INP_PATH, coverage_thresholds):
+    def run(self, INP_PATH, DATA_EXP, coverage_thresholds, doNr0 = False):
+        from pathlib import Path
         import os
+        Path(os.path.join(DATA_EXP, self.results_folder)).mkdir(parents=True, exist_ok=True)
+        Path(os.path.join(DATA_EXP, self.output_folder)).mkdir(parents=True, exist_ok=True)
+        Path(os.path.join(DATA_EXP, "error_log")).mkdir(parents=True, exist_ok=True)
         for nr, i in enumerate(coverage_thresholds):
             from DevianceMiningPipeline.ExperimentRunner import ExperimentRunner
             ex = ExperimentRunner(experiment_name=self.experiment_name,
                                   output_file=self.results_file,
-                                  results_folder=os.path.join(INP_PATH, self.results_folder),
+                                  results_folder=os.path.join(DATA_EXP, self.results_folder),
                                   inp_path=INP_PATH,
                                   log_name=self.log_name,
-                                  output_folder=self.output_folder,
+                                  output_folder=os.path.join(DATA_EXP, self.output_folder),
                                   log_template=self.log_path_seq,
-                                  dt_max_depth=self.payload_settings,
+                                  dt_max_depth=self.dt_max_depth,
                                   dt_min_leaf=self.dt_min_leaf,
                                   selection_method="coverage",
                                   coverage_threshold=i,
                                   sequence_threshold=self.sequence_threshold,
-                                  payload=True,
+                                  payload=False,
                                   payload_type=self.payload_type)
+            ex.err_logger = os.path.join(DATA_EXP, "error_log")
 
             if not self.auto_ignored is None:
                 ex.payload_dwd_settings = {"ignored": self.auto_ignored }
@@ -55,7 +60,7 @@ class ConfigurationFile(object):
                 f.write("\n")
             with open("test_" + self.results_file, "a+") as f:
                 f.write("\n")
-            if nr == 0:
+            if (nr == 0) and doNr0:
                 ex.prepare_cross_validation()
                 ex.prepare_data()
             ex.train_and_eval_benchmark()

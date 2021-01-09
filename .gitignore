@@ -1,2 +1,9 @@
 .idea/*
 venv/*
+data/experiments/*
+output/*
+declareOutput/*
+SepsisDWD/*
+__pycache__
+__pycache__/
+__pycache__/*

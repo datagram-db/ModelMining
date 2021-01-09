@@ -14,8 +14,8 @@ import os
 
 
 JAR_NAME = "GoSwift.jar"  # Jar file to run
-OUTPUT_FOLDER = "outputlogs/"  # Where to put output files
-INPUT_FOLDER = "logs/"  # Where input logs are located
+#OUTPUT_FOLDER = "outputlogs/"  # Where to put output files
+#INPUT_FOLDER = "logs/"  # Where input logs are located
 
 ## This is needed for one java version.. One for Java 8 and other for later
 #VMoptions = " --add-modules java.xml.bind"
@@ -39,22 +39,24 @@ def create_output_filename(input_log, name):
     return filename
 
 
-def create_call_params(paramString, inputFile=None, outputFile=None):
+def create_call_params(inp_path, results_folder, paramString, inputFile=None, outputFile=None):
     params = paramString.split()
 
     if outputFile:
         params.append("--outputFile")
-        params.append(OUTPUT_FOLDER + outputFile)
+        outputPath = os.path.join(results_folder, "outputlogs")
+        os.makedirs(outputPath, exist_ok=True)
+        params.append(os.path.join(outputPath, outputFile))
     if inputFile:
         params.append("--logFile")
-        params.append(INPUT_FOLDER + inputFile[0])
+        params.append(os.path.join(inp_path, inputFile[0]))
         if inputFile[1]:
             params.append("--requiresLabelling")
 
     return params
 
 
-def call_params(paramString, inputFile, outputFile):
+def call_params(inp_path, results_folder, paramString, inputFile, outputFile, err_logger):
     """
     Function to call java subprocess
     TODO: Send sigkill when host process (this one dies) to also kill the subprocess calls
@@ -64,16 +66,17 @@ def call_params(paramString, inputFile, outputFile):
     """
 
     print("Started working on {}".format(inputFile[0]))
-    parameters = create_call_params(paramString, inputFile, outputFile)
+    parameters = create_call_params(inp_path, results_folder, paramString, inputFile, outputFile)
     FNULL = open(os.devnull, 'w')  # To write output to devnull, we dont care about it
 
     # No java 8
     #subprocess.call(["java", "-jar", "--add-modules", "java.xml.bind", JAR_NAME] + parameters, stdout=FNULL,
     #                stderr=open("errorlogs/error_" + outputFile, "w"))  # blocking
 
+    print(" ".join(["java", "-jar",  JAR_NAME] + parameters))
     # Java 8
-    subprocess.call(["java", "-jar", JAR_NAME] + parameters, stdout=FNULL,
-                    stderr=open("errorlogs/error_" + outputFile, "w"))  # blocking
+    subprocess.call(["java", "-jar", "--add-modules", "java.xml.bind", JAR_NAME] + parameters, stdout=FNULL,
+                    stderr=open(os.path.join(err_logger, "error_" + outputFile), "w"))  # blocking
     print("Done with {}".format(str(parameters)))
 
 
@@ -95,7 +98,7 @@ def move_files(split_nr, folder, results_folder):
         shutil.move(source+f, dest1)
 
 
-def run_sequences(log_path, results_folder, sequence_threshold=5):
+def run_sequences(inp_path, log_path, results_folder, err_logger, sequence_threshold=5):
     """
     Runs GoSwift.jar with 4 different sets of parameters, to create sequential encodings.
     :param log_path:
@@ -116,15 +119,14 @@ def run_sequences(log_path, results_folder, sequence_threshold=5):
         print("Working on {}".format(techName))
         for splitNr in range(5):
             
-            folder_name = "./output/"
-            if not os.path.exists(folder_name):
-                os.makedirs(folder_name)
+            #folder_name = "./output/"
+            os.makedirs("./output/", exist_ok=True)
 
             print("Working on split {}".format(splitNr+1))
             inputFile = (log_path.format(splitNr+1), False)
             outputFilename = create_output_filename(inputFile[0], techName)
             tic = time.time()
-            call_params(paramString, inputFile, outputFilename)
+            call_params(inp_path, results_folder, paramString, inputFile, outputFilename, err_logger)
             toc = time.time()
             print("Time taken {0:.3f} seconds".format(toc - tic))
 

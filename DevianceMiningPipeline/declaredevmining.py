@@ -7,7 +7,7 @@ from .declaretemplates_new import *
 #from declaretemplates import *
 from .deviancecommon import *
 import pandas as pd
-
+from .pathutils import *
 import shutil
 import os
 
@@ -287,13 +287,13 @@ def run_deviance_new(log_path, results_folder, templates=None, filter_t=True, re
 
 
 def move_out_files_new(splitNr, results_folder):
-    source = './declareOutput/'
-    dest1 = './' + results_folder + '/split' + str(splitNr) + "/declare/"
-
-    files = os.listdir(source)
-
-    for f in files:
-        shutil.move(source + f, dest1)
+    move_files('./declareOutput/', results_folder, splitNr, "declare")
+    # source = './declareOutput/'
+    # dest1 = './' + results_folder + '/split' + str(splitNr) + "/declare/"
+    # files = os.listdir(source)
+    #
+    # for f in files:
+    #     shutil.move(source + f, dest1)
 
 
 def deviance_main(args, templates=None, filter_t=True, reencode=False):
