@@ -888,14 +888,15 @@ def payload_extractor(inp_folder, log_name, settings_file):
     return train_df, test_df
 
 
-
+from .pathutils import move_files
 
 def move_payload_files(inp_folder, output_folder, split_nr):
-    source = inp_folder # './baselineOutput/'
-    dest1 = './' + output_folder + '/split' + str(split_nr) + "/payload/"
-    files = os.listdir(source)
-    for f in files:
-        shutil.move(source + f, dest1)
+    move_files(inp_folder, output_folder, split_nr, "payload")
+    # source = inp_folder # './baselineOutput/'
+    # dest1 = './' + output_folder + '/split' + str(split_nr) + "/payload/"
+    # files = os.listdir(source)
+    # for f in files:
+    #     shutil.move(source + f, dest1)
 
 
 def run_payload_extractor(log_path, settings_file, results_folder):

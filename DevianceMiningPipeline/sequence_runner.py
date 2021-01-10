@@ -6,11 +6,9 @@ Might need to change VMOptions dependent on the version of Java the machine is r
 """
 import subprocess
 import time
-
-
-
 import shutil
 import os
+from .pathutils import *
 
 
 JAR_NAME = "GoSwift.jar"  # Jar file to run
@@ -44,9 +42,9 @@ def create_call_params(inp_path, results_folder, paramString, inputFile=None, ou
 
     if outputFile:
         params.append("--outputFile")
-        outputPath = os.path.join(results_folder, "outputlogs")
-        os.makedirs(outputPath, exist_ok=True)
-        params.append(os.path.join(outputPath, outputFile))
+        #outputPath = os.path.join(results_folder, "outputlogs")
+        os.makedirs(results_folder, exist_ok=True)
+        params.append(os.path.join(results_folder, outputFile))
     if inputFile:
         params.append("--logFile")
         params.append(os.path.join(inp_path, inputFile[0]))
@@ -75,27 +73,28 @@ def call_params(inp_path, results_folder, paramString, inputFile, outputFile, er
 
     print(" ".join(["java", "-jar",  JAR_NAME] + parameters))
     # Java 8
-    subprocess.call(["java", "-jar", "--add-modules", "java.xml.bind", JAR_NAME] + parameters, stdout=FNULL,
+    subprocess.call(["java", "-jar",  JAR_NAME] + parameters, stdout=FNULL,
                     stderr=open(os.path.join(err_logger, "error_" + outputFile), "w"))  # blocking
+
     print("Done with {}".format(str(parameters)))
 
 
-def move_files(split_nr, folder, results_folder):
-    """
-    Move generated encodings
-    :param split_nr: number of cv split
-    :param folder: folder for encoding at end location
-    :param results_folder: resulting folder
-    :return:
-    """
-    source = './output/'
-    dest1 = './' + results_folder + '/split' + str(split_nr) + "/" + folder + "/"
-
-    files = os.listdir(source)
-
-    ## Moves all files in the folder to detination
-    for f in files:
-        shutil.move(source+f, dest1)
+# def move_files(split_nr, folder, results_folder):
+#     """
+#     Move generated encodings
+#     :param split_nr: number of cv split
+#     :param folder: folder for encoding at end location
+#     :param results_folder: resulting folder
+#     :return:
+#     """
+#     # source = './output/'
+#     # dest1 = './' + results_folder + '/split' + str(split_nr) + "/" + folder + "/"
+#     #
+#     # files = os.listdir(source)
+#     #
+#     # ## Moves all files in the folder to detination
+#     # for f in files:
+#     #     shutil.move(source+f, dest1)
 
 
 def run_sequences(inp_path, log_path, results_folder, err_logger, sequence_threshold=5):
@@ -116,18 +115,20 @@ def run_sequences(inp_path, log_path, results_folder, err_logger, sequence_thres
     ]
 
     for paramString, techName, folder in paramStrings:
-        print("Working on {}".format(techName))
+        print("Working on {} @{}".format(techName, folder))
         for splitNr in range(5):
             
             #folder_name = "./output/"
-            os.makedirs("./output/", exist_ok=True)
+            outputPath = os.path.join(results_folder, "split"+str(splitNr + 1), folder)
+            os.makedirs(outputPath, exist_ok=True)
 
             print("Working on split {}".format(splitNr+1))
             inputFile = (log_path.format(splitNr+1), False)
             outputFilename = create_output_filename(inputFile[0], techName)
             tic = time.time()
-            call_params(inp_path, results_folder, paramString, inputFile, outputFilename, err_logger)
+            call_params(inp_path, outputPath, paramString, inputFile, outputFilename, err_logger) # Above: directly writing to the destination folder
             toc = time.time()
             print("Time taken {0:.3f} seconds".format(toc - tic))
 
-            move_files(splitNr + 1, folder, results_folder)
+            # The jar will directly write to t
+            move_files('./output/', results_folder, splitNr + 1, folder)

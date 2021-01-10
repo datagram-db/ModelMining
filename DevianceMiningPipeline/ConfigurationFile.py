@@ -8,26 +8,74 @@ def ifneg_right(lhs, rhs):
 
 
 class ConfigurationFile(object):
-    def __init__(self, experiment_name, log_name, output_folder, dt_max_depth, dt_min_leaf, sequence_threshold, payload_type, ignored = None, payload_settings = None):
+    def __init__(self):
+        self.auto_ignored = None
+        self.payload_settings = None
+        self.payload_type = None
+
+    @classmethod
+    def explicitInitialization(cls, experiment_name, log_name, output_folder, dt_max_depth, dt_min_leaf, sequence_threshold, payload_type, ignored = None, payload_settings = None):
+        cf = cls()
+        cf.setExperimentName(experiment_name)
+        cf.setLogName(log_name)
+        cf.setOutputFolder(output_folder)
+        cf.setMaxDepth(dt_max_depth)
+        cf.setMinLeaf(dt_min_leaf)
+        cf.setSequenceThreshold(sequence_threshold)
+        cf.setPayloadType(payload_type)
+
+    # def __init__(self, experiment_name, log_name, output_folder, dt_max_depth, dt_min_leaf, sequence_threshold, payload_type, ignored = None, payload_settings = None):
+    #     self.experiment_name = experiment_name
+    #     self.log_name = log_name
+    #     self.output_folder = output_folder
+    #     self.results_folder = experiment_name + "_results"
+    #     self.results_file = self.results_folder + ".txt"
+    #     self.log_path_seq = log_name[:ifneg_right(log_name.rfind('.'),len(log_name))] + "_{}" + log_name[ifneg_right(log_name.rfind('.'),len(log_name)):]
+    #     self.dt_max_depth = dt_max_depth
+    #     self.dt_min_leaf = dt_min_leaf
+    #     self.auto_ignored = ignored
+    #     self.payload_settings = payload_settings
+    #     self.sequence_threshold = sequence_threshold
+    #     self.payload_type = payload_type
+
+    def setExperimentName(self, experiment_name):
         self.experiment_name = experiment_name
-        self.log_name = log_name
-        self.output_folder = output_folder
         self.results_folder = experiment_name + "_results"
         self.results_file = self.results_folder + ".txt"
+
+    def setLogName(self, log_name):
+        self.log_name = log_name
         self.log_path_seq = log_name[:ifneg_right(log_name.rfind('.'),len(log_name))] + "_{}" + log_name[ifneg_right(log_name.rfind('.'),len(log_name)):]
+
+    def setOutputFolder(self, output_folder):
+        self.output_folder = output_folder
+
+    def setMaxDepth(self, dt_max_depth):
         self.dt_max_depth = dt_max_depth
+
+    def setMinLeaf(self, dt_min_leaf):
         self.dt_min_leaf = dt_min_leaf
-        self.auto_ignored = ignored
-        self.payload_settings = payload_settings
+
+    def setSequenceThreshold(self, sequence_threshold):
         self.sequence_threshold = sequence_threshold
+
+    def setPayloadType(self, payload_type):
         self.payload_type = payload_type
+
+    def setAutoIgnore(self, ignored):
+        if not (ignored is None):
+            self.auto_ignored = ignored
+
+    def setPayloadSettings(self,payload_settings):
+        if not (payload_settings is None):
+            self.payload_settings = payload_settings
 
     def dump(self, file):
         f = open(file, 'w')
         f.write(jsonpickle.encode(self))
         f.close()
 
-    def run(self, INP_PATH, DATA_EXP, coverage_thresholds, doNr0 = False):
+    def run(self, INP_PATH, DATA_EXP, coverage_thresholds, doNr0 = True):
         from pathlib import Path
         import os
         Path(os.path.join(DATA_EXP, self.results_folder)).mkdir(parents=True, exist_ok=True)

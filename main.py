@@ -36,12 +36,57 @@ def describe_logs():
     for key,value in to_describe.items():
         Other.describe(key, LOGS_FOLDER, value)
 
-def run_complete_configuration_and_run(conf_file):
-    jsonpickle.decode(open(conf_file).read()).run(LOGS_FOLDER, DATA_EXP, ranges, True)
+def run_complete_configuration_and_run(conf_file, doNr0 = True):
+    jsonpickle.decode(open(conf_file).read()).run(LOGS_FOLDER, DATA_EXP, ranges, doNr0)
+
+# from DevianceMiningPipeline import ConfigurationFile
+# cf = ConfigurationFile()
+# cf.setExperimentName("output_pos_neg_data")
+# cf.setLogName("output_pos_and_neg.xes")
+# cf.setOutputFolder("output_pos_neg_res")
+# cf.setMaxDepth(10)
+# cf.setMinLeaf(10)
+# cf.setSequenceThreshold(5)
+# cf.dump("output_pos_neg_data.json")
+
+def output_pos_neg_test():
+    INP_PATH = "logs/"
+    EXP_NAME = "output_pos_neg_data"
+    LOG_NAME = "output_pos_and_neg.xes"
+    OUTPUTFOLDER = "payload/"
+    results_folder = "output_pos_neg_res"
+    log_path_seq = "output_pos_and_neg_{}.xes"
+    results_file = "output_pos_neg.txt"
+
+    payload = True
+    payload_settings = "output_pos_and_neg_settings.cfg"
+
+
+    for nr, i in enumerate((5, 15, 25)):
+        ex = ExperimentRunner(experiment_name=EXP_NAME, output_file=results_file, results_folder=results_folder,
+                              inp_path=INP_PATH, log_name=LOG_NAME, output_folder=OUTPUTFOLDER,
+                              log_template=log_path_seq, dt_max_depth=10, dt_min_leaf=10,
+                              selection_method="coverage", coverage_threshold=i, sequence_threshold=5,
+                              payload=payload, payload_settings=payload_settings)
+
+        with open("train_" + results_file, "a+") as f:
+            f.write("\n")
+        with open("test_" + results_file, "a+") as f:
+            f.write("\n")
+
+        #if nr == 0:
+        #    ex.prepare_cross_validation()
+        #    ex.prepare_data()
+        ex.train_and_eval_benchmark()
+    # ex.clean_data()
+
+
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    run_complete_configuration_and_run("sepsis_er.json")
+    #pass
+    # run_complete_configuration_and_run("sepsis_er.json") --> Ok
+    run_complete_configuration_and_run("sepsis_er.json", False)
     #RulesExtraction.get_dtrules()               ## Requires: snapshots
     #print_hi('PyCharm')
 

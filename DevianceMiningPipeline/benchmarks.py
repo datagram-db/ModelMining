@@ -452,49 +452,48 @@ def output_pos_neg_test():
         #    ex.prepare_cross_validation()
         #    ex.prepare_data()
         ex.train_and_eval_benchmark()
-
     # ex.clean_data()
 
 
-def sepsis_er_dwd():
-    INP_PATH = "data/logs"
-    EXP_NAME = "sepsis_er"
-    LOG_NAME = "sepsis_tagged_er.xes"
-    OUTPUTFOLDER = "SepsisDWD/"
-    results_folder = "sepsis_er_dwd_results"
-    log_path_seq = "sepsis_tagged_er_{}.xes"
-    results_file = "sepsis_results_data_5.txt"
-    payload_type = "both" #dwd, normal or both
-
-    payload = True
-    payload_settings = "sepsis_settings.cfg"
-    payload_dwd_settings = {
-        "ignored": ["Diagnosis",
-                    "Diagnose",
-                    "time:timestamp",
-                    "concept: name",
-                    "Label",
-                    "lifecycle: transition"
-    ]
-    }
-
-    for nr, i in enumerate((5, 15, 25)):
-        ex = ExperimentRunner(experiment_name=EXP_NAME, output_file=results_file, results_folder=results_folder,
-                              inp_path=INP_PATH,
-                              log_name=LOG_NAME, output_folder=OUTPUTFOLDER, log_template=log_path_seq,
-                              dt_max_depth=5, dt_min_leaf=5, selection_method="coverage", coverage_threshold=i,
-                              sequence_threshold=5, payload_type=payload_type, payload=payload, payload_settings=payload_settings,
-                               payload_dwd_settings=payload_dwd_settings)
-
-        with open("train_" + results_file, "a+") as f:
-            f.write("\n")
-        with open("test_" + results_file, "a+") as f:
-            f.write("\n")
-
-        if nr == 0:
-            ex.prepare_cross_validation()
-            ex.prepare_data()
-        ex.train_and_eval_benchmark()
+# def sepsis_er_dwd():
+#     INP_PATH = "data/logs"
+#     EXP_NAME = "sepsis_er"
+#     LOG_NAME = "sepsis_tagged_er.xes"
+#     OUTPUTFOLDER = "SepsisDWD/"
+#     results_folder = "sepsis_er_dwd_results"
+#     log_path_seq = "sepsis_tagged_er_{}.xes"
+#     results_file = "sepsis_results_data_5.txt"
+#     payload_type = "both" #dwd, normal or both
+#
+#     payload = True
+#     payload_settings = "sepsis_settings.cfg"
+#     payload_dwd_settings = {
+#         "ignored": ["Diagnosis",
+#                     "Diagnose",
+#                     "time:timestamp",
+#                     "concept: name",
+#                     "Label",
+#                     "lifecycle: transition"
+#     ]
+#     }
+#
+#     for nr, i in enumerate((5, 15, 25)):
+#         ex = ExperimentRunner(experiment_name=EXP_NAME, output_file=results_file, results_folder=results_folder,
+#                               inp_path=INP_PATH,
+#                               log_name=LOG_NAME, output_folder=OUTPUTFOLDER, log_template=log_path_seq,
+#                               dt_max_depth=5, dt_min_leaf=5, selection_method="coverage", coverage_threshold=i,
+#                               sequence_threshold=5, payload_type=payload_type, payload=payload, payload_settings=payload_settings,
+#                                payload_dwd_settings=payload_dwd_settings)
+#
+#         with open("train_" + results_file, "a+") as f:
+#             f.write("\n")
+#         with open("test_" + results_file, "a+") as f:
+#             f.write("\n")
+#
+#         if nr == 0:
+#             ex.prepare_cross_validation()
+#             ex.prepare_data()
+#         ex.train_and_eval_benchmark()
 
 def bpi2011_dwd_data_cc():
     INP_PATH = "logs/"
@@ -577,7 +576,7 @@ def bpi2011_dwd_data_m16():
 
     # ex.clean_data()
 
-
+## Missing?
 def xray():
     results_folder = "xray_results"
 
@@ -607,35 +606,35 @@ def xray():
         ex.train_and_eval_benchmark()
 
 
-def synth_mr_new():
-    results_folder = "synth_mra_results"
-
-    EXP_NAME = "xray"
-    payload=False
-    selection_method = "coverage"
-
-    INP_PATH = "logs/"
-    LOG_NAME = "synth_mr_tagged.xes"
-    OUTPUTFOLDER = "Synthetic/"
-    log_path_seq = "synth_mr_tagged_{}.xes"
-
-    results_file = "synth_coverage_mr_results_1.txt"
-
-    for nr, i in enumerate((5, 15, 25)):
-        ex = ExperimentRunner(experiment_name=EXP_NAME, output_file=results_file, results_folder=results_folder,
-                              inp_path=INP_PATH, log_name=LOG_NAME, output_folder=OUTPUTFOLDER,
-                              payload=payload, log_template=log_path_seq, dt_max_depth=10, dt_min_leaf=5,
-                              selection_method=selection_method, coverage_threshold=i, sequence_threshold=5)
-
-        with open("train_" + results_file, "a+") as f:
-            f.write("\n")
-        with open("test_" + results_file, "a+") as f:
-            f.write("\n")
-
-        if nr == 0:
-            ex.prepare_cross_validation()
-            ex.prepare_data()
-        ex.train_and_eval_benchmark()
+# def synth_mr_new():
+#     results_folder = "synth_mra_results"
+#
+#     EXP_NAME = "xray"
+#     payload=False
+#     selection_method = "coverage"
+#
+#     INP_PATH = "logs/"
+#     LOG_NAME = "synth_mr_tagged.xes"
+#     OUTPUTFOLDER = "Synthetic/"
+#     log_path_seq = "synth_mr_tagged_{}.xes"
+#
+#     results_file = "synth_coverage_mr_results_1.txt"
+#
+#     for nr, i in enumerate((5, 15, 25)):
+#         ex = ExperimentRunner(experiment_name=EXP_NAME, output_file=results_file, results_folder=results_folder,
+#                               inp_path=INP_PATH, log_name=LOG_NAME, output_folder=OUTPUTFOLDER,
+#                               payload=payload, log_template=log_path_seq, dt_max_depth=10, dt_min_leaf=5,
+#                               selection_method=selection_method, coverage_threshold=i, sequence_threshold=5)
+#
+#         with open("train_" + results_file, "a+") as f:
+#             f.write("\n")
+#         with open("test_" + results_file, "a+") as f:
+#             f.write("\n")
+#
+#         if nr == 0:
+#             ex.prepare_cross_validation()
+#             ex.prepare_data()
+#         ex.train_and_eval_benchmark()
 
 
 
@@ -658,7 +657,7 @@ if __name__ == "__main__":
     #output_pos_neg_test()
     #sepsis_er_data()
     #bpi2011_data_cc()
-    sepsis_er_dwd()
+    #sepsis_er_dwd()
     #bpi2011_dwd_data_cc()
     #bpi2011_dwd_data_m16()
 

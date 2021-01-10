@@ -45,7 +45,6 @@ def transform_log(train_log, activity_set):
 
 
 def baseline(inp_folder, logPath):
-
     log = read_XES_log(logPath)
 
     transformed_log = xes_to_positional(log)
@@ -65,19 +64,19 @@ def baseline(inp_folder, logPath):
     # test data
     test_df = transform_log(test_log, activitySet)
 
-    train_df.to_csv(inp_folder + "/baseline_train.csv", index=False)
+    mkdir_test(inp_folder)
+    train_df.to_csv(os.path.join(inp_folder, "baseline_train.csv"), index=False)
+    test_df.to_csv(os.path.join(inp_folder, "baseline_test.csv"), index=False)
 
-    test_df.to_csv(inp_folder + "/baseline_test.csv", index=False)
 
-
-def move_baseline_files(inp_folder, output_folder, split_nr):
-    move_files(inp_folder, output_folder, split_nr, "baseline")
-    # source = inp_folder # './baselineOutput/'
-    # dest1 = os.path.join(output_folder, "split"+str(split_nr), "base")
-    # Path(dest1).mkdir(parents=True, exist_ok=True)
-    # files = os.listdir(source)
-    # for f in files:
-    #     shutil.move(source + f, dest1+os.path.sep)
+# def move_baseline_files(inp_folder, output_folder, split_nr):
+#     move_files(inp_folder, output_folder, split_nr, "baseline")
+#     # source = inp_folder # './baselineOutput/'
+#     # dest1 = os.path.join(output_folder, "split"+str(split_nr), "base")
+#     # Path(dest1).mkdir(parents=True, exist_ok=True)
+#     # files = os.listdir(source)
+#     # for f in files:
+#     #     shutil.move(source + f, dest1+os.path.sep)
 
 
 def run_baseline(experiment_name, log_path, results_folder):
@@ -87,7 +86,7 @@ def run_baseline(experiment_name, log_path, results_folder):
         if not os.path.exists(folder_name):
             os.makedirs(folder_name)
 
-        baseline(folder_name, logPath)
-        move_baseline_files(folder_name, results_folder, logNr + 1)
+        baseline(os.path.join(results_folder, "split"+str(logNr + 1), "baseline"), logPath)
+        #move_baseline_files(folder_name, results_folder, logNr + 1)
 
 

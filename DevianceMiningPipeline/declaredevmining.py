@@ -203,7 +203,7 @@ def count_classes(log):
 
 
 
-def declare_deviance_mining(log, templates=None, to_shuffle=False, filter_t=True, reencode=False):
+def declare_deviance_mining(output_path, log, templates=None, to_shuffle=False, filter_t=True, reencode=False):
     print("Filter_t", filter_t)
     if not templates:
         templates = template_sizes.keys()
@@ -263,8 +263,10 @@ def declare_deviance_mining(log, templates=None, to_shuffle=False, filter_t=True
     train_df["Label"] = train_labels.tolist()
     test_df["Case_ID"] = test_names
     test_df["Label"] = test_labels.tolist()
-    train_df.to_csv("declareOutput/declare_train.csv", index=False)
-    test_df.to_csv("declareOutput/declare_test.csv", index=False)
+
+    mkdir_test(output_path)
+    train_df.to_csv(os.path.join(output_path, "declare_train.csv"), index=False)
+    test_df.to_csv(os.path.join(output_path, "declare_test.csv"), index=False)
 
 
 def run_deviance_new(log_path, results_folder, templates=None, filter_t=True, reencode=False):
@@ -274,32 +276,30 @@ def run_deviance_new(log_path, results_folder, templates=None, filter_t=True, re
             "labelled": True
         }
         
-        folder_name ="./declareOutput/"
-        if not os.path.exists(folder_name):
-            os.makedirs(folder_name)
+        # folder_name ="./declareOutput/"
+        # if not os.path.exists(folder_name):
+        #     os.makedirs(folder_name)
 
         print("Deviance mining filtering:", filter_t)
-        
-        
-        deviance_main(args, templates=templates, filter_t=filter_t, reencode=reencode)
 
-        move_out_files_new(logNr + 1, results_folder)
+        deviance_main(os.path.join(results_folder, "split"+str(logNr + 1), "declare"), args, templates=templates, filter_t=filter_t, reencode=reencode)
+        #move_out_files_new(logNr + 1, results_folder)
 
 
-def move_out_files_new(splitNr, results_folder):
-    move_files('./declareOutput/', results_folder, splitNr, "declare")
-    # source = './declareOutput/'
-    # dest1 = './' + results_folder + '/split' + str(splitNr) + "/declare/"
-    # files = os.listdir(source)
-    #
-    # for f in files:
-    #     shutil.move(source + f, dest1)
+# def move_out_files_new(splitNr, results_folder):
+#     move_files('./declareOutput/', results_folder, splitNr, "declare")
+#     # source = './declareOutput/'
+#     # dest1 = './' + results_folder + '/split' + str(splitNr) + "/declare/"
+#     # files = os.listdir(source)
+#     #
+#     # for f in files:
+#     #     shutil.move(source + f, dest1)
 
 
-def deviance_main(args, templates=None, filter_t=True, reencode=False):
+def deviance_main(output_path, args, templates=None, filter_t=True, reencode=False):
     print("Working on: " + args["logPath"], "Filtering:", filter_t)
     log = read_XES_log(args["logPath"])
-    declare_deviance_mining(log, templates=templates, filter_t=filter_t, reencode=reencode)
+    declare_deviance_mining(output_path, log, templates=templates, filter_t=filter_t, reencode=reencode)
 
 
 if __name__ == "__main__":

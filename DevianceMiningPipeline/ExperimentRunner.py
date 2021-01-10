@@ -292,7 +292,7 @@ class ExperimentRunner:
             return models
 
     @staticmethod
-    def generate_cross_validation_logs(log, log_name, output_folder):
+    def generate_cross_validation_logs(inp_path,log, log_name, output_folder):
         split_perc = 0.2
         log_size = len(log)
         partition_size = int(split_perc * log_size)
@@ -322,8 +322,8 @@ class ExperimentRunner:
             with open(os.path.join(output_folder,  log_name[:-4] + "_" + str(log_nr + 1) + ".xes"), "w") as file:
                 XesXmlSerializer().serialize(new_log, file)
 
-            #with open("data/logs/" + log_name[:-4] + "_" + str(log_nr + 1) + ".xes", "w") as file:
-            #    XesXmlSerializer().serialize(new_log, file)
+            with open(os.path.join(inp_path, log_name[:-4] + "_" + str(log_nr + 1) + ".xes"), "w") as file:
+                XesXmlSerializer().serialize(new_log, file)
 
     @staticmethod
     def create_folder_structure(directory, payload=False, payload_type=None):
@@ -358,7 +358,7 @@ class ExperimentRunner:
         shuffle(log)
 
         # 3. Split into 5 parts for cross validation
-        ExperimentRunner.generate_cross_validation_logs(log, log_name, output_folder)
+        ExperimentRunner.generate_cross_validation_logs(inp_path, log, log_name, output_folder)
 
     @staticmethod
     def read_baseline_log(results_folder, split_nr):
@@ -419,8 +419,8 @@ class ExperimentRunner:
 
     @staticmethod
     def read_sequence_log(results_folder, encoding, split_nr):
-        print("ERROR: read_sequence_log will fail")
         split = "split" + str(split_nr)
+
         file_loc = results_folder + "/" + split + "/" + encoding
         train_path = file_loc + "/" + "globalLog.csv"
         global_df = pd.read_csv(train_path, sep=";", index_col="Case_ID", na_filter=False)
@@ -691,59 +691,68 @@ class ExperimentRunner:
                                                                 payload_train_df=payload_train_df,
                                                                 payload_test_df=payload_test_df)
 
-        # Save input to arff file to be used for RIPPER!
-        SAVE_ARFF = False
+        # # Save input to arff file to be used for RIPPER!
+        # SAVE_ARFF = False
+        # if SAVE_ARFF:
+        #     encoded_features = [str(i) for i in range(len(feature_names)+1)]
+        #     features = list(feature_names)
+        #     features.append("Label")
+        #
+        #     with open("arff/feature_encoding_{}".format(self.counter), "w") as fc:
+        #         feature_pairs = zip(encoded_features, features)
+        #         for k, v in feature_pairs:
+        #             fc.write(k + ":" + v + "\n")
+        #
+        #     train_new = pd.DataFrame(X_train, columns=feature_names)
+        #     test_new = pd.DataFrame(X_test, columns=feature_names)
+        #     train_new["Label"] = y_train
+        #     test_new["Label"] = y_test
+        #     train_new["Label"] = train_new["Label"].astype("category")
+        #     test_new["Label"] = test_new["Label"].astype('category')
+        #
+        #     arff.dump('arff/train_data_{}.arff'.format(self.counter)
+        #               , train_new.values
+        #               , relation='data_arff'
+        #               , names=encoded_features)
+        #     arff.dump('arff/test_data_{}.arff'.format(self.counter)
+        #               , test_new.values
+        #               , relation='data_arff'
+        #               , names=encoded_features)
 
-        if SAVE_ARFF:
-            encoded_features = [str(i) for i in range(len(feature_names)+1)]
-            features = list(feature_names)
-            features.append("Label")
-
-            with open("arff/feature_encoding_{}".format(self.counter), "w") as fc:
-                feature_pairs = zip(encoded_features, features)
-                for k, v in feature_pairs:
-                    fc.write(k + ":" + v + "\n")
-
-            train_new = pd.DataFrame(X_train, columns=feature_names)
-            test_new = pd.DataFrame(X_test, columns=feature_names)
-            train_new["Label"] = y_train
-            test_new["Label"] = y_test
-            train_new["Label"] = train_new["Label"].astype("category")
-            test_new["Label"] = test_new["Label"].astype('category')
-
-            arff.dump('arff/train_data_{}.arff'.format(self.counter)
-                      , train_new.values
-                      , relation='data_arff'
-                      , names=encoded_features)
-            arff.dump('arff/test_data_{}.arff'.format(self.counter)
-                      , test_new.values
-                      , relation='data_arff'
-                      , names=encoded_features)
-
-        # Toggle this to save snapshots
-        SAVE_CSV = False
-        if SAVE_CSV and exp_name and split_nr:
-            ## Save all
-            new_feature_names = list(map(lambda x: x.replace(",", "."), feature_names))
-            new_feature_names = list(map(lambda x: x.replace('"', ""), new_feature_names))
-            new_feature_names = list(map(lambda x: x.replace("'", ""), new_feature_names))
-            #new_feature_names = [str(i) for i in range(len(new_feature_names))]
-
-            savename ="synthmra_{}_{}_{}.csv".format(exp_name, self.coverage_threshold, split_nr)
-            train_new = pd.DataFrame(X_train, columns=new_feature_names)
-            test_new = pd.DataFrame(X_test, columns= new_feature_names)
-            train_new["Label"] = y_train
-            test_new["Label"] = y_test
-
-
-            # Save separately for each split, merged encoding type. To feed into RIPPER
-            train_new.to_csv("snapshots/train_" + savename, index=False)
-            test_new.to_csv("snapshots/test_" + savename, index=False)
+        # # Toggle this to save snapshots
+        # SAVE_CSV = False
+        # if SAVE_CSV and exp_name and split_nr:
+        #     ## Save all
+        #     new_feature_names = list(map(lambda x: x.replace(",", "."), feature_names))
+        #     new_feature_names = list(map(lambda x: x.replace('"', ""), new_feature_names))
+        #     new_feature_names = list(map(lambda x: x.replace("'", ""), new_feature_names))
+        #     #new_feature_names = [str(i) for i in range(len(new_feature_names))]
+        #
+        #     savename ="synthmra_{}_{}_{}.csv".format(exp_name, self.coverage_threshold, split_nr)
+        #     train_new = pd.DataFrame(X_train, columns=new_feature_names)
+        #     test_new = pd.DataFrame(X_test, columns= new_feature_names)
+        #     train_new["Label"] = y_train
+        #     test_new["Label"] = y_test
+        #
+        #
+        #     # Save separately for each split, merged encoding type. To feed into RIPPER
+        #     train_new.to_csv("snapshots/train_" + savename, index=False)
+        #     test_new.to_csv("snapshots/test_" + savename, index=False)
 
 
         # Train classifier
         clf = DecisionTreeClassifier(max_depth=self.dt_max_depth, min_samples_leaf=self.dt_min_leaf)
-        clf.fit(X_train, y_train)
+        if (np.isnan(y_train).any()) or (np.isnan(X_train).any()) or (np.isnan(y_test).any()) or (np.isnan(X_test).any()):
+            nanYtrain = ~np.isnan(y_train)
+            X_train = X_train[nanYtrain]
+            y_train = y_train[nanYtrain]
+            X_train[np.isnan(X_train)] = 0
+
+            nanYtest = ~np.isnan(y_test)
+            X_test = X_test[nanYtest]
+            y_test = y_test[nanYtest]
+            X_test[np.isnan(X_test)] = 0
+        clf.fit(X_train, y_train, check_input=False)
 
         # True to export tree .dot file
         export_tree = False

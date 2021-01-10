@@ -679,13 +679,15 @@ def data_declare_main(inp_folder, log_name, ignored):
     train_df.to_csv(inp_folder + "/dwd_train.csv", index=False)
     test_df.to_csv(inp_folder + "/dwd_test.csv", index=False)
 
+from .pathutils import move_files
 
 def move_dwd_files(inp_folder, output_folder, split_nr):
-    source = inp_folder # './baselineOutput/'
-    dest1 = './' + output_folder + '/split' + str(split_nr) + "/dwd/"
-    files = os.listdir(source)
-    for f in files:
-        shutil.move(source + f, dest1)
+    move_files(inp_folder, output_folder, split_nr, "dwd")
+    # source = inp_folder # './baselineOutput/'
+    # dest1 = './' + output_folder + '/split' + str(split_nr) + "/dwd/"
+    # files = os.listdir(source)
+    # for f in files:
+    #     shutil.move(source + f, dest1)
 
 
 def run_declare_with_data(log_path, settings, results_folder):
