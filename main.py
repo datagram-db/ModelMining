@@ -7,6 +7,7 @@ import LogGeneration
 import RulesExtraction
 import Other
 import jsonpickle
+import sys
 
 LOGS_FOLDER="data/logs"
 DATA_EXP="data/experiments"
@@ -85,8 +86,15 @@ def output_pos_neg_test():
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     #pass
+    conf_file = "sepsis_er.json"
+    if len(sys.argv)>1:
+        conf_file = sys.argv[1]
+    preprocess = True
+    if len(sys.argv)>2:
+        test = sys.argv[2]
+        preprocess = not (test == "skipPreprocessing")
     # run_complete_configuration_and_run("sepsis_er.json") --> Ok
-    run_complete_configuration_and_run("sepsis_er.json", False)
+    run_complete_configuration_and_run(conf_file, preprocess)
     #RulesExtraction.get_dtrules()               ## Requires: snapshots
     #print_hi('PyCharm')
 
