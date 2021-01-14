@@ -57,6 +57,14 @@ def write_log_file(log, filen):
         XesXmlSerializer().serialize(log, file)
 
 def write_log_file_with_label_cond(log, filen, attn, val):
+    """
+    This function updates the log by labelling it as 1 if there exists a trace with attribute attn and associated value value
+
+    :param log:         XLog to analyse
+    :param filen:       File where to serialize the labelled log
+    :param attn:        Attribute to be found within the trace
+    :param val:         Value associated to the attribute to be found.
+    """
     if not os.path.isfile(filen):
         print("Writing: "+filen)
         DevianceMiningPipeline.predicates.logTagger(log,
