@@ -53,6 +53,19 @@ def create_call_params(inp_path, results_folder, paramString, inputFile=None, ou
 
     return params
 
+def create_call_params2(inp_path, results_folder, paramString, inputFile=None, outputFile=None):
+    params = paramString.split()
+    #if outputFile:
+    params.append("--outputFile")
+    #outputPath = os.path.join(results_folder, "outputlogs")
+    os.makedirs(results_folder, exist_ok=True)
+    params.append(os.path.join(results_folder, outputFile))
+    #if inputFile:
+    params.append("--logFile")
+    params.append(inputFile)
+    #    if inputFile[1]:
+    #        params.append("--requiresLabelling")
+    return params
 
 def call_params(inp_path, results_folder, paramString, inputFile, outputFile, err_logger):
     """
@@ -96,6 +109,13 @@ def call_params(inp_path, results_folder, paramString, inputFile, outputFile, er
 #     # for f in files:
 #     #     shutil.move(source+f, dest1)
 
+def genParamStrings(sequence_threshold):
+    return [
+        ("--coverageThreshold {} ".format(sequence_threshold) + "--featureType Sequence --minimumSupport 0.1 --patternType MR --encodingType Frequency", "SequenceMR", "mr"),
+        ("--coverageThreshold {} ".format(sequence_threshold) + "--featureType Sequence --minimumSupport 0.1 --patternType MRA --encodingType Frequency", "SequenceMRA", "mra"),
+        ("--coverageThreshold {} ".format(sequence_threshold) + "--featureType Sequence --minimumSupport 0.1 --patternType TR --encodingType Frequency", "SequenceTR", "tr"),
+        ("--coverageThreshold {} ".format(sequence_threshold) + "--featureType Sequence --minimumSupport 0.1 --patternType TRA --encodingType Frequency", "SequenceTRA", "tra"),
+    ]
 
 def run_sequences(inp_path, log_path, results_folder, err_logger, sequence_threshold=5):
     """
@@ -105,14 +125,8 @@ def run_sequences(inp_path, log_path, results_folder, err_logger, sequence_thres
     :param sequence_threshold:
     :return:
     """
-
     ## Input parameters to GoSwift.jar
-    paramStrings = [
-        ("--coverageThreshold {} ".format(sequence_threshold) + "--featureType Sequence --minimumSupport 0.1 --patternType MR --encodingType Frequency", "SequenceMR", "mr"),
-        ("--coverageThreshold {} ".format(sequence_threshold) + "--featureType Sequence --minimumSupport 0.1 --patternType MRA --encodingType Frequency", "SequenceMRA", "mra"),
-        ("--coverageThreshold {} ".format(sequence_threshold) + "--featureType Sequence --minimumSupport 0.1 --patternType TR --encodingType Frequency", "SequenceTR", "tr"),
-        ("--coverageThreshold {} ".format(sequence_threshold) + "--featureType Sequence --minimumSupport 0.1 --patternType TRA --encodingType Frequency", "SequenceTRA", "tra"),
-    ]
+    paramStrings = genParamStrings(sequence_threshold)
 
     for paramString, techName, folder in paramStrings:
         print("Working on {} @{}".format(techName, folder))
@@ -126,9 +140,17 @@ def run_sequences(inp_path, log_path, results_folder, err_logger, sequence_thres
             inputFile = (log_path.format(splitNr+1), False)
             outputFilename = create_output_filename(inputFile[0], techName)
             tic = time.time()
-            call_params(inp_path, outputPath, paramString, inputFile, outputFilename, err_logger) # Above: directly writing to the destination folder
+            call_params(inp_path, outputPath, paramString, inputFile, outputFilename, err_logger)
             toc = time.time()
             print("Time taken {0:.3f} seconds".format(toc - tic))
 
             # The jar will directly write to t
             move_files('./output/', results_folder, splitNr + 1, folder)
+
+def generateSequences(inp_path, log_path, results_folder, sequence_threshold=5):
+    for paramString, techName, folder in genParamStrings(sequence_threshold):
+        outputFilename = create_output_filename(log_path, techName)
+        parameters = create_call_params2(inp_path, results_folder, paramString, log_path, outputFilename)
+        print(" ".join(["java", "-jar", JAR_NAME] + parameters))
+        subprocess.call(["java", "-jar", JAR_NAME] + parameters)  # blocking
+        move_files('./output/', results_folder, 0, folder)

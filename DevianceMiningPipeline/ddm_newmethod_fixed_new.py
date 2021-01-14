@@ -639,7 +639,7 @@ class DRC:
 
 
 
-def data_declare_main(inp_folder, log_name, ignored):
+def data_declare_main(inp_folder, log_name, ignored, split = 0.8):
 
     drc = DRC()
     log = read_XES_log(log_name)
@@ -647,7 +647,7 @@ def data_declare_main(inp_folder, log_name, ignored):
     # Transform log into suitable data structures
     transformed_log = xes_to_data_positional(log)
 
-    train_log, test_log = split_log_train_test(transformed_log, 0.8)
+    train_log, test_log = split_log_train_test(transformed_log, split)
     #print(train_log[0])
 
     train_case_ids = [tr["name"] for tr in train_log]
@@ -676,8 +676,10 @@ def data_declare_main(inp_folder, log_name, ignored):
     train_df["Case_ID"] = train_case_ids
     test_df["Case_ID"] = test_case_ids
 
-    train_df.to_csv(inp_folder + "/dwd_train.csv", index=False)
-    test_df.to_csv(inp_folder + "/dwd_test.csv", index=False)
+    if not train_df.empty:
+        train_df.to_csv(os.path.join(inp_folder, "dwd_train.csv"), index=False)
+    if not test_df.empty:
+        test_df.to_csv(os.path.join(inp_folder, "dwd_test.csv"), index=False)
 
 from .pathutils import move_files
 

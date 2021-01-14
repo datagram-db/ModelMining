@@ -44,29 +44,37 @@ def transform_log(train_log, activity_set):
     return train_df
 
 
-def baseline(inp_folder, logPath):
+def baseline(inp_folder, logPath, splitSize = 0.8):
     log = read_XES_log(logPath)
 
     transformed_log = xes_to_positional(log)
 
-    train_log, test_log = split_log_train_test(transformed_log, 0.8)
+    train_log, test_log = split_log_train_test(transformed_log, splitSize)
     # Collect all different IA's
 
     activitySet = list(extract_unique_events_transformed(train_log))
     # Transform to matrix
 
-    print("Train data")
+
     # train data
+    if len(train_log) > 0:
+        print("Train data")
+        train_df = transform_log(train_log, activitySet)
+    else:
+        train_df = pd.DataFrame()
 
-    train_df = transform_log(train_log, activitySet)
-
-    print("Test data")
     # test data
-    test_df = transform_log(test_log, activitySet)
+    if len(test_log)>0:
+        print("Test data")
+        test_df = transform_log(test_log, activitySet)
+    else:
+        test_df = pd.DataFrame()
 
     mkdir_test(inp_folder)
-    train_df.to_csv(os.path.join(inp_folder, "baseline_train.csv"), index=False)
-    test_df.to_csv(os.path.join(inp_folder, "baseline_test.csv"), index=False)
+    if not train_df.empty:
+        train_df.to_csv(os.path.join(inp_folder, "baseline_train.csv"), index=False)
+    if not test_df.empty:
+        test_df.to_csv(os.path.join(inp_folder, "baseline_test.csv"), index=False)
 
 
 # def move_baseline_files(inp_folder, output_folder, split_nr):

@@ -203,7 +203,7 @@ def count_classes(log):
 
 
 
-def declare_deviance_mining(output_path, log, templates=None, to_shuffle=False, filter_t=True, reencode=False):
+def declare_deviance_mining(output_path, log, templates=None, to_shuffle=False, filter_t=True, reencode=False, split_size = .8):
     print("Filter_t", filter_t)
     if not templates:
         templates = template_sizes.keys()
@@ -216,7 +216,7 @@ def declare_deviance_mining(output_path, log, templates=None, to_shuffle=False, 
     if to_shuffle:
         shuffle(transformed_log)
 
-    train_log, test_log = split_log_train_test(transformed_log, 0.8)
+    train_log, test_log = split_log_train_test(transformed_log, split_size)
 
     # Extract unique activities from log
     events_set = extract_unique_events_transformed(train_log)
@@ -265,8 +265,10 @@ def declare_deviance_mining(output_path, log, templates=None, to_shuffle=False, 
     test_df["Label"] = test_labels.tolist()
 
     mkdir_test(output_path)
-    train_df.to_csv(os.path.join(output_path, "declare_train.csv"), index=False)
-    test_df.to_csv(os.path.join(output_path, "declare_test.csv"), index=False)
+    if not train_df.empty:
+        train_df.to_csv(os.path.join(output_path, "declare_train.csv"), index=False)
+    if not test_df.empty:
+        test_df.to_csv(os.path.join(output_path, "declare_test.csv"), index=False)
 
 
 def run_deviance_new(log_path, results_folder, templates=None, filter_t=True, reencode=False):

@@ -40,7 +40,8 @@ def describe_logs():
         Other.describe(key, LOGS_FOLDER, value)
 
 def run_complete_configuration_and_run(conf_file, doNr0 = True):
-    jsonpickle.decode(open(conf_file).read()).run(LOGS_FOLDER, DATA_EXP, ranges, doNr0)
+    jsonpickle.decode(open(conf_file).read()).complete_embedding_generation(LOGS_FOLDER, DATA_EXP)
+    #jsonpickle.decode(open(conf_file).read()).run(LOGS_FOLDER, DATA_EXP, ranges, doNr0)
 
 # from DevianceMiningPipeline import ConfigurationFile
 # cf = ConfigurationFile()
@@ -87,7 +88,7 @@ def generateTagging():
 if __name__ == '__main__':
     LogGeneration.write_xeses(LOGS_FOLDER)
     generateTagging()
-    conf_file = "synth_xray.json"
+    conf_file = "sepsis_er.json"
     if len(sys.argv)>1:
         conf_file = sys.argv[1]
     preprocess = True

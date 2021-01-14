@@ -22,8 +22,8 @@ from opyenxes.factory.XFactory import XFactory
 from .deviancecommon import read_XES_log
 from .baseline_runner import run_baseline
 from .declaredevmining import run_deviance_new
-from .sequence_runner import run_sequences
-from .ddm_newmethod_fixed_new import run_declare_with_data
+from .sequence_runner import run_sequences, generateSequences
+from .ddm_newmethod_fixed_new import run_declare_with_data, data_declare_main
 
 from sklearn.preprocessing import StandardScaler
 
@@ -32,7 +32,7 @@ from skfeature.function.similarity_based import fisher_score
 from sklearn.decomposition import PCA
 from collections import defaultdict
 
-from .payload_extractor import run_payload_extractor
+from .payload_extractor import run_payload_extractor, payload_extractor
 
 import arff
 
@@ -1263,7 +1263,6 @@ class ExperimentRunner:
 
 
     def train_and_eval_benchmark(self):
-
         all_results = {}
         # MAKE SURE ALL METHODS USED ARE HERE. AND METHODS NOT USED ARE NOT!
         if not self.payload:
@@ -1402,6 +1401,22 @@ class ExperimentRunner:
 
     def prepare_cross_validation(self, max_splits = 5):
         self.cross_validation_pipeline(self.inp_path, self.log_name, self.output_folder, max_splits)
+
+    def serialize_complete_dataset(self):
+        logFilePath = os.path.join(self.inp_path, self.log_name)
+        log = read_XES_log(logFilePath)
+        d = os.path.join("./complete_embeddings/", logFilePath)
+        os.makedirs(d, exist_ok=True)
+        from DevianceMiningPipeline.baseline_runner import baseline
+        from DevianceMiningPipeline.declaredevmining import declare_deviance_mining
+        baseline(d, logFilePath, 1.0)  # Writing the vector embedding for the whole dataset
+        declare_deviance_mining(d, log, split_size=1.0, reencode=self.reencode)
+        generateSequences(self.inp_path, logFilePath, d)
+        # TODO: run_sequences(self.inp_path, self.log_path_seq, self.results_folder, self.err_logger, sequence_threshold=self.sequence_threshold)
+        #if self.payload:
+        #    data_declare_main(d, logFilePath, self.payload_dwd_settings["ignored"], split=1.0)
+        #    payload_extractor(d, logFilePath, self.payload_settings, split=1.0)
+
 
     def prepare_data(self):
         self.create_folder_structure(self.results_folder, payload=self.payload, payload_type=self.payload_type)

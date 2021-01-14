@@ -863,11 +863,11 @@ def build_dataframes(train_data, test_data, settings):
     return train_df, test_df
 
 
-def payload_extractor(inp_folder, log_name, settings_file):
+def payload_extractor(inp_folder, log_name, settings_file, split=0.8):
 
     log = read_XES_log(log_name)
 
-    train, test = split_log_train_test(log, 0.8)
+    train, test = split_log_train_test(log, split)
 
     print("Lengths of logs train: {}, test: {}".format(len(train), len(test)))
     pex = PayloadExtractor()
