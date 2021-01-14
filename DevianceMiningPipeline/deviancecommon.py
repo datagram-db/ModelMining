@@ -2,8 +2,7 @@ from collections import defaultdict
 from time import time
 from opyenxes.data_in.XUniversalParser import XUniversalParser
 
-from opyenxes.model import XAttributeBoolean, XAttributeLiteral, XAttributeTimestamp, XAttributeDiscrete, \
-    XAttributeContinuous
+from opyenxes.model import XAttributeBoolean, XAttributeLiteral, XAttributeTimestamp, XAttributeDiscrete, XAttributeContinuous
 
 def get_attribute_type(val):
     if isinstance(val, XAttributeLiteral.XAttributeLiteral):
@@ -30,9 +29,7 @@ def read_XES_log(path):
     with open(path) as log_file:
         log = XUniversalParser().parse(log_file)[0]  # take first log from file
 
-    toc = time()
-
-    print("Log parsed, took {} seconds..".format(toc - tic))
+    print("Log parsed, took {} seconds..".format(time() - tic))
 
     return log
 
@@ -88,7 +85,7 @@ def xes_to_positional(log, label=True):
             "name": trace_name,
             "events": events
         })
-        if label:
+        if label:                                       # Appends the label to the last element, only if it was required
             positional[-1]["label"] = trace_label
 
     return positional

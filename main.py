@@ -8,6 +8,11 @@ import RulesExtraction
 import Other
 import jsonpickle
 import sys
+import os
+
+from DevianceMiningPipeline.deviancecommon import read_XES_log
+import DevianceMiningPipeline.predicates
+from opyenxes.data_out.XesXmlSerializer import XesXmlSerializer
 
 LOGS_FOLDER="data/logs"
 DATA_EXP="data/experiments"
@@ -25,9 +30,6 @@ to_describe = {
     #"BPI2011_CC": "EnglishBPIChallenge2011_tagged_cc.xes",
     #"XRAY": "merged_xray.xes"
 }
-
-def write_logs_01():
-    LogGeneration.write_xeses(LOGS_FOLDER)
 
 def do_benchmarks():
     pass
@@ -50,52 +52,39 @@ def run_complete_configuration_and_run(conf_file, doNr0 = True):
 # cf.setSequenceThreshold(5)
 # cf.dump("output_pos_neg_data.json")
 
-def output_pos_neg_test():
-    INP_PATH = "logs/"
-    EXP_NAME = "output_pos_neg_data"
-    LOG_NAME = "output_pos_and_neg.xes"
-    OUTPUTFOLDER = "payload/"
-    results_folder = "output_pos_neg_res"
-    log_path_seq = "output_pos_and_neg_{}.xes"
-    results_file = "output_pos_neg.txt"
+def write_log_file(log, filen):
+    with open(filen, "w") as file:
+        XesXmlSerializer().serialize(log, file)
 
-    payload = True
-    payload_settings = "output_pos_and_neg_settings.cfg"
+def write_log_file_with_label_cond(log, filen, attn, val):
+    if not os.path.isfile(filen):
+        print("Writing: "+filen)
+        DevianceMiningPipeline.predicates.logTagger(log,
+                                                    DevianceMiningPipeline.predicates.compileAttributeWithValue(
+                                                        attn, val))
+        write_log_file(log, filen)
 
 
-    for nr, i in enumerate((5, 15, 25)):
-        ex = ExperimentRunner(experiment_name=EXP_NAME, output_file=results_file, results_folder=results_folder,
-                              inp_path=INP_PATH, log_name=LOG_NAME, output_folder=OUTPUTFOLDER,
-                              log_template=log_path_seq, dt_max_depth=10, dt_min_leaf=10,
-                              selection_method="coverage", coverage_threshold=i, sequence_threshold=5,
-                              payload=payload, payload_settings=payload_settings)
-
-        with open("train_" + results_file, "a+") as f:
-            f.write("\n")
-        with open("test_" + results_file, "a+") as f:
-            f.write("\n")
-
-        #if nr == 0:
-        #    ex.prepare_cross_validation()
-        #    ex.prepare_data()
-        ex.train_and_eval_benchmark()
-    # ex.clean_data()
-
+def generateTagging():
+    assert os.path.isfile("data/logs/bpi2011.xes")
+    if (not os.path.isfile("data/logs/bpi2011_dCC.xes")) or (not os.path.isfile("data/logs/bpi2011_t101.xes")) or (not os.path.isfile("data/logs/bpi2011_m13.xes")) or (not os.path.isfile("data/logs/bpi2011_m16.xes")):
+        log = read_XES_log("data/logs/bpi2011.xes")
+        write_log_file_with_label_cond(log, "data/logs/bpi2011_dCC.xes", "Diagnosis", "maligniteit cervix")
+        write_log_file_with_label_cond(log, "data/logs/bpi2011_t101.xes", "Treatment code", 101)
+        write_log_file_with_label_cond(log, "data/logs/bpi2011_m13.xes", "Diagnosis code", "M13")
+        write_log_file_with_label_cond(log, "data/logs/bpi2011_m16.xes", "Diagnosis code", "M16")
 
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    #pass
-    conf_file = "sepsis_er.json"
+    LogGeneration.write_xeses(LOGS_FOLDER)
+    generateTagging()
+    conf_file = "synth_xray.json"
     if len(sys.argv)>1:
         conf_file = sys.argv[1]
     preprocess = True
     if len(sys.argv)>2:
         test = sys.argv[2]
         preprocess = not (test == "skipPreprocessing")
-    # run_complete_configuration_and_run("sepsis_er.json") --> Ok
     run_complete_configuration_and_run(conf_file, preprocess)
-    #RulesExtraction.get_dtrules()               ## Requires: snapshots
-    #print_hi('PyCharm')
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/

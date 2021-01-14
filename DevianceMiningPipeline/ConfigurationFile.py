@@ -75,7 +75,7 @@ class ConfigurationFile(object):
         f.write(jsonpickle.encode(self))
         f.close()
 
-    def run(self, INP_PATH, DATA_EXP, coverage_thresholds, doNr0 = True):
+    def run(self, INP_PATH, DATA_EXP, coverage_thresholds, doNr0 = True, max_splits = 5):
         from pathlib import Path
         import os
         Path(os.path.join(DATA_EXP, self.results_folder)).mkdir(parents=True, exist_ok=True)
@@ -109,6 +109,6 @@ class ConfigurationFile(object):
             with open("test_" + self.results_file, "a+") as f:
                 f.write("\n")
             if (nr == 0) and doNr0:
-                ex.prepare_cross_validation()
+                ex.prepare_cross_validation(max_splits)  # Splits the log into max_splits different files. FIXME: the split is not accurately selected
                 ex.prepare_data()
             ex.train_and_eval_benchmark()

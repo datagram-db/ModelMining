@@ -37,6 +37,14 @@ from .payload_extractor import run_payload_extractor
 import arff
 
 def read_generic_log(results_folder, split_nr, encoding):
+    """
+    This method reads the log, that has been already serialized for a vectorial representation
+
+    :param results_folder:  Folder from which we have to read the serialization
+    :param split_nr:        Number of current fold for the k-fold
+    :param encoding:        Encoding stored in the folder
+    :return:
+    """
     split = "split" + str(split_nr)
     file_loc = os.path.join(results_folder, split, encoding)
     train_path = os.path.join(file_loc, encoding+"_train.csv")
@@ -173,7 +181,6 @@ class ExperimentRunner:
         else:
             self.payload_type = payload_type
 
-
         self.payload_dwd_settings = payload_dwd_settings
 
         self.payload = payload
@@ -292,11 +299,11 @@ class ExperimentRunner:
             return models
 
     @staticmethod
-    def generate_cross_validation_logs(inp_path,log, log_name, output_folder):
+    def generate_cross_validation_logs(inp_path,log, log_name, output_folder, max_splits = 5):
         split_perc = 0.2
         log_size = len(log)
         partition_size = int(split_perc * log_size)
-        for log_nr in range(5):
+        for log_nr in range(max_splits):
             new_log = XFactory.create_log(log.get_attributes().clone())
             for elem in log.get_extensions():
                 new_log.get_extensions().add(elem)
@@ -327,8 +334,8 @@ class ExperimentRunner:
 
     @staticmethod
     def create_folder_structure(directory, payload=False, payload_type=None):
-        if not os.path.exists(directory):
-            os.makedirs(directory)
+            os.makedirs("./output/", exist_ok=True)
+            os.makedirs(directory, exist_ok=True)
 
             # first level
             for i in range(1, 6):
@@ -336,86 +343,85 @@ class ExperimentRunner:
                 #os.makedirs(current_dir) --> See documentation: this is completely useless, as it will be created with the first leaf creation
 
                 # second level
-                os.makedirs(os.path.join(current_dir, "baseline"))
-                os.makedirs(os.path.join(current_dir, "declare"))
-                os.makedirs(os.path.join(current_dir, "mr"))
-                os.makedirs(os.path.join(current_dir, "mra"))
-                os.makedirs(os.path.join(current_dir, "tr"))
-                os.makedirs(os.path.join(current_dir, "tra"))
+                os.makedirs(os.path.join(current_dir, "baseline"), exist_ok=True)
+                os.makedirs(os.path.join(current_dir, "declare"), exist_ok=True)
+                os.makedirs(os.path.join(current_dir, "mr"), exist_ok=True)
+                os.makedirs(os.path.join(current_dir, "mra"), exist_ok=True)
+                os.makedirs(os.path.join(current_dir, "tr"), exist_ok=True)
+                os.makedirs(os.path.join(current_dir, "tra"), exist_ok=True)
 
                 if payload:
                     if payload_type == "normal" or "both":
-                        os.makedirs(os.path.join(current_dir, "payload"))
+                        os.makedirs(os.path.join(current_dir, "payload"), exist_ok=True)
                     if payload_type == "dwd" or "both":
-                        os.makedirs(os.path.join(current_dir, "dwd"))
+                        os.makedirs(os.path.join(current_dir, "dwd"), exist_ok=True)
 
     @staticmethod
-    def cross_validation_pipeline(inp_path, log_name, output_folder):
+    def cross_validation_pipeline(inp_path, log_name, output_folder, max_splits = 5):
         # 1. Load file
         log = read_XES_log(os.path.join(inp_path, log_name))
 
-        # 2. Randomize order of traces.
+        # 2. Randomize order of traces. ---> FIXME: should split the data evenly
         shuffle(log)
 
         # 3. Split into 5 parts for cross validation
-        ExperimentRunner.generate_cross_validation_logs(inp_path, log, log_name, output_folder)
+        ExperimentRunner.generate_cross_validation_logs(inp_path, log, log_name, output_folder, max_splits)
 
     @staticmethod
-    def read_baseline_log(results_folder, split_nr):
-        return(read_generic_log(results_folder, split_nr, "baseline"))
-        # split = "split" + str(split_nr)
-        # encoding = "base"
-        #
-        # file_loc = os.path.join(results_folder, split, encoding)
-        # train_path = os.path.join(file_loc, "baseline_train.csv")
-        # test_path = os.path.join(file_loc, "baseline_test.csv")
-        # train_df = pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False)
-        # test_df = pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False)
-        #
-        # return train_df, test_df
-
-    @staticmethod
-    def read_payload_log(results_folder, split_nr):
-        return(read_generic_log(results_folder, split_nr, "payload"))
-        # split = "split" + str(split_nr)
-        # encoding = "payload"
-        #
-        # file_loc = os.path.join(results_folder, split, encoding)
-        # train_path = os.path.join(file_loc, "payload_train.csv")
-        # test_path = os.path.join(file_loc, "payload_test.csv")
-        # train_df = pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False)
-        # test_df = pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False)
-        #
-        # return train_df, test_df
-
-    @staticmethod
-    def read_declare_with_data_log(results_folder, split_nr):
-        return(read_generic_log(results_folder, split_nr, "dwd"))
-        # split = "split" + str(split_nr)
-        # encoding = "dwd"
-        #
-        # file_loc =  os.path.join(results_folder, split, encoding)
-        # train_path = os.path.join(file_loc, "dwd_train.csv")
-        # test_path = os.path.join(file_loc, "dwd_test.csv")
-        # train_df = pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False)
-        # test_df = pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False)
-        #
-        # return train_df, test_df
-
-
-    @staticmethod
-    def read_declare_log(results_folder, split_nr):
-        return(read_generic_log(results_folder, split_nr, "declare"))
-        # split = "split" + str(split_nr)
-        # encoding = "declare"
-        #
-        # file_loc = results_folder + "/" + split + "/" + encoding
-        # train_path = file_loc + "/" + "declare_train.csv"
-        # test_path = file_loc + "/" + "declare_test.csv"
-        # train_df = pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False)
-        # test_df = pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False)
-        #
-        # return train_df, test_df
+    def readCompleteXES(inp_path, log_name, output_folder):
+        log = read_XES_log(os.path.join(inp_path, log_name))
+    # @staticmethod
+    # def read_baseline_log(results_folder, split_nr):
+    #     return(read_generic_log(results_folder, split_nr, "baseline"))
+    #     # split = "split" + str(split_nr)
+    #     # encoding = "base"
+    #     #
+    #     # file_loc = os.path.join(results_folder, split, encoding)
+    #     # train_path = os.path.join(file_loc, "baseline_train.csv")
+    #     # test_path = os.path.join(file_loc, "baseline_test.csv")
+    #     # train_df = pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False)
+    #     # test_df = pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False)
+    #     #
+    #     # return train_df, test_df
+    # @staticmethod
+    # def read_payload_log(results_folder, split_nr):
+    #     return(read_generic_log(results_folder, split_nr, "payload"))
+    #     # split = "split" + str(split_nr)
+    #     # encoding = "payload"
+    #     #
+    #     # file_loc = os.path.join(results_folder, split, encoding)
+    #     # train_path = os.path.join(file_loc, "payload_train.csv")
+    #     # test_path = os.path.join(file_loc, "payload_test.csv")
+    #     # train_df = pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False)
+    #     # test_df = pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False)
+    #     #
+    #     # return train_df, test_df
+    # @staticmethod
+    # def read_declare_with_data_log(results_folder, split_nr):
+    #     return(read_generic_log(results_folder, split_nr, "dwd"))
+    #     # split = "split" + str(split_nr)
+    #     # encoding = "dwd"
+    #     #
+    #     # file_loc =  os.path.join(results_folder, split, encoding)
+    #     # train_path = os.path.join(file_loc, "dwd_train.csv")
+    #     # test_path = os.path.join(file_loc, "dwd_test.csv")
+    #     # train_df = pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False)
+    #     # test_df = pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False)
+    #     #
+    #     # return train_df, test_df
+    # @staticmethod
+    # def read_declare_log(results_folder, split_nr):
+    #     return(read_generic_log(results_folder, split_nr, "declare"))
+    #     # split = "split" + str(split_nr)
+    #     # encoding = "declare"
+    #     #
+    #     # file_loc = results_folder + "/" + split + "/" + encoding
+    #     # train_path = file_loc + "/" + "declare_train.csv"
+    #     # test_path = file_loc + "/" + "declare_test.csv"
+    #     # train_df = pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False)
+    #     # test_df = pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False)
+    #     #
+    #     # return train_df, test_df
 
     @staticmethod
     def read_sequence_log(results_folder, encoding, split_nr):
@@ -486,8 +492,6 @@ class ExperimentRunner:
         return train_results, test_results
 
     def feature_selection(self, train_df, test_df, y_train, params, payload_train_df=None, payload_test_df=None, ):
-
-
         if payload_train_df is not None:
             train_df = pd.concat([train_df, payload_train_df], axis=1)
             test_df = pd.concat([test_df, payload_test_df], axis=1)
@@ -685,7 +689,7 @@ class ExperimentRunner:
 
         self.counter += 1
 
-        y_train = train_df.pop('Label').values
+        y_train = train_df.pop('Label').values # pop: removing the column from the table, while preserving the values
         y_test = test_df.pop('Label').values
         X_train, X_test, feature_names = self.feature_selection(train_df, test_df, y_train, params=params,
                                                                 payload_train_df=payload_train_df,
@@ -746,12 +750,12 @@ class ExperimentRunner:
             nanYtrain = ~np.isnan(y_train)
             X_train = X_train[nanYtrain]
             y_train = y_train[nanYtrain]
-            X_train[np.isnan(X_train)] = 0
+            X_train[np.isnan(X_train)] = -1
 
             nanYtest = ~np.isnan(y_test)
             X_test = X_test[nanYtest]
             y_test = y_test[nanYtest]
-            X_test[np.isnan(X_test)] = 0
+            X_test[np.isnan(X_test)] = -1
         clf.fit(X_train, y_train, check_input=False)
 
         # True to export tree .dot file
@@ -818,7 +822,7 @@ class ExperimentRunner:
 
         results = []
         for split_nr in range(1, 6):
-            train_df, test_df = ExperimentRunner.read_baseline_log(self.results_folder, split_nr)
+            train_df, test_df = read_generic_log(self.results_folder, split_nr, "baseline")
 
             tr_result = self.train(train_df, test_df, split_nr=split_nr, exp_name="baseline")
 
@@ -841,7 +845,7 @@ class ExperimentRunner:
 
         # Separately for every split. Reduce total number of file parsing.
         for split_nr in range(1, 6):
-            train_df, test_df = ExperimentRunner.read_declare_log(self.results_folder, split_nr)
+            train_df, test_df = read_generic_log(self.results_folder, split_nr,  "declare")
             tr_result = self.train(train_df, test_df, split_nr=split_nr, exp_name="declare")
 
             result = {
@@ -886,7 +890,7 @@ class ExperimentRunner:
 
         results = []
         for split_nr in range(1, 6):
-            dec_train_df, dec_test_df = ExperimentRunner.read_declare_log(self.results_folder, split_nr)
+            dec_train_df, dec_test_df = read_generic_log(self.results_folder, split_nr,  "declare")
             seq_train_list = []
             seq_test_list = []
             for encoding in encodings:
@@ -922,8 +926,8 @@ class ExperimentRunner:
         """
         results = []
         for split_nr in range(1, 6):
-            baseline_train_df, baseline_test_df = ExperimentRunner.read_baseline_log(self.results_folder, split_nr)
-            payload_train_df, payload_test_df = ExperimentRunner.read_payload_log(self.results_folder, split_nr)
+            baseline_train_df, baseline_test_df = read_generic_log(self.results_folder, split_nr, "baseline")
+            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr)
 
             payload_train_df["Label"] = baseline_train_df["Label"]
             payload_test_df["Label"] = baseline_test_df["Label"]
@@ -947,8 +951,8 @@ class ExperimentRunner:
 
         results = []
         for split_nr in range(1, 6):
-            train_df, test_df = ExperimentRunner.read_baseline_log(self.results_folder, split_nr)
-            payload_train_df, payload_test_df = ExperimentRunner.read_payload_log(self.results_folder, split_nr)
+            train_df, test_df = read_generic_log(self.results_folder, split_nr, "baseline")
+            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr, "payload")
 
             #merged_train_df = pd.concat([train_df, payload_train_df], axis=1)
             #merged_test_df = pd.concat([test_df, payload_test_df], axis=1)
@@ -975,8 +979,8 @@ class ExperimentRunner:
 
         results = []
         for split_nr in range(1, 6):
-            train_df, test_df = ExperimentRunner.read_baseline_log(self.results_folder, split_nr)
-            payload_train_df, payload_test_df = ExperimentRunner.read_declare_with_data_log(self.results_folder, split_nr)
+            train_df, test_df = read_generic_log(self.results_folder, split_nr, "baseline")
+            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr,  "dwd")
 
             # merged_train_df = pd.concat([train_df, payload_train_df], axis=1)
             # merged_test_df = pd.concat([test_df, payload_test_df], axis=1)
@@ -1003,8 +1007,8 @@ class ExperimentRunner:
         results = []
         # Separately for every split. Reduce total number of file parsing.
         for split_nr in range(1, 6):
-            train_df, test_df = ExperimentRunner.read_declare_log(self.results_folder, split_nr)
-            payload_train_df, payload_test_df = ExperimentRunner.read_payload_log(self.results_folder, split_nr)
+            train_df, test_df = read_generic_log(self.results_folder, split_nr,  "declare")
+            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr, "payload")
 
 
             tr_result = self.train(train_df, test_df, payload_train_df, payload_test_df,
@@ -1030,8 +1034,8 @@ class ExperimentRunner:
         results = []
         # Separately for every split. Reduce total number of file parsing.
         for split_nr in range(1, 6):
-            train_df, test_df = ExperimentRunner.read_declare_log(self.results_folder, split_nr)
-            payload_train_df, payload_test_df = ExperimentRunner.read_declare_with_data_log(self.results_folder, split_nr)
+            train_df, test_df = read_generic_log(self.results_folder, split_nr,  "declare")
+            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr,  "dwd")
 
             tr_result = self.train(train_df, test_df, payload_train_df, payload_test_df,
                                    split_nr=split_nr, exp_name="declare_dwd")
@@ -1055,9 +1059,9 @@ class ExperimentRunner:
         results = []
         # Separately for every split. Reduce total number of file parsing.
         for split_nr in range(1, 6):
-            train_df, test_df = ExperimentRunner.read_declare_log(self.results_folder, split_nr)
-            payload_train_df, payload_test_df = ExperimentRunner.read_payload_log(self.results_folder, split_nr)
-            payload_train_df_2, payload_test_df_2 = ExperimentRunner.read_declare_with_data_log(self.results_folder, split_nr)
+            train_df, test_df = read_generic_log(self.results_folder, split_nr,  "declare")
+            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr, "payload")
+            payload_train_df_2, payload_test_df_2 = read_generic_log(self.results_folder, split_nr,  "dwd")
 
             merged_train_df = pd.concat([train_df, payload_train_df_2], axis=1)
             merged_test_df = pd.concat([test_df, payload_test_df_2], axis=1)
@@ -1087,7 +1091,7 @@ class ExperimentRunner:
         for split_nr in range(1, 6):
             # Read the log
             train_df, test_df = ExperimentRunner.read_sequence_log(self.results_folder, encoding, split_nr)
-            payload_train_df, payload_test_df = ExperimentRunner.read_payload_log(self.results_folder, split_nr)
+            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr, "payload")
 
             #merged_train_df = pd.concat([train_df, payload_train_df], axis=1)
             #merged_test_df = pd.concat([test_df, payload_test_df], axis=1)
@@ -1117,7 +1121,7 @@ class ExperimentRunner:
         for split_nr in range(1, 6):
             # Read the log
             train_df, test_df = ExperimentRunner.read_sequence_log(self.results_folder, encoding, split_nr)
-            payload_train_df, payload_test_df = ExperimentRunner.read_declare_with_data_log(self.results_folder, split_nr)
+            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr,  "dwd")
 
             #merged_train_df = pd.concat([train_df, payload_train_df], axis=1)
             #merged_test_df = pd.concat([test_df, payload_test_df], axis=1)
@@ -1145,8 +1149,8 @@ class ExperimentRunner:
 
         results = []
         for split_nr in range(1, 6):
-            dec_train_df, dec_test_df = ExperimentRunner.read_declare_log(self.results_folder, split_nr)
-            payload_train_df, payload_test_df = ExperimentRunner.read_payload_log(self.results_folder, split_nr)
+            dec_train_df, dec_test_df = read_generic_log(self.results_folder, split_nr,  "declare")
+            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr, "payload")
             seq_train_list = []
             seq_test_list = []
             for encoding in encodings:
@@ -1186,8 +1190,8 @@ class ExperimentRunner:
 
         results = []
         for split_nr in range(1, 6):
-            dec_train_df, dec_test_df = ExperimentRunner.read_declare_log(self.results_folder, split_nr)
-            payload_train_df, payload_test_df = ExperimentRunner.read_declare_with_data_log(self.results_folder, split_nr)
+            dec_train_df, dec_test_df = read_generic_log(self.results_folder, split_nr,  "declare")
+            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr,  "dwd")
             seq_train_list = []
             seq_test_list = []
             for encoding in encodings:
@@ -1226,9 +1230,9 @@ class ExperimentRunner:
 
         results = []
         for split_nr in range(1, 6):
-            dec_train_df, dec_test_df = ExperimentRunner.read_declare_log(self.results_folder, split_nr)
-            payload_train_df, payload_test_df = ExperimentRunner.read_declare_with_data_log(self.results_folder, split_nr)
-            payload_train_df_2, payload_test_df_2 = ExperimentRunner.read_payload_log(self.results_folder, split_nr)
+            dec_train_df, dec_test_df = read_generic_log(self.results_folder, split_nr,  "declare")
+            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr,  "dwd")
+            payload_train_df_2, payload_test_df_2 = read_generic_log(self.results_folder, split_nr, "payload")
             seq_train_list = []
             seq_test_list = []
             for encoding in encodings:
@@ -1396,8 +1400,8 @@ class ExperimentRunner:
                         evalTrain.write_statistics_file_noname(self.train_output_file)
                         evalTest.write_statistics_file_noname(self.test_output_file)
 
-    def prepare_cross_validation(self):
-        self.cross_validation_pipeline(self.inp_path, self.log_name, self.output_folder)
+    def prepare_cross_validation(self, max_splits = 5):
+        self.cross_validation_pipeline(self.inp_path, self.log_name, self.output_folder, max_splits)
 
     def prepare_data(self):
         self.create_folder_structure(self.results_folder, payload=self.payload, payload_type=self.payload_type)

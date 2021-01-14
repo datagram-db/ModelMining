@@ -7,5 +7,10 @@ SepsisDWD/*
 __pycache__
 __pycache__/
 __pycache__/*
-data/bpi2011.xes.gz
-data/bpi2017.xes.gz
+data/logs/bpi2011.xes.gz
+data/logs/bpi2017.xes.gz
+data/logs/bpi2011_dCC.xes
+data/logs/bpi2011_m13.xes
+data/logs/bpi2011_m16.xes
+data/logs/bpi2011_t101.xes
+data/logs/merged_xray.xes
