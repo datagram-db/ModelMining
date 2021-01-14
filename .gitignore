@@ -7,3 +7,5 @@ SepsisDWD/*
 __pycache__
 __pycache__/
 __pycache__/*
+data/bpi2011.xes.gz
+data/bpi2017.xes.gz
