@@ -75,6 +75,7 @@ def baseline(inp_folder, logPath, splitSize = 0.8):
         train_df.to_csv(os.path.join(inp_folder, "baseline_train.csv"), index=False)
     if not test_df.empty:
         test_df.to_csv(os.path.join(inp_folder, "baseline_test.csv"), index=False)
+    return os.path.abspath(os.path.join(inp_folder, "baseline_train.csv"))
 
 
 # def move_baseline_files(inp_folder, output_folder, split_nr):

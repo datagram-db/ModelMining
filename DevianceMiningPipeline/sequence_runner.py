@@ -148,9 +148,12 @@ def run_sequences(inp_path, log_path, results_folder, err_logger, sequence_thres
             move_files('./output/', results_folder, splitNr + 1, folder)
 
 def generateSequences(inp_path, log_path, results_folder, sequence_threshold=5):
+    yamlPart = {}
     for paramString, techName, folder in genParamStrings(sequence_threshold):
         outputFilename = create_output_filename(log_path, techName)
         parameters = create_call_params2(inp_path, results_folder, paramString, log_path, outputFilename)
         print(" ".join(["java", "-jar", JAR_NAME] + parameters))
         subprocess.call(["java", "-jar", JAR_NAME] + parameters)  # blocking
-        move_files('./output/', results_folder, 0, folder)
+        res = move_files('./output/', results_folder, 0, folder)
+        yamlPart[folder] = os.path.abspath(os.path.join(res, "globalLog.csv"))
+    return yamlPart

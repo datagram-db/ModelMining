@@ -648,6 +648,9 @@ def data_declare_main(inp_folder, log_name, ignored, split = 0.8):
     transformed_log = xes_to_data_positional(log)
 
     train_log, test_log = split_log_train_test(transformed_log, split)
+    doStoreSecondFile = not (len(test_log)==0)
+    if not doStoreSecondFile:
+        test_log = train_log.copy()
     #print(train_log[0])
 
     train_case_ids = [tr["name"] for tr in train_log]
@@ -660,12 +663,13 @@ def data_declare_main(inp_folder, log_name, ignored, split = 0.8):
     for i, tf in enumerate(train_features):
         train_dict[train_names[i]] = tf
 
-    for i, tf in enumerate(test_features):
-        test_dict[test_names[i]] = tf
+    if doStoreSecondFile:
+        for i, tf in enumerate(test_features):
+            test_dict[test_names[i]] = tf
 
     train_df = pd.DataFrame.from_dict(train_dict)
-    test_df = pd.DataFrame.from_dict(test_dict)
-
+    if doStoreSecondFile:
+        test_df = pd.DataFrame.from_dict(test_dict)
 
     #train_df = pd.DataFrame(train_features, columns=train_names)
     #test_df = pd.DataFrame(test_features, columns=test_names)
@@ -674,22 +678,19 @@ def data_declare_main(inp_folder, log_name, ignored, split = 0.8):
     # add Case_ID
 
     train_df["Case_ID"] = train_case_ids
-    test_df["Case_ID"] = test_case_ids
+    if doStoreSecondFile:
+        test_df["Case_ID"] = test_case_ids
 
     if not train_df.empty:
         train_df.to_csv(os.path.join(inp_folder, "dwd_train.csv"), index=False)
-    if not test_df.empty:
+    if doStoreSecondFile:
         test_df.to_csv(os.path.join(inp_folder, "dwd_test.csv"), index=False)
+    return os.path.abspath(os.path.join(inp_folder, "dwd_train.csv"))
 
 from .pathutils import move_files
 
 def move_dwd_files(inp_folder, output_folder, split_nr):
     move_files(inp_folder, output_folder, split_nr, "dwd")
-    # source = inp_folder # './baselineOutput/'
-    # dest1 = './' + output_folder + '/split' + str(split_nr) + "/dwd/"
-    # files = os.listdir(source)
-    # for f in files:
-    #     shutil.move(source + f, dest1)
 
 
 def run_declare_with_data(log_path, settings, results_folder):

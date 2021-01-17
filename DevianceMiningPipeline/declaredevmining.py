@@ -269,6 +269,7 @@ def declare_deviance_mining(output_path, log, templates=None, to_shuffle=False, 
         train_df.to_csv(os.path.join(output_path, "declare_train.csv"), index=False)
     if not test_df.empty:
         test_df.to_csv(os.path.join(output_path, "declare_test.csv"), index=False)
+    return os.path.abspath(os.path.join(output_path, "declare_train.csv"))
 
 
 def run_deviance_new(log_path, results_folder, templates=None, filter_t=True, reencode=False):

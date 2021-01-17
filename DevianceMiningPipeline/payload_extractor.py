@@ -14,6 +14,12 @@ import os, shutil
 
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 
+def containsSubstringOf(str, ls):
+    for k in ls:
+        if (str.startswith(k)):
+            return True
+    return False
+
 def get_attribute_type(val):
     if isinstance(val, XAttributeLiteral.XAttributeLiteral):
         return "literal"
@@ -301,9 +307,8 @@ class PayloadExtractor:
             for attrib_name, value in trace_attribs.items():
                 # handle trace attributes
                 attrib_type = get_attribute_type(value)
-                if attrib_name == "concept:name" or attrib_name in settings["trace_ignored"]:
+                if attrib_name == "concept:name" or containsSubstringOf(attrib_name, settings["trace_ignored"]):
                     continue
-
                 trace_data[(None, "trace" + ":" + attrib_name, "first", attrib_type)] = str(value)
 
 
@@ -744,7 +749,7 @@ def handle_data(k, trace_data, trace_df_data, settings):
             trace_df_data.append(trace_data[k])
         else:
             print("ERROR! Not implemented for {}".format(k))
-            raise Exception("Not implemented! Add to ignore in config file!")
+            #raise Exception("Not implemented! Add to ignore in config file!")
 
 
 def build_dataframes(train_data, test_data, settings):
@@ -791,14 +796,12 @@ def build_dataframes(train_data, test_data, settings):
         trace_df_data = []
         for k in all_keys:
             handle_data(k, trace_data, trace_df_data, settings)
-
         train_df_data.append(trace_df_data)
 
     for trace_data in test_data:
         trace_df_data = []
         for k in all_keys:
             handle_data(k, trace_data, trace_df_data, settings)
-
         test_df_data.append(trace_df_data)
 
     train_df = pd.DataFrame(train_df_data, columns=names)
@@ -868,6 +871,7 @@ def payload_extractor(inp_folder, log_name, settings_file, split=0.8):
     log = read_XES_log(log_name)
 
     train, test = split_log_train_test(log, split)
+    doSaveFile = len(test)>0
 
     print("Lengths of logs train: {}, test: {}".format(len(train), len(test)))
     pex = PayloadExtractor()
@@ -876,16 +880,48 @@ def payload_extractor(inp_folder, log_name, settings_file, split=0.8):
 
     ## Get first forms of data
     extracted_train_data = pex.get_overview_of_data(train, settings)
-    extracted_test_data = pex.get_overview_of_data(test, settings)
+    extracted_test_data = None
+    if doSaveFile:
+        extracted_test_data = pex.get_overview_of_data(test, settings)
+    else:
+        extracted_test_data = extracted_train_data
 
     train_df, test_df = build_dataframes(extracted_train_data, extracted_test_data, settings)
 
     # Force all to float (except label?)
 
-    train_df.to_csv(inp_folder + "/payload_train.csv", index=False)
-    test_df.to_csv(inp_folder + "/payload_test.csv", index=False)
+    train_df.to_csv(os.path.join(inp_folder, "payload_train.csv"), index=False)
+    if doSaveFile:
+        test_df.to_csv(os.path.join(inp_folder, "payload_test.csv"), index=False)
 
     return train_df, test_df
+
+def payload_extractor2(inp_folder, log_name, settings_file, split=1.0):
+
+    log = read_XES_log(log_name)
+
+    train, test = split_log_train_test(log, split)
+    doSaveFile = False
+
+    print("Lengths of logs train: {}, test: {}".format(len(train), len(test)))
+    pex = PayloadExtractor()
+
+    settings = settings_from_cfg(settings_file)
+
+    ## Get first forms of data
+    extracted_train_data = pex.get_overview_of_data(train, settings)
+    extracted_test_data = None
+    if doSaveFile:
+        extracted_test_data = pex.get_overview_of_data(test, settings)
+    else:
+        extracted_test_data = extracted_train_data
+
+    train_df, _ = build_dataframes(extracted_train_data, extracted_test_data, settings)
+
+    # Force all to float (except label?)
+    f = os.path.join(inp_folder, "payload_train.csv")
+    train_df.to_csv(os.path.join(inp_folder, "payload_train.csv"), index=False)
+    return os.path.abspath(f)
 
 
 from .pathutils import move_files

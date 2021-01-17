@@ -11,6 +11,7 @@ import pandas as pd
 import numpy as np
 
 import shutil
+import yaml
 
 from sklearn.metrics import roc_auc_score, accuracy_score, precision_score, recall_score, f1_score
 from sklearn.tree import DecisionTreeClassifier, _tree, export_graphviz
@@ -32,7 +33,7 @@ from skfeature.function.similarity_based import fisher_score
 from sklearn.decomposition import PCA
 from collections import defaultdict
 
-from .payload_extractor import run_payload_extractor, payload_extractor
+from .payload_extractor import run_payload_extractor, payload_extractor, payload_extractor2
 
 import arff
 
@@ -1409,13 +1410,21 @@ class ExperimentRunner:
         os.makedirs(d, exist_ok=True)
         from DevianceMiningPipeline.baseline_runner import baseline
         from DevianceMiningPipeline.declaredevmining import declare_deviance_mining
-        baseline(d, logFilePath, 1.0)  # Writing the vector embedding for the whole dataset
-        declare_deviance_mining(d, log, split_size=1.0, reencode=self.reencode)
-        generateSequences(self.inp_path, logFilePath, d)
-        # TODO: run_sequences(self.inp_path, self.log_path_seq, self.results_folder, self.err_logger, sequence_threshold=self.sequence_threshold)
-        #if self.payload:
-        #    data_declare_main(d, logFilePath, self.payload_dwd_settings["ignored"], split=1.0)
-        #    payload_extractor(d, logFilePath, self.payload_settings, split=1.0)
+        yamlFile = {}
+        print("\x1b[6;30;42m Baseline generation:\x1b[0m")
+        yamlFile["baseline"] = baseline(d, logFilePath, 1.0)
+        print("\x1b[6;30;42m Declare generation:\x1b[0m")
+        yamlFile["declare"]  = declare_deviance_mining(d, log, split_size=1.0, reencode=self.reencode)        #run_deviance_new
+        print("\x1b[6;30;42m Generate Sequences generation:\x1b[0m")
+        yamlFile.update(generateSequences(self.inp_path, logFilePath, d))
+        if not (self.payload_settings is None):
+            print("\x1b[6;30;42m Payload generation:\x1b[0m")
+            yamlFile["payload"] = payload_extractor2(d, logFilePath, self.payload_settings)
+        if not (self.payload_dwd_settings is None):
+            print("\x1b[6;30;42m DWD Sequences generation:\x1b[0m")
+            yamlFile["dwd"] = data_declare_main(d, logFilePath, self.payload_dwd_settings["ignored"], split=1.0)
+        with open(os.path.abspath(os.path.join(d, "../"+self.log_name+".yaml")), 'w') as file:
+            yaml.dump(yamlFile, file)
 
 
     def prepare_data(self):

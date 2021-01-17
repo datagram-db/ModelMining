@@ -14,3 +14,4 @@ def move_files(inp_folder, output_folder, split_nr, base):
         if (os.path.exists(dstFile)): os.remove(dstFile)
         print("moving "+os.path.join(source, f)+" to "+dstFile+"...")
         os.rename(os.path.join(source, f), dstFile)
+    return dest1

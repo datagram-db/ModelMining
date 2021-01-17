@@ -19,4 +19,4 @@ def extractAttributeValues(x, attribute):
 
 def logTagger(log, predicate):
     for trace in log:
-        trace.get_attributes()["label"] = XFactory.create_attribute_literal("label","1" if predicate(trace) else "0")
+        trace.get_attributes()["Label"] = XFactory.create_attribute_literal("Label","1" if predicate(trace) else "0")
