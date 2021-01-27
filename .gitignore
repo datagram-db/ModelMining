@@ -16,3 +16,11 @@ data/logs/bpi2011_t101.xes
 data/logs/merged_xray.xes
 complete_embeddings/
 complete_embeddings/*
+data/logs/bpi2011.xes
+data/logs/sepsis_tagged_er_1.xes
+data/logs/sepsis_tagged_er_2.xes
+data/logs/sepsis_tagged_er_3.xes
+data/logs/sepsis_tagged_er_4.xes
+data/logs/sepsis_tagged_er_5.xes
+data/onehot_transformations.txt
+*.csv

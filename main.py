@@ -10,6 +10,7 @@ import jsonpickle
 import sys
 import os
 
+from sklearn.model_selection import StratifiedKFold
 from DevianceMiningPipeline.deviancecommon import read_XES_log
 import DevianceMiningPipeline.predicates
 from opyenxes.data_out.XesXmlSerializer import XesXmlSerializer
@@ -75,9 +76,9 @@ def write_log_file_with_label_cond(log, filen, attn, val):
 
 
 def generateTagging():
-    assert os.path.isfile("data/logs/bpi2011.xes")
+    assert os.path.isfile("data/logs/EnglishBPIChallenge2011.xes")
     if (not os.path.isfile("data/logs/bpi2011_dCC.xes")) or (not os.path.isfile("data/logs/bpi2011_t101.xes")) or (not os.path.isfile("data/logs/bpi2011_m13.xes")) or (not os.path.isfile("data/logs/bpi2011_m16.xes")):
-        log = read_XES_log("data/logs/bpi2011.xes")
+        log = read_XES_log("data/logs/EnglishBPIChallenge2011.xes")
         write_log_file_with_label_cond(log, "data/logs/bpi2011_dCC.xes", "Diagnosis", "maligniteit cervix")
         write_log_file_with_label_cond(log, "data/logs/bpi2011_t101.xes", "Treatment code", 101)
         write_log_file_with_label_cond(log, "data/logs/bpi2011_m13.xes", "Diagnosis code", "M13")
@@ -88,10 +89,10 @@ def generateTagging():
 if __name__ == '__main__':
     LogGeneration.write_xeses(LOGS_FOLDER)
     generateTagging()
-    conf_file = "sepsis_er.json"
+    conf_file = "BPI2011_dCC.json"
     if len(sys.argv)>1:
         conf_file = sys.argv[1]
-    preprocess = True
+    preprocess = False
     if len(sys.argv)>2:
         test = sys.argv[2]
         preprocess = not (test == "skipPreprocessing")
