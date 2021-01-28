@@ -69,9 +69,7 @@ def write_log_file_with_label_cond(log, filen, attn, val):
     """
     if not os.path.isfile(filen):
         print("Writing: "+filen)
-        DevianceMiningPipeline.predicates.logTagger(log,
-                                                    DevianceMiningPipeline.predicates.compileAttributeWithValue(
-                                                        attn, val))
+        DevianceMiningPipeline.predicates.tagLogWithValueEqOverAttn(log, attn, val)
         write_log_file(log, filen)
 
 
