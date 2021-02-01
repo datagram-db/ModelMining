@@ -44,8 +44,10 @@ def describe_logs():
         Other.describe(key, LOGS_FOLDER, value)
 
 def run_complete_configuration_and_run(conf_file, doNr0 = True):
-    #jsonpickle.decode(open(conf_file).read()).complete_embedding_generation(LOGS_FOLDER, DATA_EXP)
-    jsonpickle.decode(open(conf_file).read()).run(LOGS_FOLDER, DATA_EXP, ranges, doNr0)
+    conf = jsonpickle.decode(open(conf_file).read())
+    assert (isinstance(conf, ConfigurationFile))
+    #conf.complete_embedding_generation(LOGS_FOLDER, DATA_EXP)
+    conf.run(LOGS_FOLDER, DATA_EXP, ranges, doNr0)
 
 # from DevianceMiningPipeline import ConfigurationFile
 # cf = ConfigurationFile()
@@ -96,31 +98,36 @@ def generateTagging():
         assert(isinstance(conf, ConfigurationFile))
 
         write_log_file_with_cond(log, "data/logs/sepsis_proc.xes", lambda x: DevianceMiningPipeline.predicates.tagLogWithExactSubsequence(x, ["Admission NC","Leucocytes", "CRP"]))
-        conf.setLogName("data/logs/sepsis_proc.xes")
+        conf.setLogName("sepsis_proc.xes")
         conf.setOutputFolder("sepsis_proc_out")
         conf.dump("sepsis_proc.json")
+        conf.setExperimentName("sepsis_proc")
 
         write_log_file_with_cond(log, "data/logs/sepsis_decl.xes", lambda x: DevianceMiningPipeline.predicates.tagLogWithSatAllProp(x, [(template_response, ["IV Antibiotics", "Leucocytes"]),
                                                                                                                                         (template_response, ["LacticAcid", "IV Antibiotics"]),
                                                                                                                                         (template_response, ["ER Triage", "CRP"])], SatCases.NotVacuitySat))
-        conf.setLogName("data/logs/sepsis_decl.xes")
+        conf.setLogName("sepsis_decl.xes")
         conf.setOutputFolder("sepsis_decl_out")
         conf.dump("sepsis_decl.json")
+        conf.setExperimentName("sepsis_decl")
 
         write_log_file_with_cond(log, "data/logs/sepsis_mr_tr.xes", lambda x: DevianceMiningPipeline.predicates.tagLogWithExactOccurrence(x, ["IV Liquid", "LacticAcid", "Leucocytes"], 2))
-        conf.setLogName("data/logs/sepsis_mr_tr.xes")
+        conf.setLogName("sepsis_mr_tr.xes")
         conf.setOutputFolder("sepsis_mr_tr_out")
         conf.dump("sepsis_mr_tr.json")
+        conf.setExperimentName("sepsis_mr_tr")
 
         write_log_file_with_cond(log, "data/logs/sepsis_mra_tra.xes", lambda x: DevianceMiningPipeline.predicates.tagLogWithOccurrence(x, ["IV Liquid", "LacticAcid", "Leucocytes"], 2))
-        conf.setLogName("data/logs/sepsis_mra_tra.xes")
+        conf.setLogName("sepsis_mra_tra.xes")
         conf.setOutputFolder("sepsis_mra_tra_out")
         conf.dump("sepsis_mra_tra.json")
+        conf.setExperimentName("sepsis_mra_tra")
 
         write_log_file_with_cond(log, "data/logs/sepsis_payload.xes", lambda x: DevianceMiningPipeline.predicates.tagLogWithValueEqOverIthEventAttn(x, "DisfuncOrg", True, 0))
-        conf.setLogName("data/logs/sepsis_payload.xes")
+        conf.setLogName("sepsis_payload.xes")
         conf.setOutputFolder("sepsis_payload_out")
         conf.dump("sepsis_payload.json")
+        conf.setExperimentName("sepsis_payload")
 
     assert os.path.isfile("data/logs/merged_xray.xes")
     assert os.path.isfile("synth_xray.json")
@@ -130,43 +137,48 @@ def generateTagging():
         assert(isinstance(conf, ConfigurationFile))
 
         write_log_file_with_cond(log, "data/logs/xray_proc.xes", lambda x: DevianceMiningPipeline.predicates.tagLogWithExactSubsequence(x, ["check_X_ray_risk", "examine_patient", "perform_surgery"]))
-        conf.setLogName("data/logs/xray_proc.xes")
+        conf.setLogName("xray_proc.xes")
         conf.setOutputFolder("xray_proc_out")
         conf.dump("xray_proc.json")
+        conf.setExperimentName("xray_proc")
 
         write_log_file_with_cond(log, "data/logs/xray_decl.xes", lambda x: DevianceMiningPipeline.predicates.tagLogWithSatAllProp(x, [(template_precedence, ["perform_reposition", "perform_X_ray"]),
                                                                                                                                         (template_precedence, ["apply_cast", "perform_X_ray"]),
                                                                                                                                        (template_precedence, ["remove_cast", "apply_cast"])], SatCases.NotVacuitySat))
-        conf.setLogName("data/logs/xray_decl.xes")
+        conf.setLogName("xray_decl.xes")
         conf.setOutputFolder("xray_decl_out")
         conf.dump("xray_decl.json")
+        conf.setExperimentName("xray_decl")
 
         write_log_file_with_cond(log, "data/logs/xray_mr_tr.xes", lambda x: DevianceMiningPipeline.predicates.tagLogWithExactOccurrence(x, ["apply_cast", "perform_reposition", "prescribe_rehabilitation"], 2))
-        conf.setLogName("data/logs/xray_mr_tr.xes")
+        conf.setLogName("xray_mr_tr.xes")
         conf.setOutputFolder("xray_mr_tr_out")
         conf.dump("xray_mr_tr.json")
+        conf.setExperimentName("xray_mr_tr")
 
         write_log_file_with_cond(log, "data/logs/xray_mra_tra.xes", lambda x: DevianceMiningPipeline.predicates.tagLogWithOccurrence(x, ["apply_cast", "perform_reposition", "prescribe_rehabilitation"], 2))
-        conf.setLogName("data/logs/xray_mra_tra.xes")
+        conf.setLogName("xray_mra_tra.xes")
         conf.setOutputFolder("xray_mra_tra_out")
         conf.dump("xray_mra_tra.json")
+        conf.setExperimentName("xray_mra_tra")
 
         write_log_file_with_cond(log, "data/logs/xray_payload.xes", lambda x: DevianceMiningPipeline.predicates.logRandomTagger(x, 0, 1, 0.1))
-        conf.setLogName("data/logs/xray_payload.xes")
+        conf.setLogName("xray_payload.xes")
         conf.setOutputFolder("xray_payload_out")
         conf.dump("xray_payload.json")
+        conf.setExperimentName("xray_payload")
 
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     LogGeneration.write_xeses(LOGS_FOLDER)
     generateTagging()
-    #conf_file = "BPI2011_dCC.json"
-    #if len(sys.argv)>1:
-    #    conf_file = sys.argv[1]
-    #preprocess = False
-    #if len(sys.argv)>2:
-    #    test = sys.argv[2]
-    #    preprocess = not (test == "skipPreprocessing")
-    #run_complete_configuration_and_run(conf_file, preprocess)
+    conf_file = "synth_xray.json"
+    if len(sys.argv)>1:
+        conf_file = sys.argv[1]
+    preprocess = False
+    if len(sys.argv)>2:
+        test = sys.argv[2]
+        preprocess = not (test == "skipPreprocessing")
+    run_complete_configuration_and_run(conf_file, preprocess)
 

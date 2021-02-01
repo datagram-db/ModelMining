@@ -173,7 +173,7 @@ class ModelEvaluation:
 class ExperimentRunner:
 
     def __init__(self, experiment_name, output_file, results_folder, inp_path, log_name, output_folder, log_template,
-                 dt_max_depth=15, dt_min_leaf=10, selection_method="fisher", selection_counts=None,
+                 dt_max_depth=15, dt_min_leaf=None, selection_method="fisher", selection_counts=None,
                  coverage_threshold=None, sequence_threshold=5, payload=False, payload_settings=None,
                  reencode=False, payload_type=None, payload_dwd_settings=None):
 
@@ -746,7 +746,7 @@ class ExperimentRunner:
 
 
         # Train classifier
-        clf = DecisionTreeClassifier(max_depth=self.dt_max_depth, min_samples_leaf=self.dt_min_leaf)
+        clf = DecisionTreeClassifier(max_depth=self.dt_max_depth)#, min_samples_leaf=self.dt_min_leaf)
         if (np.isnan(y_train).any()) or (np.isnan(X_train).any()) or (np.isnan(y_test).any()) or (np.isnan(X_test).any()):
             nanYtrain = ~np.isnan(y_train)
             X_train = X_train[nanYtrain]
@@ -1371,40 +1371,48 @@ class ExperimentRunner:
                 all_results["hybrid_dwd_payload"] = self.interpret_results(payload_results, "hybrid_data_dwd")
 
 
-
-        if self.method == "fisher":
-            for selection_count in self.selection_counts:
-                # find the print
-                for meth in print_order:
-                    for k, v in all_results.items():
-                        if meth == k:
-                            print(k)
-                            evalTrain = v[selection_count]["train"]
-                            evalTest = v[selection_count]["test"]
-                            evalTrain.print_statistics_drive()
-                            evalTest.print_statistics_drive()
-                            evalTrain.write_statistics_file_noname(self.train_output_file)
-                            evalTest.write_statistics_file_noname(self.test_output_file)
-        else:
-            for meth in print_order:
-                for k, v in all_results.items():
-                    if meth == k:
-                        print(k)
-
-                        evalTrain = v["train"]
-                        evalTest = v["test"]
-                        evalTrain.print_statistics_drive()
-                        evalTest.print_statistics_drive()
-                        evalTrain.write_statistics_file_noname(self.train_output_file)
-                        evalTest.write_statistics_file_noname(self.test_output_file)
+        from GoodPrintResults import printToFile
+        line = None
+        if (not os.path.exists("benchmarks.csv")):
+            line = "dataset,learner,elements,conftype,confvalue,metrictype,metricvalue\n"
+        with open("benchmarks.csv", "a") as csvFile:
+            csvFile.write(line)
+            printToFile(all_results, self.experiment_name, "Pipeline DT", "max_depth", self.dt_max_depth, csvFile)
+        # if self.method == "fisher":
+        #     for selection_count in self.selection_counts:
+        #         # find the print
+        #         for meth in print_order:
+        #             for k, v in all_results.items():
+        #                 if meth == k:
+        #                     print(k)
+        #                     evalTrain = v[selection_count]["train"]
+        #                     evalTest = v[selection_count]["test"]
+        #                     evalTrain.print_statistics_drive()
+        #                     evalTest.print_statistics_drive()
+        #                     evalTrain.write_statistics_file_noname(self.train_output_file)
+        #                     evalTest.write_statistics_file_noname(self.test_output_file)
+        # else:
+        #     for meth in print_order:
+        #         for k, v in all_results.items():
+        #             if meth == k:
+        #                 print(k)
+        #
+        #                 evalTrain = v["train"]
+        #                 evalTest = v["test"]
+        #                 evalTrain.print_statistics_drive()
+        #                 evalTest.print_statistics_drive()
+        #                 evalTrain.write_statistics_file_noname(self.train_output_file)
+        #                 evalTest.write_statistics_file_noname(self.test_output_file)
 
     def prepare_cross_validation(self, max_splits = 5):
         self.cross_validation_pipeline(self.inp_path, self.log_name, self.output_folder, max_splits)
 
-    def serialize_complete_dataset(self):
+    def serialize_complete_dataset(self, isCompleteEmbedding):
         logFilePath = os.path.join(self.inp_path, self.log_name)
         log = read_XES_log(logFilePath)
-        d = os.path.join("./complete_embeddings/", logFilePath)
+        d = logFilePath
+        if isCompleteEmbedding:
+            d = os.path.join("./complete_embeddings/", logFilePath)
         os.makedirs(d, exist_ok=True)
         from DevianceMiningPipeline.baseline_runner import baseline
         from DevianceMiningPipeline.declaredevmining import declare_deviance_mining
@@ -1440,4 +1448,5 @@ class ExperimentRunner:
 
     def clean_data(self):
         shutil.rmtree(self.results_folder)
+
 

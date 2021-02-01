@@ -91,13 +91,13 @@ class ConfigurationFile(object):
                               selection_method="coverage",
                               coverage_threshold=5,
                               sequence_threshold=self.sequence_threshold,
-                              payload=True,
+                              payload=not (self.payload_type is None),
                               payload_type=self.payload_type)
         if not self.auto_ignored is None:
             ex.payload_dwd_settings = {"ignored": self.auto_ignored}
         if not self.payload_settings is None:
             ex.payload_settings = self.payload_settings
-        ex.serialize_complete_dataset()
+        ex.serialize_complete_dataset(True)
 
     def run(self, INP_PATH, DATA_EXP, coverage_thresholds, doNr0 = True, max_splits = 5):
         from pathlib import Path
@@ -107,6 +107,20 @@ class ConfigurationFile(object):
         Path(os.path.join(DATA_EXP, "error_log")).mkdir(parents=True, exist_ok=True)
         for nr, i in enumerate(coverage_thresholds):
             from DevianceMiningPipeline.ExperimentRunner import ExperimentRunner
+            # ex = ExperimentRunner(experiment_name=self.experiment_name,
+            #                       output_file=self.results_file,
+            #                       results_folder=os.path.join(DATA_EXP, self.results_folder),
+            #                       inp_path=INP_PATH,
+            #                       log_name=self.log_name,
+            #                       output_folder=os.path.join(DATA_EXP, self.output_folder),
+            #                       log_template=self.log_path_seq,
+            #                       dt_max_depth=self.dt_max_depth,
+            #                       dt_min_leaf=self.dt_min_leaf,
+            #                       selection_method="coverage",
+            #                       coverage_threshold=i,
+            #                       sequence_threshold=self.sequence_threshold,
+            #                       payload=True,
+            #                       payload_type=self.payload_type.value[0])
             ex = ExperimentRunner(experiment_name=self.experiment_name,
                                   output_file=self.results_file,
                                   results_folder=os.path.join(DATA_EXP, self.results_folder),
@@ -117,12 +131,11 @@ class ConfigurationFile(object):
                                   dt_max_depth=self.dt_max_depth,
                                   dt_min_leaf=self.dt_min_leaf,
                                   selection_method="coverage",
-                                  coverage_threshold=i,
+                                  coverage_threshold=5,
                                   sequence_threshold=self.sequence_threshold,
-                                  payload=True,
-                                  payload_type=self.payload_type.value[0])
+                                  payload=not (self.payload_type is None),
+                                  payload_type=self.payload_type)
             ex.err_logger = os.path.join(DATA_EXP, "error_log")
-
             if not self.auto_ignored is None:
                 ex.payload_dwd_settings = {"ignored": self.auto_ignored }
             if not self.payload_settings is None:

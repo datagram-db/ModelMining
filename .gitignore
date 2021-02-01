@@ -44,3 +44,10 @@ xray_decl.json
 xray_mr_tr.json
 xray_mra_tra.json
 xray_payload.json
+data/logs/merged_xray_1.xes
+data/logs/merged_xray_2.xes
+data/logs/merged_xray_3.xes
+data/logs/merged_xray_4.xes
+data/logs/merged_xray_5.xes
+test_synth_xray_results.txt
+train_synth_xray_results.txt

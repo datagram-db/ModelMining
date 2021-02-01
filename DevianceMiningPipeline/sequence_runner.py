@@ -149,6 +149,7 @@ def run_sequences(inp_path, log_path, results_folder, err_logger, sequence_thres
 
 def generateSequences(inp_path, log_path, results_folder, sequence_threshold=5):
     yamlPart = {}
+    mkdir_test('./output/')
     for paramString, techName, folder in genParamStrings(sequence_threshold):
         outputFilename = create_output_filename(log_path, techName)
         parameters = create_call_params2(inp_path, results_folder, paramString, log_path, outputFilename)
