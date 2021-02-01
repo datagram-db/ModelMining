@@ -6,6 +6,7 @@ Templates take a trace and event set, and test if the template is satisfied in t
 
 from typing import Tuple
 
+assert (False)  # Never load this module! it contains the faulted implementations!
 
 def template_absence1(trace, event_set):
     assert (len(event_set) == 1)

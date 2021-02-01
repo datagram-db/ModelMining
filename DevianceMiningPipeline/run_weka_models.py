@@ -124,7 +124,7 @@ def prune_duplicate_leaves(mdl):
     prune_index(mdl.tree_, decisions)
 
 
-def run_weka_csv_train_test(train_file_path, test_file_path):
+def run_weka_csv_train_test(train_file_path, test_file_path, option=2):
     """
     1) From previous process, for each fold create input .csv's which will then be read here
     1.1) Input csv will be on exact same data, which was fed to DT model
@@ -134,10 +134,10 @@ def run_weka_csv_train_test(train_file_path, test_file_path):
     need to make new .csv, which contains both, payload and usual stuff....
     :return:
     """
-    train_df = read_df_csv(train_file_path)
-    test_df = read_df_csv(test_file_path)
+    #train_df = read_df_csv(train_file_path)
+    #test_df = read_df_csv(test_file_path)
 
-    cls = Classifier(classname="weka.classifiers.rules.JRip") #options=["-O", "2"]), default opt. is 2
+    cls = Classifier(classname="weka.classifiers.rules.JRip", options=["-O", str(option)]) #options=["-O", "2"]), default opt. is 2
 
     loader = Loader(classname="weka.core.converters.CSVLoader")
     # print(cls.to_help())
@@ -374,32 +374,11 @@ def testcase():
                     train_name = "snapshots/train_{}_{}_{}_{}.csv".format(experiment, encoding, coverage, split)
                     test_name = "snapshots/test_{}_{}_{}_{}.csv".format(experiment, encoding, coverage, split)
 
-                    train_results, test_results = run_weka_csv_train_test(train_name, test_name)
+                    train_over_Weka_RIPPER(test_accuracies, test_aucs, test_f1s, test_name, test_precisions, test_rcs,
+                                           train_accuracies, train_aucs, train_f1s, train_name, train_precisions,
+                                           train_rcs)
 
-                    #for i in range(len(train_results)):
-                    #    if math.isnan(train_results[i]):
-                    #        train_results[i] = 0
-
-                    #for i in range(len(test_results)):
-                    #    if math.isnan(test_results[i]):
-                    #        test_results[i] = 0
-
-                    test_accuracy, test_auc, test_f1, test_precision, test_rc = test_results
-                    train_accuracy, train_auc, train_f1, train_precision, train_rc = train_results
-
-                    train_accuracies.append(train_accuracy)
-                    train_precisions.append(train_precision)
-                    train_rcs.append(train_rc)
-                    train_f1s.append(train_f1)
-                    train_aucs.append(train_auc)
-
-                    test_accuracies.append(test_accuracy)
-                    test_precisions.append(test_precision)
-                    test_rcs.append(test_rc)
-                    test_f1s.append(test_f1)
-                    test_aucs.append(test_auc)
-
-                   #print(test_accuracy, test_auc, test_f1, test_rc, test_precision)
+                #print(test_accuracy, test_auc, test_f1, test_rc, test_precision)
 
                 #print(coverage, encoding)
                 ttest_results.append("{},{},{},{},{},{},{},{},{},{}".format(
@@ -430,8 +409,56 @@ def testcase():
                 print(ttrain_results[i * len(coverages) + j])
 
 
+def train_over_Weka_RIPPER(test_accuracies, test_aucs, test_f1s, test_name, test_precisions, test_rcs, train_accuracies,
+                           train_aucs, train_f1s, train_name, train_precisions, train_rcs):
+    train_results, test_results = run_weka_csv_train_test(train_name, test_name)
+    # for i in range(len(train_results)):
+    #    if math.isnan(train_results[i]):
+    #        train_results[i] = 0
+    # for i in range(len(test_results)):
+    #    if math.isnan(test_results[i]):
+    #        test_results[i] = 0
+    test_accuracy, test_auc, test_f1, test_precision, test_rc = test_results
+    train_accuracy, train_auc, train_f1, train_precision, train_rc = train_results
+    train_accuracies.append(train_accuracy)
+    train_precisions.append(train_precision)
+    train_rcs.append(train_rc)
+    train_f1s.append(train_f1)
+    train_aucs.append(train_auc)
+    test_accuracies.append(test_accuracy)
+    test_precisions.append(test_precision)
+    test_rcs.append(test_rc)
+    test_f1s.append(test_f1)
+    test_aucs.append(test_auc)
+
+def train_over_Weka_RIPPER_old(train_name_csv, test_name_csv):
+    """
+
+    :param train_name_csv:
+    :param test_name_csv:
+    :return:
+    """
+    train_results, test_results = run_weka_csv_train_test(train_name_csv, test_name_csv)
+    test_accuracy, test_auc, test_f1, test_precision, test_rc = test_results
+    train_accuracy, train_auc, train_f1, train_precision, train_rc = train_results
+    train_results = {
+        "accuracy": train_accuracy,
+        "precision": train_precision,
+        "recall": train_rc,
+        "f1": train_f1,
+        "auc": train_auc
+    }
+    test_results = {
+        "accuracy": test_accuracy,
+        "precision": test_precision,
+        "recall": test_rc,
+        "f1": test_f1,
+        "auc": test_auc
+    }
+    return train_results, test_results
+
 #RUN = "weka"
-RUN = "python" # Either run weka or python code
+RUN = "weka" # Either run weka or python code
 if __name__ == "__main__":
     if RUN == "python":
         python_run()
@@ -440,7 +467,7 @@ if __name__ == "__main__":
         try:
             # Weka wrapper uses JVM
             jvm.start()
-            testcase()
+            train_over_Weka_RIPPER_old("//home/giacomo/PycharmProjects/dmm2/data/experiments/sepsis_proc_results/split1/baseline/baseline_train.csv", "/home/giacomo/PycharmProjects/dmm2/data/experiments/sepsis_proc_results/split1/baseline/baseline_test.csv")
         except Exception as e:
             print(traceback.format_exc())
         finally:

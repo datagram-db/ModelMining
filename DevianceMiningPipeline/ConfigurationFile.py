@@ -146,6 +146,8 @@ class ConfigurationFile(object):
             with open("test_" + self.results_file, "a+") as f:
                 f.write("\n")
             if (nr == 0) and doNr0:
-                ex.prepare_cross_validation(max_splits)  # Splits the log into max_splits different files. FIXME: the split is not accurately selected
+                #ex.prepare_cross_validation(max_splits)  # Splits the log into max_splits different files. FIXME: the split is not accurately selected
                 ex.prepare_data()
+                import sys
+                sys.exit(1)
             ex.train_and_eval_benchmark()

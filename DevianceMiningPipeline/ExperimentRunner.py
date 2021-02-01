@@ -34,6 +34,7 @@ from sklearn.decomposition import PCA
 from collections import defaultdict
 
 from .payload_extractor import run_payload_extractor, payload_extractor, payload_extractor2
+from .run_weka_models import prune_duplicate_leaves, get_code
 
 import arff
 
@@ -309,7 +310,7 @@ class ExperimentRunner:
             for elem in log.get_extensions():
                 new_log.get_extensions().add(elem)
 
-            new_log.__classifiers = log.get_classifiers().copy()
+            #new_log.__classifiers = log.get_classifiers().copy()
             new_log.__globalTraceAttributes = log.get_global_trace_attributes().copy()
             new_log.__globalEventAttributes = log.get_global_event_attributes().copy()
 
@@ -326,6 +327,17 @@ class ExperimentRunner:
                 if i >= log_size:
                     break  # edge case
                 new_log.append(log[i])
+
+            count = 0
+            for trace in new_log:
+                if (trace.get_attributes()["Label"].get_value() == "1"):
+                    count = count +1
+            assert(count > 0)
+            count = 0
+            for trace in new_log:
+                if (trace.get_attributes()["Label"].get_value() == "0"):
+                    count = count +1
+            assert(count > 0)
 
             with open(os.path.join(output_folder,  log_name[:-4] + "_" + str(log_nr + 1) + ".xes"), "w") as file:
                 XesXmlSerializer().serialize(new_log, file)
@@ -441,7 +453,7 @@ class ExperimentRunner:
         return train_df, test_df
 
     @staticmethod
-    def evaluate_model(clf, X_train, y_train, X_test, y_test) -> (dict, dict):
+    def evaluate_dt_model(clf, X_train, y_train, X_test, y_test) -> (dict, dict):
         """
         Evaluates the model
         :param y_test:
@@ -759,17 +771,12 @@ class ExperimentRunner:
             X_test[np.isnan(X_test)] = -1
         clf.fit(X_train, y_train, check_input=False)
 
-        # True to export tree .dot file
-        #export_tree = False
-        #if export_tree:
-        #    export_graphviz(clf, out_file="outputfile_{}.dot".format(self.counter), feature_names=feature_names)
-        #tree_to_code(clf, feature_names)
-        #print_importances = False
-        #if print_importances:
-        #    print(list(reversed(sorted(zip(feature_names, clf.feature_importances_), key=lambda x: x[1])))[:10])
-
         # Evaluate model
-        train_results, test_results = ExperimentRunner.evaluate_model(clf, X_train, y_train, X_test, y_test)
+        train_results, test_results = ExperimentRunner.evaluate_dt_model(clf, X_train, y_train, X_test, y_test)
+
+        #Same code from run_weka_models
+        prune_duplicate_leaves(clf)
+        rules = get_code(clf, feature_names)
 
         return train_results, test_results
 
@@ -1377,7 +1384,7 @@ class ExperimentRunner:
             line = "dataset,learner,elements,conftype,confvalue,metrictype,metricvalue\n"
         with open("benchmarks.csv", "a") as csvFile:
             csvFile.write(line)
-            printToFile(all_results, self.experiment_name, "Pipeline DT", "max_depth", self.dt_max_depth, csvFile)
+            printToFile(all_results, self.experiment_name, "Decision Tree", "max_depth", self.dt_max_depth, csvFile)
         # if self.method == "fisher":
         #     for selection_count in self.selection_counts:
         #         # find the print

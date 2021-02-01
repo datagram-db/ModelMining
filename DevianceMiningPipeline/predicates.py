@@ -9,15 +9,18 @@ from opyenxes.model import XAttributeBoolean, XAttributeLiteral, XAttributeTimes
 from opyenxes.factory.XFactory import XFactory
 from enum import Enum
 import numpy
-
+from .deviancecommon import xes_to_positional
+import itertools
 
 def n_slices(n, list_):
     for i in range(len(list_) + 1 - n):
         yield list_[i:i+n]
 
 def n_setSlice(n, list_):
-    for i in range(len(list_) + 1 - n):
-        yield set(list_[i:i+n])
+    for slice in itertools.combinations(list_,n):
+        sliceS = set(slice)
+        if (len(sliceS)==n):
+            yield sliceS
 
 def isSublist(list_, sub_list):
     for slice_ in n_slices(len(sub_list), list_):
@@ -93,7 +96,9 @@ def checkSat(trace, function, event_name_list, SatCheck):
     :return:
     """
     out, _  = function(trace, event_name_list)
-    return checkSatSwitch[SatCheck.name](out)
+    lam = checkSatSwitch[SatCheck.name]
+    tes = lam(out)
+    return tes
 
 class SatProp:
     """
@@ -146,15 +151,32 @@ class SatAnyProp:
     def __call__(self, trace):
         return any(x(trace) for x in self.props)
 
-def logTagger(log, predicate):
+def logTagger(log, predicate, doPropositional = False):
     """
     Tags the log using the predicate's satisfiability
     :param log:         Log to be tagget at each trace
     :param predicate:   Predicate used to tag the sequence
     :return:
     """
+    nTot = 0
+    nPred = 0
+    propLog = dict()
+    if doPropositional:
+        for propTrace in xes_to_positional(log, False):
+            propLog[propTrace["name"]] = propTrace["events"]
     for trace in log:
-        trace.get_attributes()["Label"] = XFactory.create_attribute_literal("Label","1" if predicate(trace) else "0")
+        nTot = nTot+1
+        test = False
+        if doPropositional:
+            trace_name = trace.get_attributes()["concept:name"].get_value()
+            test = predicate(propLog[trace_name])
+        else:
+            test = predicate(trace)
+        if test:
+            nPred = nPred + 1
+        trace.get_attributes()["Label"] = XFactory.create_attribute_literal("Label","1" if test else "0")
+    assert (nPred < nTot)
+    assert (nPred > 0)
 
 def logRandomTagger(log, min = 0, max = 1, maxThreshold = 0.1):
     """
@@ -182,7 +204,7 @@ def tagLogWithOccurrence(log, pat, threshold):
     logTagger(log, compileCountPattern(pat, threshold))
 
 def tagLogWithSatAllProp(log, functionEventNamesList, SatCheck):
-    logTagger(log, SatAllProp([SatProp(x,y, SatCheck) for (x,y) in functionEventNamesList]))
+    logTagger(log, SatAllProp([SatProp(x,y, SatCheck) for (x,y) in functionEventNamesList]), True)
 
 def tagLogWithSatAnyProp(log, functionEventNamesList, SatCheck):
-    logTagger(log, SatAllProp([SatProp(x,y, SatCheck) for (x,y) in functionEventNamesList]))
+    logTagger(log, SatAnyProp([SatProp(x,y, SatCheck) for (x,y) in functionEventNamesList]), True)
