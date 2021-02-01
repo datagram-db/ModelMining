@@ -34,3 +34,13 @@ data/logs/sepsis_tagged_er_4.xes
 data/logs/sepsis_tagged_er_5.xes
 data/onehot_transformations.txt
 *.csv
+sepsis_proc.json
+sepsis_decl.json
+sepsis_mr_tr.json
+sepsis_mra_tra.json
+sepsis_payload.json
+xray_proc.json
+xray_decl.json
+xray_mr_tr.json
+xray_mra_tra.json
+xray_payload.json
