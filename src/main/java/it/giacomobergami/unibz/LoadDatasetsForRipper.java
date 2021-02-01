@@ -16,7 +16,7 @@ public class LoadDatasetsForRipper {
         String conftype = "iteration";
 
         if (args.length <6) {
-            System.err.println("Error: you should provide at least 5 args");
+            System.err.println("Error: you should provide at least 6 args");
             System.err.println(" - Input: Training set csv file");
             System.err.println(" - Input: Testing set csv file");
             System.err.println(" - Output: File where the rules will be appended");
