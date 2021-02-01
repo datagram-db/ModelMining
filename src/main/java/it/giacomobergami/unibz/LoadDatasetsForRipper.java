@@ -19,24 +19,29 @@ public class LoadDatasetsForRipper {
             System.err.println("Error: you should provide at least 5 args");
             System.err.println(" - Input: Training set csv file");
             System.err.println(" - Input: Testing set csv file");
-            System.err.println(" - Output: Files where the rules will be appended");
-            System.err.println(" - Output: Files where the benchmarks will be printed");
+            System.err.println(" - Output: File where the rules will be appended");
+            System.err.println(" - Output: File where the benchmarks will be printed");
             System.err.println(" - Input: Dataset name associated to the experiment");
-            System.err.println(" - Element: Embedding configuration associated to the experiment");
+            System.err.println(" - Input: Embedding configuration associated to the experiment");
             System.exit(1);
         } else  {
             String train = args[0];
+            System.out.println(">Training set for csv file: "+train);
             assert (new File(train).exists());
             String test = args[1];
+            System.out.println(">Testing set for csv file: "+train);
             assert (new File(test).exists());
             String rule_file = args[2];
+            System.out.println("<File where the rules will be appended: "+rule_file);
             assert (new File(rule_file).getParentFile().exists());
             String csv_file = args[3];
-            assert (new File(rule_file).getParentFile().exists());
+            System.out.println("<File where the benchmarks will be printed: "+csv_file);
+            assert (new File(csv_file).getParentFile().exists());
             String dataset = args[4];
+            System.out.println(">Dataset name associated to the experiment: "+dataset);
             String elements = args[5];
-
-            System.out.println();
+            System.out.println(">Embedding configuration associated to the experiment: "+elements);
+            System.out.println("===================================================\n\n");
 
             NumericToNominal nominal = new NumericToNominal();
             nominal.setOptions(new String[]{"-R", "last"});
@@ -48,7 +53,7 @@ public class LoadDatasetsForRipper {
             BufferedWriter rule_bw = new BufferedWriter(rule_fw);
             PrintWriter ruleFile = new PrintWriter(rule_bw))
             {
-                for (int i = 0; i<9; i++) {
+                for (int i = 0; i<10; i++) {
                     int optimization_i = i * 2;
                     JRip ripperk = new JRip();
                     Instances trainingSet = extracted(train, "Label", nominal);
@@ -77,7 +82,8 @@ public class LoadDatasetsForRipper {
 
                 }
             } catch (IOException e) {
-                //exception handling left as an exercise for the reader
+                e.printStackTrace();
+                System.exit(1);
             }
         }
     }
