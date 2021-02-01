@@ -8,15 +8,66 @@ from opyenxes.data_in.XUniversalParser import XUniversalParser
 from opyenxes.model import XAttributeBoolean, XAttributeLiteral, XAttributeTimestamp, XAttributeDiscrete, XAttributeContinuous
 from opyenxes.factory.XFactory import XFactory
 from enum import Enum
+import numpy
 
-def hasAttributeWithValue(x, attribute, value):
-    if attribute in x.get_attributes():
-        return x.get_attributes()[attribute].get_value() == value
+
+def n_slices(n, list_):
+    for i in range(len(list_) + 1 - n):
+        yield list_[i:i+n]
+
+def n_setSlice(n, list_):
+    for i in range(len(list_) + 1 - n):
+        yield set(list_[i:i+n])
+
+def isSublist(list_, sub_list):
+    for slice_ in n_slices(len(sub_list), list_):
+        if slice_ == sub_list:
+            return True
+    return False
+
+def traceAsListOfEvents(trace):
+    return list(map(lambda x: str(x.get_attributes()["concept:name"].get_value()), trace))
+
+def isTraceSublistOf(trace, sublist):
+    return isSublist(traceAsListOfEvents(trace), sublist)
+
+def compileIsTraceSublistOf(sublist):
+    return lambda x : isTraceSublistOf(x, sublist)
+
+def countPatternExactOccurrence(trace, pat, threshold):
+    pattern = list(pat)
+    npatt = len(pattern)
+    return sum(map(lambda x: 1 if x == pattern else 0, n_slices(npatt, traceAsListOfEvents(trace)))) >= threshold
+
+def compileCountPatternExact(pat, threshold):
+    return lambda x : countPatternExactOccurrence(x, pat, threshold)
+
+def countPatternOccurrence(trace, pattern, threshold):
+    sPattern = set(pattern)
+    npatt = len(pattern)
+    return sum(map(lambda x: 1 if x == sPattern else 0, n_setSlice(npatt, traceAsListOfEvents(trace)))) >= threshold
+
+def compileCountPattern(pat, threshold):
+    return lambda x : countPatternOccurrence(x, pat, threshold)
+
+def hasTraceAttributeWithValue(trace, attribute, value):
+    if attribute in trace.get_attributes():
+        return trace.get_attributes()[attribute].get_value() == value
     else:
         return False
 
-def compileAttributeWithValue(attribute, value):
-    return lambda x: hasAttributeWithValue(x, attribute, value)
+def hasIthEventAttributeWithValue(trace, attribute, value, ith):
+    event = trace[ith]
+    if attribute in event.get_attributes():
+        return event.get_attributes()[attribute].get_value() == value
+    else:
+        return False
+
+def compileTraceAttributeWithValue(attribute, value):
+    return lambda x: hasTraceAttributeWithValue(x, attribute, value)
+
+def compileIthEventAttributeWithValue(attribute, value, ith):
+    return lambda x: hasIthEventAttributeWithValue(x, attribute, value, ith)
 
 def extractAttributeValues(x, attribute):
     if attribute in x.get_attributes():
@@ -83,6 +134,18 @@ class SatAllProp:
     def __call__(self, trace):
         return all(x(trace) for x in self.props)
 
+class SatAnyProp:
+    """
+    Definition of a class checking that all the Satisfiability predicates were satisfied
+    """
+    def __init__(self, props):
+        for x in props:
+            assert(isinstance(x, SatProp))
+        self.props = props
+
+    def __call__(self, trace):
+        return any(x(trace) for x in self.props)
+
 def logTagger(log, predicate):
     """
     Tags the log using the predicate's satisfiability
@@ -93,8 +156,33 @@ def logTagger(log, predicate):
     for trace in log:
         trace.get_attributes()["Label"] = XFactory.create_attribute_literal("Label","1" if predicate(trace) else "0")
 
-def tagLogWithValueEqOverAttn(log, attn, val):
-    logTagger(log, compileAttributeWithValue(attn, val))
+def logRandomTagger(log, min = 0, max = 1, maxThreshold = 0.1):
+    """
+    Tags the log using the predicate's satisfiability
+    :param log:         Log to be tagget at each trace
+    :param predicate:   Predicate used to tag the sequence
+    :return:
+    """
+    for (trace,prob) in zip(log, numpy.random.uniform(min, max, len(log))):
+        trace.get_attributes()["Label"] = XFactory.create_attribute_literal("Label","1" if prob<=maxThreshold else "0")
+
+def tagLogWithValueEqOverTraceAttn(log, attn, val):
+    logTagger(log, compileTraceAttributeWithValue(attn, val))
+
+def tagLogWithValueEqOverIthEventAttn(log, attn, val, ith):
+    logTagger(log, compileIthEventAttributeWithValue(attn, val, ith))
+
+def tagLogWithExactSubsequence(log, subsequence):
+    logTagger(log, compileIsTraceSublistOf(subsequence))
+
+def tagLogWithExactOccurrence(log, pat, threshold):
+        logTagger(log, compileCountPatternExact(pat, threshold))
+
+def tagLogWithOccurrence(log, pat, threshold):
+    logTagger(log, compileCountPattern(pat, threshold))
 
 def tagLogWithSatAllProp(log, functionEventNamesList, SatCheck):
+    logTagger(log, SatAllProp([SatProp(x,y, SatCheck) for (x,y) in functionEventNamesList]))
+
+def tagLogWithSatAnyProp(log, functionEventNamesList, SatCheck):
     logTagger(log, SatAllProp([SatProp(x,y, SatCheck) for (x,y) in functionEventNamesList]))

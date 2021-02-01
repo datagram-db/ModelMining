@@ -760,15 +760,13 @@ class ExperimentRunner:
         clf.fit(X_train, y_train, check_input=False)
 
         # True to export tree .dot file
-        export_tree = False
-        if export_tree:
-            export_graphviz(clf, out_file="outputfile_{}.dot".format(self.counter), feature_names=feature_names)
-
+        #export_tree = False
+        #if export_tree:
+        #    export_graphviz(clf, out_file="outputfile_{}.dot".format(self.counter), feature_names=feature_names)
         #tree_to_code(clf, feature_names)
-
-        print_importances = False
-        if print_importances:
-            print(list(reversed(sorted(zip(feature_names, clf.feature_importances_), key=lambda x: x[1])))[:10])
+        #print_importances = False
+        #if print_importances:
+        #    print(list(reversed(sorted(zip(feature_names, clf.feature_importances_), key=lambda x: x[1])))[:10])
 
         # Evaluate model
         train_results, test_results = ExperimentRunner.evaluate_model(clf, X_train, y_train, X_test, y_test)
