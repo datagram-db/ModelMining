@@ -19,7 +19,7 @@ from DevianceMiningPipeline import ConfigurationFile
 
 LOGS_FOLDER="data/logs"
 DATA_EXP="data/experiments"
-ranges=(5, 15, 25)
+ranges=[5]#, 10, 15, 20, 25, 30, 35, 40, 45, 50)
 
 to_describe = {
     #"sepsis_constr": "sepsis_constraint_tagged.xes", --> missing
@@ -171,12 +171,15 @@ def generateTagging():
 if __name__ == '__main__':
     LogGeneration.write_xeses(LOGS_FOLDER)
     generateTagging()
-    conf_file = "sepsis_proc.json"
-    if len(sys.argv)>1:
-        conf_file = sys.argv[1]
-    preprocess = True
-    if len(sys.argv)>2:
-        test = sys.argv[2]
-        preprocess = not (test == "skipPreprocessing")
-    run_complete_configuration_and_run(conf_file, preprocess)
+    #conf_file = "sepsis_proc.json"
+    #if len(sys.argv)>1:
+    #    conf_file = sys.argv[1]
+    #preprocess = True
+    #if len(sys.argv)>2:
+    #    test = sys.argv[2]
+    #    preprocess = not (test == "skipPreprocessing")
+    for conf_file in ["sepsis_proc.json"]:#, "sepsis_decl.json", "sepsis_mr_tr.json", "sepsis_mra_tra.json", "sepsis_payload.json", "xray_proc.json", "xray_decl.json", "xray_mr_tr.json", "xray_mra_tra.json", "xray_payload.json"]:
+        print("Now running: "+conf_file)
+        run_complete_configuration_and_run(conf_file, False)
+
 

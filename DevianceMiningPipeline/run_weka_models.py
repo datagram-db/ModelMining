@@ -208,7 +208,8 @@ def get_code(tree, feature_names):
     value = tree.tree_.value
 
     global rules_count
-    rules_count = 0
+    rules_count = []
+    assert isinstance(rules_count, list)
 
     def recurse(left, right, threshold, features, node, depth, current_text=""):
         global rules_count
@@ -236,8 +237,7 @@ def get_code(tree, feature_names):
 
             if pos_samples > neg_samples:
                 current_text += " => Label=1" + " (" + str(pos_samples) + "/" + str(neg_samples) + ")"
-                print(current_text)
-                rules_count += 1
+                rules_count.append(current_text)
 
     recurse(left, right, threshold, features, 0, 0)
 

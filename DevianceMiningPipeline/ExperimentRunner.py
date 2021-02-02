@@ -36,9 +36,10 @@ from collections import defaultdict
 from .payload_extractor import run_payload_extractor, payload_extractor, payload_extractor2
 from .run_weka_models import prune_duplicate_leaves, get_code
 
+from pathlib import Path
 import arff
 
-def read_generic_log(results_folder, split_nr, encoding):
+def read_generic_log(results_folder, split_nr, encoding, dictionary):
     """
     This method reads the log, that has been already serialized for a vectorial representation
 
@@ -51,9 +52,26 @@ def read_generic_log(results_folder, split_nr, encoding):
     file_loc = os.path.join(results_folder, split, encoding)
     train_path = os.path.join(file_loc, encoding+"_train.csv")
     test_path = os.path.join(file_loc, encoding+"_test.csv")
+    dictionary["train"] = train_path
+    dictionary["test"] = test_path
     train_df = pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False)
     test_df = pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False)
     return train_df, test_df
+
+def path_generic_log(results_folder, split_nr, encoding):
+    split = "split" + str(split_nr)
+    file_loc = os.path.join(results_folder, split, encoding)
+    Path(file_loc).mkdir(parents=True, exist_ok=True)
+    train_path = os.path.join(file_loc, encoding + "_train.csv")
+    test_path = os.path.join(file_loc, encoding + "_test.csv")
+    return (train_path, test_path)
+
+def dump_extended_dataframes(train_df, test_df, results_folder, split_nr, encoding):
+    train_path, test_path = path_generic_log(results_folder, split_nr, encoding)
+    print("Dumping extended data frames into " + train_path +" and "+test_path)
+    train_df.to_csv(train_path, index=False)
+    test_df.to_csv(test_path, index=False)
+    return (train_path, test_path)
 
 def fisher_calculation(X, y):
     # Calculates fisher score
@@ -230,6 +248,7 @@ class ExperimentRunner:
 
     def interpret_results(self, results, model_type, sequence_encoding=None):
         if self.method == "fisher":
+            assert (False)
 
             selection_models = defaultdict(dict)
             results_per_selection = defaultdict(list)
@@ -239,11 +258,13 @@ class ExperimentRunner:
                     # Train results
                     train_results = train_test["train"]
                     test_results = train_test["test"]
+                    rules = rules["test"]
                     selection_count = train_test["selection_count"]
 
                     res = {
                         "train": train_results,
-                        "test": test_results
+                        "test": test_results,
+                        "rules": rules
                     }
 
                     results_per_selection[selection_count].append(res)
@@ -279,6 +300,7 @@ class ExperimentRunner:
 
         else:
             models = defaultdict(dict)
+            rules = []
 
             if model_type == "sequence":
                 test_model_eval = ModelEvaluation(
@@ -294,9 +316,11 @@ class ExperimentRunner:
             for r in results:
                 train_model_eval.add_results_dict(r["result"]["train"])
                 test_model_eval.add_results_dict(r["result"]["test"])
+                rules.append(r["result"]["rules"])
 
             models["train"] = train_model_eval
             models["test"] = test_model_eval
+            models["rules"] = rules
 
             return models
 
@@ -451,6 +475,14 @@ class ExperimentRunner:
         test_df = global_df.iloc[train_size:, ]
 
         return train_df, test_df
+
+    @staticmethod
+    def test_encodings(results_folder, encoding, split_nr):
+        split = "split" + str(split_nr)
+        file_loc = results_folder + "/" + split + "/" + encoding
+        train_path = file_loc + "/" + "train_encodings.arff"
+        test_path = file_loc + "/" + "test_encodings.arff"
+        return {"train": train_path, "test": test_path}
 
     @staticmethod
     def evaluate_dt_model(clf, X_train, y_train, X_test, y_test) -> (dict, dict):
@@ -691,7 +723,7 @@ class ExperimentRunner:
 
     def train_and_evaluate_select(self, train_df: pd.DataFrame, test_df: pd.DataFrame,
                                   payload_train_df=None, payload_test_df=None, params=None,
-                                  exp_name=None, split_nr=None) -> (dict, dict):
+                                  exp_name=None, split_nr=None, dump_to_folder = None) -> (dict, dict):
         """
         Trains and evaluates model
         :param train_df:
@@ -707,6 +739,14 @@ class ExperimentRunner:
         X_train, X_test, feature_names = self.feature_selection(train_df, test_df, y_train, params=params,
                                                                 payload_train_df=payload_train_df,
                                                                 payload_test_df=payload_test_df)
+
+        if not (dump_to_folder is None):
+            assert ((isinstance(dump_to_folder, tuple)) and ((len(dump_to_folder)==3)))
+            X_traincpy = pd.DataFrame(data=X_train,  columns=feature_names)
+            X_traincpy["Label"] = y_train
+            X_testcpy = pd.DataFrame(data=X_test,  columns=feature_names)
+            X_testcpy["Label"] = y_test
+            dump_extended_dataframes(X_traincpy, X_testcpy, dump_to_folder[0], dump_to_folder[1], dump_to_folder[2])
 
         # # Save input to arff file to be used for RIPPER!
         # SAVE_ARFF = False
@@ -775,27 +815,29 @@ class ExperimentRunner:
         train_results, test_results = ExperimentRunner.evaluate_dt_model(clf, X_train, y_train, X_test, y_test)
 
         #Same code from run_weka_models
-        prune_duplicate_leaves(clf)
+        #prune_duplicate_leaves(clf)
         rules = get_code(clf, feature_names)
 
-        return train_results, test_results
+        return train_results, test_results, rules
 
-    def train(self, train_df, test_df, payload_train_df=None, payload_test_df=None, split_nr=None, exp_name=None):
+    def train(self, train_df, test_df, payload_train_df=None, payload_test_df=None, split_nr=None, exp_name=None, dump_to_folder = None):
         if self.method == "fisher":
+            assert (False) # Dead code
             selection_counts = self.selection_counts
             results = []
             # Trying all selection counts
             for selection_count in selection_counts:
                 if payload_train_df is not None:
-                    train_results, test_results = self.train_and_evaluate_select(train_df.copy(), test_df.copy(),
-                                                                             payload_train_df.copy(), payload_test_df.copy(),                                                                         params={"selection_count": selection_count})
+                    train_results, test_results, rules = self.train_and_evaluate_select(train_df.copy(), test_df.copy(),
+                                                                             payload_train_df.copy(), payload_test_df.copy(), params={"selection_count": selection_count})
                 else:
-                    train_results, test_results = self.train_and_evaluate_select(train_df.copy(), test_df.copy(),
+                    train_results, test_results, rules = self.train_and_evaluate_select(train_df.copy(), test_df.copy(),
                                                                                  params={"selection_count": selection_count})
                 result = {
                     "train": train_results,
                     "test": test_results,
-                    "selection_count": selection_count
+                    "selection_count": selection_count,
+                    "rules": rules
                 }
 
                 results.append(result)
@@ -803,33 +845,36 @@ class ExperimentRunner:
             return results
         else:
             if payload_train_df is not None:
-                train_results, test_results = self.train_and_evaluate_select(train_df.copy(),
+                train_results, test_results, rules = self.train_and_evaluate_select(train_df.copy(),
                                                                              test_df.copy(),
                                                                              payload_train_df.copy(),
                                                                              payload_test_df.copy(),
-                                                                             split_nr=split_nr, exp_name=exp_name)
+                                                                             split_nr=split_nr, exp_name=exp_name, dump_to_folder = dump_to_folder)
             else:
-                train_results, test_results = self.train_and_evaluate_select(train_df.copy(),
+                train_results, test_results, rules = self.train_and_evaluate_select(train_df.copy(),
                                                                             test_df.copy(),
                                                                             split_nr=split_nr, exp_name=exp_name)
 
             result = {
                 "train": train_results,
-                "test": test_results
+                "test": test_results,
+                    "rules": rules
             }
 
             return result
 
-    def baseline_train(self):
+    def baseline_train(self, str_key, yamlfile):
         """
 
         :return:
         """
 
         results = []
+        elements = []
         for split_nr in range(1, 6):
-            train_df, test_df = read_generic_log(self.results_folder, split_nr, "baseline")
-
+            d = dict()
+            train_df, test_df = read_generic_log(self.results_folder, split_nr, "baseline", d)
+            elements.append(d)
             tr_result = self.train(train_df, test_df, split_nr=split_nr, exp_name="baseline")
 
             result = {
@@ -839,19 +884,23 @@ class ExperimentRunner:
 
             results.append(result)
 
+        assert (not (str_key in yamlfile))
+        yamlfile[str_key] = elements
         return results
 
-    def declare_train(self):
+    def declare_train(self, str_key, yaml_file):
         """
         Train and evaluate declare models
         :return:
         """
 
         results = []
-
+        elements = []
         # Separately for every split. Reduce total number of file parsing.
         for split_nr in range(1, 6):
-            train_df, test_df = read_generic_log(self.results_folder, split_nr,  "declare")
+            d = dict()
+            train_df, test_df = read_generic_log(self.results_folder, split_nr,  "declare", d)
+            elements.append(d)
             tr_result = self.train(train_df, test_df, split_nr=split_nr, exp_name="declare")
 
             result = {
@@ -861,9 +910,10 @@ class ExperimentRunner:
 
             results.append(result)
 
+        yaml_file[str_key] = elements
         return results
 
-    def sequence_train(self, encoding):
+    def sequence_train(self, encoding, yaml_file):
         """
         Trains a sequence model with given encoding
         :param encoding: sequence encoding
@@ -871,10 +921,11 @@ class ExperimentRunner:
         """
 
         results = []
+        elements = []
         for split_nr in range(1, 6):
             # Read the log
             train_df, test_df = ExperimentRunner.read_sequence_log(self.results_folder, encoding, split_nr)
-
+            elements.append(ExperimentRunner.test_encodings(self.results_folder, encoding, split_nr))
             tr_result = self.train(train_df, test_df, split_nr=split_nr, exp_name="sequence_{}".format(encoding))
 
             result = {
@@ -885,9 +936,10 @@ class ExperimentRunner:
 
             results.append(result)
 
+        yaml_file[encoding] = elements
         return results
 
-    def hybrid_train(self):
+    def hybrid_train(self, str_key, yaml_file):
         """
         Hybrid model training
         :return:
@@ -895,8 +947,10 @@ class ExperimentRunner:
         encodings = ["mr", "mra", "tr", "tra"]
 
         results = []
+        elements = []
         for split_nr in range(1, 6):
-            dec_train_df, dec_test_df = read_generic_log(self.results_folder, split_nr,  "declare")
+            d = dict()
+            dec_train_df, dec_test_df = read_generic_log(self.results_folder, split_nr,  "declare", d)
             seq_train_list = []
             seq_test_list = []
             for encoding in encodings:
@@ -915,6 +969,7 @@ class ExperimentRunner:
             merged_train_df = pd.concat([dec_train_df] + seq_train_list, axis=1)
             merged_test_df = pd.concat([dec_test_df] + seq_test_list, axis=1)
 
+            self.multidump_compact(elements, str_key, merged_train_df, merged_test_df, split_nr)
             tr_result = self.train(merged_train_df, merged_test_df, split_nr=split_nr, exp_name="hybrid")
             result = {
                 "result": tr_result,
@@ -923,21 +978,24 @@ class ExperimentRunner:
 
             results.append(result)
 
+        yaml_file[str_key] = elements
         return results
 
-    def payload_train(self):
+    def payload_train(self, key, yaml_file):
         """
         Trains and tests models just on payload data.
         :return:
         """
         results = []
+        elements = []
         for split_nr in range(1, 6):
-            baseline_train_df, baseline_test_df = read_generic_log(self.results_folder, split_nr, "baseline")
-            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr)
+            baseline_train_df, baseline_test_df = read_generic_log(self.results_folder, split_nr, "baseline", dict())
+            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr, "payload", dict())
 
             payload_train_df["Label"] = baseline_train_df["Label"]
             payload_test_df["Label"] = baseline_test_df["Label"]
 
+            self.multidump_compact(elements, "payload_for_training", payload_test_df, payload_train_df, split_nr)
             tr_result = self.train(payload_train_df, payload_test_df, split_nr=split_nr, exp_name="payload")
 
             result = {
@@ -947,26 +1005,35 @@ class ExperimentRunner:
 
             results.append(result)
 
+        yaml_file[key] = elements
         return results
 
-    def baseline_train_with_data(self):
+    def multidump_compact(self, elements, forMultiDump, payload_test_df, payload_train_df, split_nr):
+        tr_f, t_f = dump_extended_dataframes(payload_train_df, payload_test_df, self.results_folder, split_nr,
+                                             forMultiDump)
+        d = dict()
+        d["train"] = tr_f
+        d["test"] = t_f
+        elements.append(d)
+
+    def baseline_train_with_data(self, key, yaml_file):
         """
 
         :return:
         """
 
         results = []
+        elements = []
         for split_nr in range(1, 6):
-            train_df, test_df = read_generic_log(self.results_folder, split_nr, "baseline")
-            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr, "payload")
-
+            train_df, test_df = read_generic_log(self.results_folder, split_nr, "baseline", dict())
+            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr, "payload", dict())
             #merged_train_df = pd.concat([train_df, payload_train_df], axis=1)
             #merged_test_df = pd.concat([test_df, payload_test_df], axis=1)
 
             tr_result = self.train(train_df, test_df, payload_train_df, payload_test_df,
-                                   split_nr=split_nr, exp_name="baseline_payload")
+                                   split_nr=split_nr, exp_name="baseline_payload", dump_to_folder=(self.results_folder, split_nr, key))
 
-
+            self.extract_file_name_for_dump(elements, key, split_nr)
             result = {
                 "result": tr_result,
                 "split": split_nr
@@ -974,26 +1041,34 @@ class ExperimentRunner:
 
             results.append(result)
 
+        yaml_file[key] = elements
         return results
 
+    def extract_file_name_for_dump(self, elements, key, split_nr):
+        d = dict()
+        tr_f, t_f = path_generic_log(self.results_folder, split_nr, key)
+        d["train"] = tr_f
+        d["test"] = t_f
+        elements.append(d)
 
-    def baseline_train_with_dwd(self):
+    def baseline_train_with_dwd(self, key, yaml_file):
         """
 
         :return:
         """
 
         results = []
+        elements = []
         for split_nr in range(1, 6):
-            train_df, test_df = read_generic_log(self.results_folder, split_nr, "baseline")
-            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr,  "dwd")
+            train_df, test_df = read_generic_log(self.results_folder, split_nr, "baseline", dict())
+            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr,  "dwd", dict())
 
             # merged_train_df = pd.concat([train_df, payload_train_df], axis=1)
             # merged_test_df = pd.concat([test_df, payload_test_df], axis=1)
 
             tr_result = self.train(train_df, test_df, payload_train_df, payload_test_df,
-                                   split_nr=split_nr, exp_name="baseline_dwd")
-
+                                   split_nr=split_nr, exp_name="baseline_dwd", dump_to_folder=(self.results_folder, split_nr, key))
+            self.extract_file_name_for_dump(elements, key, split_nr)
             result = {
                 "result": tr_result,
                 "split": split_nr
@@ -1001,26 +1076,28 @@ class ExperimentRunner:
 
             results.append(result)
 
+        yaml_file[key] = elements
         return results
 
 
-    def declare_train_with_data(self):
+    def declare_train_with_data(self, key, yaml_file):
         """
         Train and evaluate declare models
         :return:
         """
 
         results = []
+        elements = []
         # Separately for every split. Reduce total number of file parsing.
         for split_nr in range(1, 6):
-            train_df, test_df = read_generic_log(self.results_folder, split_nr,  "declare")
-            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr, "payload")
+            train_df, test_df = read_generic_log(self.results_folder, split_nr,  "declare", dict())
+            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr, "payload", dict())
 
 
             tr_result = self.train(train_df, test_df, payload_train_df, payload_test_df,
-                                   split_nr=split_nr, exp_name="declare_data")
+                                   split_nr=split_nr, exp_name="declare_data", dump_to_folder=(self.results_folder, split_nr, key))
 
-
+            self.extract_file_name_for_dump(elements, key, split_nr)
             result = {
                 "result": tr_result,
                 "split": split_nr
@@ -1028,25 +1105,27 @@ class ExperimentRunner:
 
             results.append(result)
 
+        yaml_file[key] = elements
         return results
 
 
-    def declare_train_with_dwd(self):
+    def declare_train_with_dwd(self, key, yaml_file):
         """
         Train and evaluate declare models
         :return:
         """
 
         results = []
+        elements = []
         # Separately for every split. Reduce total number of file parsing.
         for split_nr in range(1, 6):
-            train_df, test_df = read_generic_log(self.results_folder, split_nr,  "declare")
-            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr,  "dwd")
+            train_df, test_df = read_generic_log(self.results_folder, split_nr,  "declare", dict())
+            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr,  "dwd", dict())
 
             tr_result = self.train(train_df, test_df, payload_train_df, payload_test_df,
-                                   split_nr=split_nr, exp_name="declare_dwd")
+                                   split_nr=split_nr, exp_name="declare_dwd", dump_to_folder=(self.results_folder, split_nr, key))
 
-
+            self.extract_file_name_for_dump(elements, key, split_nr)
             result = {
                 "result": tr_result,
                 "split": split_nr
@@ -1054,28 +1133,30 @@ class ExperimentRunner:
 
             results.append(result)
 
+        yaml_file[key] = elements
         return results
 
 
-    def declare_train_with_dwd_data(self):
+    def declare_train_with_dwd_data(self, key, yaml_file):
         """
         Train and evaluate declare models
         :return:
         """
         results = []
+        elements = []
         # Separately for every split. Reduce total number of file parsing.
         for split_nr in range(1, 6):
-            train_df, test_df = read_generic_log(self.results_folder, split_nr,  "declare")
-            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr, "payload")
-            payload_train_df_2, payload_test_df_2 = read_generic_log(self.results_folder, split_nr,  "dwd")
+            train_df, test_df = read_generic_log(self.results_folder, split_nr,  "declare", dict())
+            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr, "payload", dict())
+            payload_train_df_2, payload_test_df_2 = read_generic_log(self.results_folder, split_nr,  "dwd", dict())
 
             merged_train_df = pd.concat([train_df, payload_train_df_2], axis=1)
             merged_test_df = pd.concat([test_df, payload_test_df_2], axis=1)
 
             tr_result = self.train(merged_train_df, merged_test_df, payload_train_df, payload_test_df,
-                                   split_nr=split_nr, exp_name="declare_dwd_data")
+                                   split_nr=split_nr, exp_name="declare_dwd_data", dump_to_folder=(self.results_folder, split_nr, key))
 
-
+            self.extract_file_name_for_dump(elements, key, split_nr)
             result = {
                 "result": tr_result,
                 "split": split_nr
@@ -1083,10 +1164,11 @@ class ExperimentRunner:
 
             results.append(result)
 
+        yaml_file[key] = elements
         return results
 
 
-    def sequence_train_with_data(self, encoding):
+    def sequence_train_with_data(self, encoding, yaml_file):
         """
         Trains a sequence model with given encoding
         :param encoding: sequence encoding
@@ -1094,18 +1176,20 @@ class ExperimentRunner:
         """
 
         results = []
+        elements = []
+        key = encoding+"_data"
         for split_nr in range(1, 6):
             # Read the log
             train_df, test_df = ExperimentRunner.read_sequence_log(self.results_folder, encoding, split_nr)
-            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr, "payload")
+            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr, "payload", dict())
 
             #merged_train_df = pd.concat([train_df, payload_train_df], axis=1)
             #merged_test_df = pd.concat([test_df, payload_test_df], axis=1)
 
             tr_result = self.train(train_df, test_df, payload_train_df, payload_test_df,
-                                   split_nr=split_nr, exp_name="sequence_data_{}".format(encoding))
+                                   split_nr=split_nr, exp_name="sequence_data_{}".format(encoding), dump_to_folder=(self.results_folder, split_nr, key))
 
-
+            self.extract_file_name_for_dump(elements, key, split_nr)
             result = {
                 "result": tr_result,
                 "split": split_nr,
@@ -1114,49 +1198,50 @@ class ExperimentRunner:
 
             results.append(result)
 
+        yaml_file[key] = elements
         return results
 
-    def sequence_train_with_dwd(self, encoding):
-        """
-        Trains a sequence model with given encoding
-        :param encoding: sequence encoding
-        :return:
-        """
+    # def sequence_train_with_dwd(self, encoding):
+    #     """
+    #     Trains a sequence model with given encoding
+    #     :param encoding: sequence encoding
+    #     :return:
+    #     """
+    #
+    #     results = []
+    #     for split_nr in range(1, 6):
+    #         # Read the log
+    #         train_df, test_df = ExperimentRunner.read_sequence_log(self.results_folder, encoding, split_nr)
+    #         payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr,  "dwd")
+    #
+    #         #merged_train_df = pd.concat([train_df, payload_train_df], axis=1)
+    #         #merged_test_df = pd.concat([test_df, payload_test_df], axis=1)
+    #
+    #         tr_result = self.train(train_df, test_df, payload_train_df, payload_test_df, split_nr=split_nr, exp_name="sequence_dwd")
+    #
+    #
+    #         result = {
+    #             "result": tr_result,
+    #             "split": split_nr,
+    #             "encoding": encoding
+    #         }
+    #
+    #         results.append(result)
+    #
+    #     return results
 
-        results = []
-        for split_nr in range(1, 6):
-            # Read the log
-            train_df, test_df = ExperimentRunner.read_sequence_log(self.results_folder, encoding, split_nr)
-            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr,  "dwd")
-
-            #merged_train_df = pd.concat([train_df, payload_train_df], axis=1)
-            #merged_test_df = pd.concat([test_df, payload_test_df], axis=1)
-
-            tr_result = self.train(train_df, test_df, payload_train_df, payload_test_df, split_nr=split_nr, exp_name="sequence_dwd")
-
-
-            result = {
-                "result": tr_result,
-                "split": split_nr,
-                "encoding": encoding
-            }
-
-            results.append(result)
-
-        return results
-
-    def hybrid_with_data(self):
+    def hybrid_with_data(self, key, yaml_file):
         """
         Hybrid model training with additional data
         :return:
         """
 
         encodings = ["mr", "mra", "tr", "tra"]
-
+        elements = []
         results = []
         for split_nr in range(1, 6):
-            dec_train_df, dec_test_df = read_generic_log(self.results_folder, split_nr,  "declare")
-            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr, "payload")
+            dec_train_df, dec_test_df = read_generic_log(self.results_folder, split_nr,  "declare", dict())
+            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr, "payload", dict())
             seq_train_list = []
             seq_test_list = []
             for encoding in encodings:
@@ -1175,7 +1260,8 @@ class ExperimentRunner:
             merged_train_df = pd.concat([dec_train_df] + seq_train_list, axis=1)
             merged_test_df = pd.concat([dec_test_df] + seq_test_list, axis=1)
             # , payload_train_df, payload_test_df
-            tr_result = self.train(merged_train_df, merged_test_df, payload_train_df, payload_test_df, split_nr=split_nr, exp_name="hybrid_data")
+            tr_result = self.train(merged_train_df, merged_test_df, payload_train_df, payload_test_df, split_nr=split_nr, exp_name="hybrid_data", dump_to_folder=(self.results_folder, split_nr, key))
+            self.extract_file_name_for_dump(elements, key, split_nr)
             result = {
                 "result": tr_result,
                 "split": split_nr
@@ -1183,10 +1269,11 @@ class ExperimentRunner:
 
             results.append(result)
 
+        yaml_file[key] = elements
         return results
 
 
-    def hybrid_with_dwd(self):
+    def hybrid_with_dwd(self, key, yaml_file):
         """
         Hybrid model training with additional data
         :return:
@@ -1195,9 +1282,10 @@ class ExperimentRunner:
         encodings = ["mr", "mra", "tr", "tra"]
 
         results = []
+        elements = []
         for split_nr in range(1, 6):
-            dec_train_df, dec_test_df = read_generic_log(self.results_folder, split_nr,  "declare")
-            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr,  "dwd")
+            dec_train_df, dec_test_df = read_generic_log(self.results_folder, split_nr,  "declare", dict())
+            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr,  "dwd", dict())
             seq_train_list = []
             seq_test_list = []
             for encoding in encodings:
@@ -1216,7 +1304,8 @@ class ExperimentRunner:
             merged_train_df = pd.concat([dec_train_df] + seq_train_list, axis=1)
             merged_test_df = pd.concat([dec_test_df] + seq_test_list, axis=1)
             # , payload_train_df, payload_test_df
-            tr_result = self.train(merged_train_df, merged_test_df, payload_train_df, payload_test_df, split_nr=split_nr, exp_name="hybrid_dwd")
+            tr_result = self.train(merged_train_df, merged_test_df, payload_train_df, payload_test_df, split_nr=split_nr, exp_name="hybrid_dwd", dump_to_folder=(self.results_folder, split_nr, key))
+            self.extract_file_name_for_dump(elements, key, split_nr)
             result = {
                 "result": tr_result,
                 "split": split_nr
@@ -1224,9 +1313,10 @@ class ExperimentRunner:
 
             results.append(result)
 
+        yaml_file[key] = elements
         return results
 
-    def hybrid_with_dwd_and_payload(self):
+    def hybrid_with_dwd_and_payload(self, key, yaml_file):
         """
         Hybrid model training with additional data
         :return:
@@ -1235,10 +1325,11 @@ class ExperimentRunner:
         encodings = ["mr", "mra", "tr", "tra"]
 
         results = []
+        elements = []
         for split_nr in range(1, 6):
-            dec_train_df, dec_test_df = read_generic_log(self.results_folder, split_nr,  "declare")
-            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr,  "dwd")
-            payload_train_df_2, payload_test_df_2 = read_generic_log(self.results_folder, split_nr, "payload")
+            dec_train_df, dec_test_df = read_generic_log(self.results_folder, split_nr,  "declare", dict())
+            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr,  "dwd", dict())
+            payload_train_df_2, payload_test_df_2 = read_generic_log(self.results_folder, split_nr, "payload", dict())
             seq_train_list = []
             seq_test_list = []
             for encoding in encodings:
@@ -1257,7 +1348,8 @@ class ExperimentRunner:
             merged_train_df = pd.concat([dec_train_df, payload_train_df_2] + seq_train_list, axis=1)
             merged_test_df = pd.concat([dec_test_df, payload_test_df_2] + seq_test_list, axis=1)
             # , payload_train_df, payload_test_df
-            tr_result = self.train(merged_train_df, merged_test_df, payload_train_df, payload_test_df, split_nr=split_nr, exp_name="hybrid_dwd_payload")
+            tr_result = self.train(merged_train_df, merged_test_df, payload_train_df, payload_test_df, split_nr=split_nr, exp_name="hybrid_dwd_payload", dump_to_folder=(self.results_folder, split_nr, key))
+            self.extract_file_name_for_dump(elements, key, split_nr)
             result = {
                 "result": tr_result,
                 "split": split_nr
@@ -1265,126 +1357,137 @@ class ExperimentRunner:
 
             results.append(result)
 
+        yaml_file[key] = elements
         return results
 
 
     def train_and_eval_benchmark(self):
         all_results = {}
+        yaml_file = {}
         # MAKE SURE ALL METHODS USED ARE HERE. AND METHODS NOT USED ARE NOT!
-        if not self.payload:
+        if True:#not self.payload:
             print_order = ["bs", "dc", "tr", "tra", "mr", "mra", "hybrid"]
             print("Started working on baseline.")
-            baseline_results = self.baseline_train()
+            baseline_results = self.baseline_train("bs", yaml_file)
             all_results["bs"] = self.interpret_results(baseline_results, "baseline")
 
             print("Started working on declare.")
-            declare_results = self.declare_train()
+            declare_results = self.declare_train("dc", yaml_file)
             all_results["dc"] = self.interpret_results(declare_results, "declare")
 
             print("Started working on sequenceMR.")
-            sequence_results = self.sequence_train("mr")
+            sequence_results = self.sequence_train("mr", yaml_file)
             all_results["mr"] = self.interpret_results(sequence_results, "sequence", "mr")
 
             print("Started working on sequenceTR.")
-            sequence_results = self.sequence_train("tr")
+            sequence_results = self.sequence_train("tr", yaml_file)
             all_results["tr"] = self.interpret_results(sequence_results, "sequence", "tr")
 
             print("Started working on sequenceTRA.")
-            sequence_results = self.sequence_train("tra")
+            sequence_results = self.sequence_train("tra", yaml_file)
             all_results["tra"] = self.interpret_results(sequence_results, "sequence", "tra")
 
             print("Started working on sequenceMRA.")
-            sequence_results = self.sequence_train("mra")
+            sequence_results = self.sequence_train("mra", yaml_file)
             all_results["mra"] = self.interpret_results(sequence_results, "sequence", "mra")
 
             print("Started working on hybrid.")
-            hybrid_results = self.hybrid_train()
+            hybrid_results = self.hybrid_train("hybrid", yaml_file)
             all_results["hybrid"] = self.interpret_results(hybrid_results, "hybrid")
 
         if self.payload:
-            print_order = []
-            if self.payload_type == "normal":
+                print_order = []
+                #if self.payload_type == "normal":
                 print_order += ["payload", "bs_data", "dc_data", "tr_data", "tra_data", "mr_data", "mra_data", "hybrid_data"]
                 print("Started working on payload train.")
-                payload_results = self.payload_train()
+                payload_results = self.payload_train("bs", yaml_file)
                 all_results["payload"] = self.interpret_results(payload_results, "payload")
 
                 print("Started working on baseline with data.")
-                baseline_results = self.baseline_train_with_data()
+                baseline_results = self.baseline_train_with_data("bs_data", yaml_file)
                 all_results["bs_data"] = self.interpret_results(baseline_results, "baseline")
 
                 print("Started working on declare with data.")
-                declare_results = self.declare_train_with_data()
+                declare_results = self.declare_train_with_data("dc_data", yaml_file)
                 all_results["dc_data"] = self.interpret_results(declare_results, "declare")
 
                 print("Started working on sequenceMR with data.")
-                sequence_results = self.sequence_train_with_data("mr")
+                sequence_results = self.sequence_train_with_data("mr", yaml_file)
                 all_results["mr_data"] = self.interpret_results(sequence_results, "sequence", "mr")
 
                 print("Started working on sequenceTR with data.")
-                sequence_results = self.sequence_train_with_data("tr")
+                sequence_results = self.sequence_train_with_data("tr", yaml_file)
                 all_results["tr_data"] = self.interpret_results(sequence_results, "sequence", "tr")
 
                 print("Started working on sequenceTRA with data.")
-                sequence_results = self.sequence_train_with_data("tra")
+                sequence_results = self.sequence_train_with_data("tra", yaml_file)
                 all_results["tra_data"] = self.interpret_results(sequence_results, "sequence", "tra")
 
                 print("Started working on sequenceMRA with data.")
-                sequence_results = self.sequence_train_with_data("mra")
+                sequence_results = self.sequence_train_with_data("mra", yaml_file)
                 all_results["mra_data"] = self.interpret_results(sequence_results, "sequence", "mra")
 
                 print("Started working on hybrid with data.")
-                payload_results = self.hybrid_with_data()
+                payload_results = self.hybrid_with_data("hybrid", yaml_file)
                 all_results["hybrid_data"] = self.interpret_results(payload_results, "hybrid_data")
 
-            if self.payload_type == "both":
+                #if self.payload_type == "both":
                 print_order += ["bs", "dc", "dc_data", "dc_dwd",  "dc_dwd_payload", "hybrid", "hybrid_data", "hybrid_dwd", "hybrid_dwd_payload"]
 
-                print("Started working on baseline.")
-                baseline_results = self.baseline_train()
-                all_results["bs"] = self.interpret_results(baseline_results, "baseline")
+                #print("Started working on baseline.")
+                #baseline_results = self.baseline_train("bs", yaml_file)
+                #all_results["bs"] = self.interpret_results(baseline_results, "baseline")
 
-                print("Started working on declare.")
-                declare_results = self.declare_train()
-                all_results["dc"] = self.interpret_results(declare_results, "declare")
+                #print("Started working on declare.")
+                #declare_results = self.declare_train("dc", yaml_file)
+                #all_results["dc"] = self.interpret_results(declare_results, "declare")
 
-                print("Started working on declare with payload.")
-                declare_results = self.declare_train_with_data()
-                all_results["dc_data"] = self.interpret_results(declare_results, "declare_payload")
+                #print("Started working on declare with payload.")
+                #declare_results = self.declare_train_with_data("dc_data", yaml_file)
+                #all_results["dc_data"] = self.interpret_results(declare_results, "declare_payload")
 
                 print("Started working on declare with dwd.")
-                declare_results = self.declare_train_with_dwd()
+                declare_results = self.declare_train_with_dwd("dc_dwd", yaml_file)
                 all_results["dc_dwd"] = self.interpret_results(declare_results, "declare_dwd")
 
                 print("Started working on declare with dwd and payload.")
-                declare_results = self.declare_train_with_dwd_data()
+                declare_results = self.declare_train_with_dwd_data("dc_dwd_payload", yaml_file)
                 all_results["dc_dwd_payload"] = self.interpret_results(declare_results, "declare_payload_dwd")
 
 
-                print("Started working on hybrid.")
-                payload_results = self.hybrid_train()
-                all_results["hybrid"] = self.interpret_results(payload_results, "hybrid")
+                #print("Started working on hybrid.")
+                #payload_results = self.hybrid_train()
+                #all_results["hybrid"] = self.interpret_results(payload_results, "hybrid")
 
-                print("Started working on hybrid with data.")
-                payload_results = self.hybrid_with_data()
-                all_results["hybrid_data"] = self.interpret_results(payload_results, "hybrid_data")
+                #print("Started working on hybrid with data.")
+                #payload_results = self.hybrid_with_data()
+                #all_results["hybrid_data"] = self.interpret_results(payload_results, "hybrid_data")
 
                 print("Started working on hybrid with dwd.")
-                payload_results = self.hybrid_with_dwd()
+                payload_results = self.hybrid_with_dwd("hybrid_dwd", yaml_file)
                 all_results["hybrid_dwd"] = self.interpret_results(payload_results, "hybrid_dwd")
 
                 print("Started working on hybrid with dwd and usual payload.")
-                payload_results = self.hybrid_with_dwd_and_payload()
+                payload_results = self.hybrid_with_dwd_and_payload("hybrid_dwd_payload", yaml_file)
                 all_results["hybrid_dwd_payload"] = self.interpret_results(payload_results, "hybrid_data_dwd")
 
+        weka_yaml_file = os.path.join(self.results_folder, "for_weka_experiments.yaml")
+        if not (os.path.exists(weka_yaml_file)):
+            print("Writing the yaml file:")
+            with open(weka_yaml_file, 'w') as file:
+                yaml.dump(yaml_file, file)
 
-        from GoodPrintResults import printToFile
+        from .GoodPrintResults import printToFile
         line = None
         if (not os.path.exists("benchmarks.csv")):
-            line = "dataset,learner,elements,conftype,confvalue,metrictype,metricvalue\n"
-        with open("benchmarks.csv", "a") as csvFile:
-            csvFile.write(line)
-            printToFile(all_results, self.experiment_name, "Decision Tree", "max_depth", self.dt_max_depth, csvFile)
+            line = "dataset,learner,outcome_type,strategy,conftype,confvalue,metrictype,metricvalue\n"
+        with open(os.path.join(self.results_folder, "benchmarks.csv"), "a") as csvFile:
+            with open(os.path.join(self.results_folder, "rules.txt"), "a") as rulesFile:
+                if not (line is None):
+                    csvFile.write(line)
+                printToFile(all_results, self.experiment_name, "Decision Tree", "max_depth", self.dt_max_depth, csvFile, rulesFile)
+                rulesFile.close()
+            csvFile.close()
         # if self.method == "fisher":
         #     for selection_count in self.selection_counts:
         #         # find the print
