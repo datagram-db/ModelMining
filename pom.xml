@@ -21,7 +21,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>it.giacomobergami.unibz.LoadDatasetsForRipper</mainClass>
+                            <mainClass>it.giacomobergami.unibz.CrawBenchmarkDataset</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

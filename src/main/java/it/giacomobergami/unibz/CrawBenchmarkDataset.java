@@ -31,7 +31,7 @@ public class CrawBenchmarkDataset {
     }
 
     public static void main(String args[]) {
-        run("/home/giacomo/PycharmProjects/dmm2/data/experiments");
+        run(args[0]); ///home/giacomo/PycharmProjects/dmm2/data/experiments
     }
 
 }
