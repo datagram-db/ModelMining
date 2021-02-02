@@ -69,8 +69,9 @@ def path_generic_log(results_folder, split_nr, encoding):
 def dump_extended_dataframes(train_df, test_df, results_folder, split_nr, encoding):
     train_path, test_path = path_generic_log(results_folder, split_nr, encoding)
     print("Dumping extended data frames into " + train_path +" and "+test_path)
-    train_df.to_csv(train_path, index=False)
-    test_df.to_csv(test_path, index=False)
+    new_cols = [col for col in train_df.columns if col != 'Label'] + ['Label']
+    train_df[new_cols].to_csv(train_path, index=False)
+    test_df[new_cols].to_csv(test_path, index=False)
     return (train_path, test_path)
 
 def fisher_calculation(X, y):
@@ -1365,7 +1366,7 @@ class ExperimentRunner:
         yaml_file = {}
         # MAKE SURE ALL METHODS USED ARE HERE. AND METHODS NOT USED ARE NOT!
         if True:#not self.payload:
-            print_order = ["bs", "dc", "tr", "tra", "mr", "mra", "hybrid"]
+            #print_order = ["bs", "dc", "tr", "tra", "mr", "mra", "hybrid"]
             print("Started working on baseline.")
             baseline_results = self.baseline_train("bs", yaml_file)
             all_results["bs"] = self.interpret_results(baseline_results, "baseline")
@@ -1395,9 +1396,9 @@ class ExperimentRunner:
             all_results["hybrid"] = self.interpret_results(hybrid_results, "hybrid")
 
         if self.payload:
-                print_order = []
+                #print_order = []
                 #if self.payload_type == "normal":
-                print_order += ["payload", "bs_data", "dc_data", "tr_data", "tra_data", "mr_data", "mra_data", "hybrid_data"]
+                #print_order += ["payload", "bs_data", "dc_data", "tr_data", "tra_data", "mr_data", "mra_data", "hybrid_data"]
                 print("Started working on payload train.")
                 payload_results = self.payload_train("bs", yaml_file)
                 all_results["payload"] = self.interpret_results(payload_results, "payload")
@@ -1431,7 +1432,7 @@ class ExperimentRunner:
                 all_results["hybrid_data"] = self.interpret_results(payload_results, "hybrid_data")
 
                 #if self.payload_type == "both":
-                print_order += ["bs", "dc", "dc_data", "dc_dwd",  "dc_dwd_payload", "hybrid", "hybrid_data", "hybrid_dwd", "hybrid_dwd_payload"]
+                #print_order += ["bs", "dc", "dc_data", "dc_dwd",  "dc_dwd_payload", "hybrid", "hybrid_data", "hybrid_dwd", "hybrid_dwd_payload"]
 
                 #print("Started working on baseline.")
                 #baseline_results = self.baseline_train("bs", yaml_file)

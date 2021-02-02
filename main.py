@@ -19,7 +19,7 @@ from DevianceMiningPipeline import ConfigurationFile
 
 LOGS_FOLDER="data/logs"
 DATA_EXP="data/experiments"
-ranges=[5]#, 10, 15, 20, 25, 30, 35, 40, 45, 50)
+ranges=[5, 10, 15, 20, 25, 30]#, 10, 15, 20, 25, 30, 35, 40, 45, 50)
 
 to_describe = {
     #"sepsis_constr": "sepsis_constraint_tagged.xes", --> missing
