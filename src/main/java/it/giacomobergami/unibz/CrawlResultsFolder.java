@@ -55,13 +55,13 @@ public class CrawlResultsFolder implements AutoCloseable {
                 {"hybrid_dwd_payload", "Hybrid+Payload+Declare Data Aware"}
         }).collect(Collectors.toMap(data ->  data[0], data ->  data[1]));
 
-        for (String key : map.keySet())
+        /*for (String key : map.keySet())
             if (!yaml.containsKey(key))
                 throw new RuntimeException(key);
 
         for (String key: yaml.keySet())
             if (! map.containsKey(key))
-                throw new RuntimeException(key);
+                throw new RuntimeException(key);*/
 
         File csv_file = Files.list(folder.toPath()).filter(x -> x.toString().endsWith(".csv")).findAny().get().toFile();
         File rule_file = Files.list(folder.toPath()).filter(x -> x.toString().endsWith(".txt")).findAny().get().toFile();
@@ -79,6 +79,7 @@ public class CrawlResultsFolder implements AutoCloseable {
         for (String keys : map.keySet()) {
             String dump_conf = map.get(keys);
             System.out.println("Running: "+dump_conf);
+            if (yaml.containsKey(keys))
             for (TrainingTest tt : yaml.get(keys)) {
                 String training_csv = tt.train;
                 String testing_csv = tt.test;
@@ -89,8 +90,8 @@ public class CrawlResultsFolder implements AutoCloseable {
         }
     }
 
-    public static void test(String args[]) throws IOException {
-        try (CrawlResultsFolder folder = new CrawlResultsFolder("/home/giacomo/PycharmProjects/dmm2/data/experiments/sepsis_proc_results")) {
+    public static void main(String args[]) throws IOException {
+        try (CrawlResultsFolder folder = new CrawlResultsFolder("/home/giacomo/PycharmProjects/dmm2/data/experiments/xray_payload_results")) {
             folder.dump();
         } catch (Exception e) {
             e.printStackTrace();
