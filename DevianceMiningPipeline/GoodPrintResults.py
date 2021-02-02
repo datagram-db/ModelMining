@@ -1,6 +1,6 @@
 
 confPrettyPrint = {"bs": "IA",
-                    "bs_data": "IA",
+                    "bs_data": "Data+IA",
                    "dc": "Declare",
                     "dc_data": "Data+Declare",
                    "mr": "IA+MR",

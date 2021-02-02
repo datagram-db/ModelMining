@@ -52,8 +52,8 @@ def read_generic_log(results_folder, split_nr, encoding, dictionary):
     file_loc = os.path.join(results_folder, split, encoding)
     train_path = os.path.join(file_loc, encoding+"_train.csv")
     test_path = os.path.join(file_loc, encoding+"_test.csv")
-    dictionary["train"] = train_path
-    dictionary["test"] = test_path
+    dictionary["train"] = os.path.abspath(train_path)
+    dictionary["test"] = os.path.abspath(test_path)
     train_df = pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False)
     test_df = pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False)
     return train_df, test_df
@@ -482,7 +482,7 @@ class ExperimentRunner:
         file_loc = results_folder + "/" + split + "/" + encoding
         train_path = file_loc + "/" + "train_encodings.arff"
         test_path = file_loc + "/" + "test_encodings.arff"
-        return {"train": train_path, "test": test_path}
+        return {"train": os.path.abspath(train_path), "test": os.path.abspath(test_path)}
 
     @staticmethod
     def evaluate_dt_model(clf, X_train, y_train, X_test, y_test) -> (dict, dict):
@@ -949,8 +949,7 @@ class ExperimentRunner:
         results = []
         elements = []
         for split_nr in range(1, 6):
-            d = dict()
-            dec_train_df, dec_test_df = read_generic_log(self.results_folder, split_nr,  "declare", d)
+            dec_train_df, dec_test_df = read_generic_log(self.results_folder, split_nr,  "declare", dict())
             seq_train_list = []
             seq_test_list = []
             for encoding in encodings:
@@ -1005,15 +1004,15 @@ class ExperimentRunner:
 
             results.append(result)
 
-        yaml_file[key] = elements
+        yaml_file["payload_for_training"] = elements
         return results
 
     def multidump_compact(self, elements, forMultiDump, payload_test_df, payload_train_df, split_nr):
         tr_f, t_f = dump_extended_dataframes(payload_train_df, payload_test_df, self.results_folder, split_nr,
                                              forMultiDump)
         d = dict()
-        d["train"] = tr_f
-        d["test"] = t_f
+        d["train"] = os.path.abspath(tr_f)
+        d["test"] = os.path.abspath(t_f)
         elements.append(d)
 
     def baseline_train_with_data(self, key, yaml_file):
@@ -1047,8 +1046,8 @@ class ExperimentRunner:
     def extract_file_name_for_dump(self, elements, key, split_nr):
         d = dict()
         tr_f, t_f = path_generic_log(self.results_folder, split_nr, key)
-        d["train"] = tr_f
-        d["test"] = t_f
+        d["train"] = os.path.abspath(tr_f)
+        d["test"] = os.path.abspath(t_f)
         elements.append(d)
 
     def baseline_train_with_dwd(self, key, yaml_file):
@@ -1428,7 +1427,7 @@ class ExperimentRunner:
                 all_results["mra_data"] = self.interpret_results(sequence_results, "sequence", "mra")
 
                 print("Started working on hybrid with data.")
-                payload_results = self.hybrid_with_data("hybrid", yaml_file)
+                payload_results = self.hybrid_with_data("hybrid_data", yaml_file)
                 all_results["hybrid_data"] = self.interpret_results(payload_results, "hybrid_data")
 
                 #if self.payload_type == "both":
