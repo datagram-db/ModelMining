@@ -45,7 +45,7 @@ public class CrawlBenchmarkDataset {
     }
 
     public static void main(String args[]) {
-        parallel(args[0]); ///home/giacomo/PycharmProjects/dmm2/data/experiments
+        sequential(args[0]); ///home/giacomo/PycharmProjects/dmm2/data/experiments
     }
 
 }
