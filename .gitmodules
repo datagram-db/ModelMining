@@ -1,0 +1,6 @@
+[submodule "cpp_stats_pipeline"]
+	path = cpp_stats_pipeline
+	url = https://github.com/jackbergus/Classifiers/
+[submodule "python_prop_and_rtree_pipeline"]
+	path = python_prop_and_rtree_pipeline
+	url = https://github.com/jackbergus/DevianceMiningMethods
