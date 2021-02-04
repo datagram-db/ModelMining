@@ -2,6 +2,9 @@
 
 # Press Maiusc+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+import distutils
+import shutil
+import threading
 
 import LogGeneration
 import Other
@@ -15,7 +18,7 @@ from opyenxes.data_out.XesXmlSerializer import XesXmlSerializer
 from DevianceMiningPipeline.declaretemplates_new import template_response, template_precedence, template_init, \
     template_alternate_precedence
 from DevianceMiningPipeline.predicates import SatCases
-from DevianceMiningPipeline import ConfigurationFile
+from DevianceMiningPipeline import ConfigurationFile, PayloadType
 
 LOGS_FOLDER="data/logs"
 DATA_EXP="data/experiments"
@@ -48,15 +51,37 @@ def run_complete_configuration_and_run(conf_file, doNr0 = True):
     #conf.complete_embedding_generation(LOGS_FOLDER, DATA_EXP)
     conf.run(LOGS_FOLDER, DATA_EXP, ranges, doNr0)
 
-# from DevianceMiningPipeline import ConfigurationFile
-# cf = ConfigurationFile()
-# cf.setExperimentName("output_pos_neg_data")
-# cf.setLogName("output_pos_and_neg.xes")
-# cf.setOutputFolder("output_pos_neg_res")
-# cf.setMaxDepth(10)
-# cf.setMinLeaf(10)
-# cf.setSequenceThreshold(5)
-# cf.dump("output_pos_neg_data.json")
+def guaranteeUniqueXes():
+    from DevianceMiningPipeline.RetagLogWithUniqueIds import  changeLog
+    changeLog("data/logs/merged_xray.xes")
+    changeLog("data/logs/sepsis.xes")
+
+def generate_configuration():
+    from DevianceMiningPipeline import ConfigurationFile
+    cf = ConfigurationFile()
+    cf.setExperimentName("synth_xray")
+    cf.setLogName("merged_xray.xes_unique.xes")
+    cf.setOutputFolder("xray")
+    cf.setMaxDepth(10)
+    cf.setMinLeaf(10)
+    cf.setSequenceThreshold(5)
+    cf.setPayloadType(PayloadType.both)
+    cf.setAutoIgnore(["concept: name", "Label", "lifecycle: transition"])
+    cf.doForceTime()
+    cf.setPayloadSettings("xray_settings.cfg")
+    cf.dump("synth_xray.json")
+
+    cf = ConfigurationFile()
+    cf.setExperimentName("sepsis_er")
+    cf.setLogName("sepsis.xes_unique.xes")
+    cf.setOutputFolder("SepsisDWD")
+    cf.setMaxDepth(5)
+    cf.setMinLeaf(5)
+    cf.setSequenceThreshold(5)
+    cf.setPayloadType(PayloadType.both)
+    cf.setAutoIgnore(["Diagnosis","Diagnose","time:timestamp","concept: name","Label","lifecycle: transition"])
+    cf.setPayloadSettings("sepsis_settings.cfg")
+    cf.dump("sepsis_er.json")
 
 def write_log_file(log, filen):
     with open(filen, "w") as file:
@@ -90,10 +115,10 @@ def generateTagging():
     #    write_log_file_with_label_cond(log, "data/logs/bpi2011_t101.xes", "Treatment code", 101)
     #    write_log_file_with_label_cond(log, "data/logs/bpi2011_m13.xes", "Diagnosis code", "M13")
     #    write_log_file_with_label_cond(log, "data/logs/bpi2011_m16.xes", "Diagnosis code", "M16")
-    assert os.path.isfile("data/logs/sepsis.xes")
+    assert os.path.isfile("data/logs/sepsis.xes_unique.xes")
     assert os.path.isfile("sepsis_er.json")
     if ((not os.path.isfile("data/logs/sepsis_payload.xes")) or (not os.path.isfile("data/logs/sepsis_proc.xes")) or (not os.path.isfile("data/logs/sepsis_decl.xes")) or (not os.path.isfile("data/logs/sepsis_mr_tr.xes")) or (not os.path.isfile("data/logs/sepsis_mra_tra.xes"))):
-        log = read_XES_log("data/logs/sepsis.xes")
+        log = read_XES_log("data/logs/sepsis.xes_unique.xes")
         conf = jsonpickle.decode(open("sepsis_er.json").read())
         assert(isinstance(conf, ConfigurationFile))
 
@@ -129,10 +154,10 @@ def generateTagging():
         conf.setExperimentName("sepsis_payload")
         conf.dump("sepsis_payload.json")
 
-    assert os.path.isfile("data/logs/merged_xray.xes")
+    assert os.path.isfile("data/logs/merged_xray.xes_unique.xes")
     assert os.path.isfile("synth_xray.json")
     if ((not os.path.isfile("data/logs/xray_proc.xes")) or (not os.path.isfile("data/logs/xray_decl.xes")) or (not os.path.isfile("data/logs/xray_mr_tr.xes")) or (not os.path.isfile("data/logs/xray_mra_tra.xes"))):
-        log = read_XES_log("data/logs/merged_xray.xes")
+        log = read_XES_log("data/logs/merged_xray.xes_unique.xes")
         conf = jsonpickle.decode(open("synth_xray.json").read())
         assert(isinstance(conf, ConfigurationFile))
 
@@ -166,11 +191,49 @@ def generateTagging():
         conf.setExperimentName("xray_payload")
         conf.dump("xray_payload.json")
 
+# def test(x):
+#         from pathlib import Path
+#         folder_not_copy = ".thread"
+#         pid = "Process-"+str(os.getpid())
+#         print("[" + threading.currentThread().getName() + "] Current: "+ os.getcwd() +" name: "+os.path.basename(os.getcwd()))
+#         #if not (os.path.basename(os.getcwd()) == pid):
+#         Path(pid).mkdir(parents=True, exist_ok=True)
+#         print("["+threading.currentThread().getName()+"] Creating folder")
+#         data_path = os.path.abspath(os.path.join(pid, "data"))
+#         if not (os.path.exists(data_path)):
+#             print("["+pid+"] Copying to the thread folder: " + os.path.join(pid, "data"))
+#             shutil.copyfile("bpi11.json", os.path.join(pid, "bpi11.json"))
+#             #TODO:
+#             #shutil.copytree("./data", data_path)
+#             #for file in os.listdir("."):
+#             #    if (os.path.isfile(file)):
+#             #        shutil.copyfile(file, os.path.join(pid, file))
+#             #shutil.copyfile("GoSwift.jar", os.path.join(pid, "GoSwift.jar"))
+#         #os.chdir(pid)
+#         #print("Creating placeholder: "+os.path.abspath(os.path.join(pid, folder_not_copy))+" for current"+ os.getcwd() +" name: "+os.path.basename(os.getcwd()))
+#         #open(os.path.abspath(os.path.join(pid, folder_not_copy)), "a").close()
+#         #print("["+threading.currentThread().getName()+"] Now running: " + x)
+#         #run_complete_configuration_and_run(x)
+#         return pid
+
+def printWithColor(str):
+    print("\x1b[6;30;42m "+str+"\x1b[0m")
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
+    from multiprocessing import Pool
+    printWithColor("Generating the configuration JSONs")
+    generate_configuration()
+
+    printWithColor("Generating some randomly-generated datasets (unused in the current configuration)")
     LogGeneration.write_xeses(LOGS_FOLDER)
+
+    printWithColor("Guaranteeing that the logs used for the testing have unique trace ids (it is required for better training the dataset)")
+    guaranteeUniqueXes()
+
+    printWithColor("Generates the jsons configurations")
     generateTagging()
+
     #conf_file = "sepsis_proc.json"
     #if len(sys.argv)>1:
     #    conf_file = sys.argv[1]
@@ -178,8 +241,17 @@ if __name__ == '__main__':
     #if len(sys.argv)>2:
     #    test = sys.argv[2]
     #    preprocess = not (test == "skipPreprocessing")
-    for conf_file in ["sepsis_proc.json"]:#, "sepsis_decl.json", "sepsis_mr_tr.json", "sepsis_mra_tra.json", "sepsis_payload.json", "xray_proc.json", "xray_decl.json", "xray_mr_tr.json", "xray_mra_tra.json", "xray_payload.json"]:
-        print("Now running: "+conf_file)
-        run_complete_configuration_and_run(conf_file, False)
+    #,
+    # ,
+    LS = [ "sepsis_proc.json", "sepsis_decl.json", "sepsis_mr_tr.json", "sepsis_mra_tra.json", "sepsis_payload.json"]
+    LS = ["xray_proc.json", "xray_decl.json", "xray_mr_tr.json", "xray_mra_tra.json", "xray_payload.json"]
+    LS = ["sepsis_decl.json", "sepsis_mr_tr.json", "sepsis_mra_tra.json", "sepsis_payload.json"]
+    for conf_file in LS:
+        printWithColor("Now running: "+conf_file)
+        run_complete_configuration_and_run(conf_file)
+    # pool = Pool()
+    # folders_to_merge = pool.map(test, LS)
+    # pool.close()
+    # pool.join()
 
 

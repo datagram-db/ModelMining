@@ -639,13 +639,13 @@ class DRC:
 
 
 
-def data_declare_main(inp_folder, log_name, ignored, split = 0.8):
+def data_declare_main(inp_folder, log_name, ignored, split = 0.8, forceSomeElements = False):
 
     drc = DRC()
     log = read_XES_log(log_name)
 
     # Transform log into suitable data structures
-    transformed_log = xes_to_data_positional(log)
+    transformed_log = xes_to_data_positional(log, forceSomeElements=forceSomeElements)
 
     train_log, test_log = split_log_train_test(transformed_log, split)
     doStoreSecondFile = not (len(test_log)==0)
@@ -693,16 +693,18 @@ def move_dwd_files(inp_folder, output_folder, split_nr):
     move_files(inp_folder, output_folder, split_nr, "dwd")
 
 
-def run_declare_with_data(log_path, settings, results_folder):
+def run_declare_with_data(log_path, settings, results_folder, doForce = False):
     for logNr in range(5):
         logPath = log_path.format(logNr + 1)
         folder_name = "./dwdOutput/"
         if not os.path.exists(folder_name):
             os.makedirs(folder_name)
 
-        ignored = settings["ignored"]
+        ignored = []
+        if settings is not None:
+            ignored = settings["ignored"]
 
-        data_declare_main(folder_name, logPath, ignored)
+        data_declare_main(folder_name, logPath, ignored, forceSomeElements=(settings is None) or doForce)
         move_dwd_files(folder_name, results_folder, logNr + 1)
 
 

@@ -656,7 +656,12 @@ def settings_from_cfg(settings_file):
                  "--EVENT--", "--AGGREGATED ATTRIBUTES--", "--EVENT DEFAULT--",
                  "--MISSING--", "--ONE HOT ENCODING--"])
 
+    if settings_file is None:
+        return settings
     mode = None
+    if not (os.path.exists(settings_file)):
+        return settings
+
     with open(settings_file, "r") as f:
 
         for line in f:

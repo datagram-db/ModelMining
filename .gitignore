@@ -51,3 +51,7 @@ data/logs/merged_xray_4.xes
 data/logs/merged_xray_5.xes
 test_synth_xray_results.txt
 train_synth_xray_results.txt
+*.tar.xz
+*.7z
+data/logs/sepsis.xes_unique.xes
+data/logs/merged_xray.xes_unique.xes

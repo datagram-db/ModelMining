@@ -517,7 +517,11 @@ class ExperimentRunner:
         test_precision = precision_score(y_test, predictions)
         test_rc = recall_score(y_test, predictions)
         test_f1 = f1_score(y_test, predictions)
-        test_auc = roc_auc_score(y_test, probabilities)
+        test_auc = 0
+        try:
+            test_auc = roc_auc_score(y_test, probabilities)
+        except:
+            test_auc = 0
 
         train_results = {
             "accuracy": train_accuracy,
@@ -549,6 +553,11 @@ class ExperimentRunner:
         #    feature_names = X_train_df.columns
         #    X_train = X_train_df.values
         #    X_test = X_test_df.values
+
+        ## Enforcing the fact that we want to perform analyses over numerical type
+        ## Still, Joonas produces columns that contains strings, forsooth!
+        train_df = train_df.select_dtypes(['number'])
+        test_df  = test_df.select_dtypes(['number'])
         train_df = train_df.transpose().drop_duplicates().transpose()
         remaining_columns = train_df.columns
 
@@ -734,6 +743,9 @@ class ExperimentRunner:
         """
 
         self.counter += 1
+        # Pwoblem (sic!): sometimes, it happens that the Case_Id column is used for training.
+        train_df = train_df.drop(['Case_Id'], axis=1, errors='ignore')
+        test_df = test_df.drop(['Case_Id'], axis=1, errors='ignore')
 
         y_train = train_df.pop('Label').values # pop: removing the column from the table, while preserving the values
         y_test = test_df.pop('Label').values
@@ -1431,45 +1443,45 @@ class ExperimentRunner:
                 payload_results = self.hybrid_with_data("hybrid_data", yaml_file)
                 all_results["hybrid_data"] = self.interpret_results(payload_results, "hybrid_data")
 
-                #if self.payload_type == "both":
-                #print_order += ["bs", "dc", "dc_data", "dc_dwd",  "dc_dwd_payload", "hybrid", "hybrid_data", "hybrid_dwd", "hybrid_dwd_payload"]
+                if self.payload_type == "both":
+                    #print_order += ["bs", "dc", "dc_data", "dc_dwd",  "dc_dwd_payload", "hybrid", "hybrid_data", "hybrid_dwd", "hybrid_dwd_payload"]
 
-                #print("Started working on baseline.")
-                #baseline_results = self.baseline_train("bs", yaml_file)
-                #all_results["bs"] = self.interpret_results(baseline_results, "baseline")
+                    #print("Started working on baseline.")
+                    #baseline_results = self.baseline_train("bs", yaml_file)
+                    #all_results["bs"] = self.interpret_results(baseline_results, "baseline")
 
-                #print("Started working on declare.")
-                #declare_results = self.declare_train("dc", yaml_file)
-                #all_results["dc"] = self.interpret_results(declare_results, "declare")
+                    #print("Started working on declare.")
+                    #declare_results = self.declare_train("dc", yaml_file)
+                    #all_results["dc"] = self.interpret_results(declare_results, "declare")
 
-                #print("Started working on declare with payload.")
-                #declare_results = self.declare_train_with_data("dc_data", yaml_file)
-                #all_results["dc_data"] = self.interpret_results(declare_results, "declare_payload")
+                    #print("Started working on declare with payload.")
+                    #declare_results = self.declare_train_with_data("dc_data", yaml_file)
+                    #all_results["dc_data"] = self.interpret_results(declare_results, "declare_payload")
 
-                print("Started working on declare with dwd.")
-                declare_results = self.declare_train_with_dwd("dc_dwd", yaml_file)
-                all_results["dc_dwd"] = self.interpret_results(declare_results, "declare_dwd")
+                    print("Started working on declare with dwd.")
+                    declare_results = self.declare_train_with_dwd("dc_dwd", yaml_file)
+                    all_results["dc_dwd"] = self.interpret_results(declare_results, "declare_dwd")
 
-                print("Started working on declare with dwd and payload.")
-                declare_results = self.declare_train_with_dwd_data("dc_dwd_payload", yaml_file)
-                all_results["dc_dwd_payload"] = self.interpret_results(declare_results, "declare_payload_dwd")
+                    print("Started working on declare with dwd and payload.")
+                    declare_results = self.declare_train_with_dwd_data("dc_dwd_payload", yaml_file)
+                    all_results["dc_dwd_payload"] = self.interpret_results(declare_results, "declare_payload_dwd")
 
 
-                #print("Started working on hybrid.")
-                #payload_results = self.hybrid_train()
-                #all_results["hybrid"] = self.interpret_results(payload_results, "hybrid")
+                    #print("Started working on hybrid.")
+                    #payload_results = self.hybrid_train()
+                    #all_results["hybrid"] = self.interpret_results(payload_results, "hybrid")
 
-                #print("Started working on hybrid with data.")
-                #payload_results = self.hybrid_with_data()
-                #all_results["hybrid_data"] = self.interpret_results(payload_results, "hybrid_data")
+                    #print("Started working on hybrid with data.")
+                    #payload_results = self.hybrid_with_data()
+                    #all_results["hybrid_data"] = self.interpret_results(payload_results, "hybrid_data")
 
-                print("Started working on hybrid with dwd.")
-                payload_results = self.hybrid_with_dwd("hybrid_dwd", yaml_file)
-                all_results["hybrid_dwd"] = self.interpret_results(payload_results, "hybrid_dwd")
+                    print("Started working on hybrid with dwd.")
+                    payload_results = self.hybrid_with_dwd("hybrid_dwd", yaml_file)
+                    all_results["hybrid_dwd"] = self.interpret_results(payload_results, "hybrid_dwd")
 
-                print("Started working on hybrid with dwd and usual payload.")
-                payload_results = self.hybrid_with_dwd_and_payload("hybrid_dwd_payload", yaml_file)
-                all_results["hybrid_dwd_payload"] = self.interpret_results(payload_results, "hybrid_data_dwd")
+                    print("Started working on hybrid with dwd and usual payload.")
+                    payload_results = self.hybrid_with_dwd_and_payload("hybrid_dwd_payload", yaml_file)
+                    all_results["hybrid_dwd_payload"] = self.interpret_results(payload_results, "hybrid_data_dwd")
 
         weka_yaml_file = os.path.join(self.results_folder, "for_weka_experiments.yaml")
         if not (os.path.exists(weka_yaml_file)):
@@ -1479,7 +1491,7 @@ class ExperimentRunner:
 
         from .GoodPrintResults import printToFile
         line = None
-        if (not os.path.exists("benchmarks.csv")):
+        if (not os.path.exists(os.path.join(self.results_folder, "benchmarks.csv"))):
             line = "dataset,learner,outcome_type,strategy,conftype,confvalue,metrictype,metricvalue\n"
         with open(os.path.join(self.results_folder, "benchmarks.csv"), "a") as csvFile:
             with open(os.path.join(self.results_folder, "rules.txt"), "a") as rulesFile:
@@ -1543,7 +1555,7 @@ class ExperimentRunner:
             yaml.dump(yamlFile, file)
 
 
-    def prepare_data(self):
+    def prepare_data(self, doForce = False):
         self.create_folder_structure(self.results_folder, payload=self.payload, payload_type=self.payload_type)
         run_baseline(self.experiment_name, self.log_path, self.results_folder)
         run_deviance_new(self.log_path, self.results_folder, reencode=self.reencode)
@@ -1554,7 +1566,7 @@ class ExperimentRunner:
                 run_payload_extractor(self.log_path, self.payload_settings, self.results_folder)
 
             if self.payload_type == "dwd" or self.payload_type == "both":
-                run_declare_with_data(self.log_path, self.payload_dwd_settings, self.results_folder)
+                run_declare_with_data(self.log_path, self.payload_dwd_settings, self.results_folder, doForce=doForce)
 
     def clean_data(self):
         shutil.rmtree(self.results_folder)

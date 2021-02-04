@@ -13,3 +13,4 @@ skfeature==1.0.0
 arff==0.9
 jsonpickle==1.4.2
 pyyaml
+dateparser

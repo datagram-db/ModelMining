@@ -1,3 +1,4 @@
+import datetime
 from collections import defaultdict
 from time import time
 from opyenxes.data_in.XUniversalParser import XUniversalParser
@@ -24,12 +25,10 @@ def split_log_train_test(log, train_size, test_size=None):
 
 def read_XES_log(path):
     tic = time()
-
-    print("Parsing log")
+    #print("Parsing log")
     with open(path) as log_file:
         log = XUniversalParser().parse(log_file)[0]  # take first log from file
-
-    print("Log parsed, took {} seconds..".format(time() - tic))
+    #print("Log parsed, took {} seconds..".format(time() - tic))
 
     return log
 
@@ -92,7 +91,7 @@ def xes_to_positional(log, label=True):
 
 
 
-def xes_to_data_positional(log, label=True, considered=None):
+def xes_to_data_positional(log, label=True, considered=None, forceSomeElements = False):
     """
     [
         {tracename:name, tracelabel:label,
@@ -103,6 +102,11 @@ def xes_to_data_positional(log, label=True, considered=None):
     :param log:
     :return:
     """
+    import dateparser
+    epoch = datetime.datetime.utcfromtimestamp(0)
+    toExclude = {"concept:name", "Label", "lifecycle:transition"}
+    if not forceSomeElements:
+        toExclude.add("time:timestamp")
 
     positional = [
 
@@ -119,9 +123,13 @@ def xes_to_data_positional(log, label=True, considered=None):
 
         # TODO: Add considered values!
         for key, val in trace_attribs.items():
-            if key not in set(["concept:name", "time:timestamp", "Label", "lifecycle:transition"]):
-                ptype = get_attribute_type(val)
-                trace_data[(key, ptype)] = str(val)
+            if key not in toExclude:
+                if (key == "time:timestamp"):
+                    trace_data[(key, "continuous")] = str(dateparser.parse(str(val)).timestamp())
+                else:
+                    ptype = get_attribute_type(val)
+                    trace_data[(key, ptype)] = str(val)
+
 
         first_event = True
         events = {}
@@ -132,9 +140,12 @@ def xes_to_data_positional(log, label=True, considered=None):
             atrbs = event.get_attributes()
             event_data_attribs = {}
             for key, val in atrbs.items():
-                if key not in set(["concept:name", "time:timestamp", "Label", "lifecycle:transition"]):
-                    ptype = get_attribute_type(val)
-                    event_data_attribs[(key, ptype)] = str(val)
+                if key not in toExclude:
+                    if (key == "time:timestamp"):
+                        trace_data[(key, "continuous")] = str(dateparser.parse(str(val)).timestamp())
+                    else:
+                        ptype = get_attribute_type(val)
+                        event_data_attribs[(key, ptype)] = str(val)
 
             if first_event:
                 for k, val in trace_data.items():

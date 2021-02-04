@@ -204,7 +204,16 @@ def get_code(tree, feature_names):
     left      = tree.tree_.children_left
     right     = tree.tree_.children_right
     threshold = tree.tree_.threshold
-    features  = [feature_names[i] for i in tree.tree_.feature]
+    features  = dict()#[feature_names[i] for i in filter(lambda x: x>=0, tree.tree_.feature)]
+    global conv
+    conv = set()
+    idx = 0
+    for i in tree.tree_.feature:
+        if (i<0):
+            conv.add(idx)
+        else:
+            features[i] = feature_names[i]
+        idx = idx +1
     value = tree.tree_.value
 
     global rules_count
@@ -213,7 +222,8 @@ def get_code(tree, feature_names):
 
     def recurse(left, right, threshold, features, node, depth, current_text=""):
         global rules_count
-        if (threshold[node] != -2):
+        global conv
+        if (node in features) and (threshold[node] != -2):
 
             if left[node] != -1:
                 if current_text != "":

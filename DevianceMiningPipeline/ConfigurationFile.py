@@ -12,6 +12,7 @@ class ConfigurationFile(object):
         self.auto_ignored = None
         self.payload_settings = None
         self.payload_type = None
+        self.forceTime = False
 
     @classmethod
     def explicitInitialization(cls, experiment_name, log_name, output_folder, dt_max_depth, dt_min_leaf, sequence_threshold, payload_type, ignored = None, payload_settings = None):
@@ -42,6 +43,9 @@ class ConfigurationFile(object):
         self.experiment_name = experiment_name
         self.results_folder = experiment_name + "_results"
         self.results_file = self.results_folder + ".txt"
+
+    def doForceTime(self):
+        self.forceTime = True
 
     def setLogName(self, log_name):
         self.log_name = log_name
@@ -148,5 +152,5 @@ class ConfigurationFile(object):
                 f.write("\n")
             if (nr == 0) and doNr0:
                 ex.prepare_cross_validation(max_splits)  # Splits the log into max_splits different files. FIXME: the split is not accurately selected
-                ex.prepare_data()
+                ex.prepare_data(doForce=self.forceTime)
             ex.train_and_eval_benchmark()
