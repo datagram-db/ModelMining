@@ -83,7 +83,20 @@ public class CrawlResultsFolder implements AutoCloseable {
             for (TrainingTest tt : yaml.get(keys)) {
                 String training_csv = tt.train;
                 String testing_csv = tt.test;
-                LoadDatasetsForRipper.dumpFile(folderName, training_csv, testing_csv, dump_conf, ",", csvFile, ruleFile, 10);
+                boolean hasError = false;
+                String strError = "[generic]";
+                try {
+                    hasError = LoadDatasetsForRipper.dumpFile(folderName, training_csv, testing_csv, dump_conf, ",", csvFile, ruleFile, 10);
+                } catch (Exception e) {
+                    strError = ": " + e.toString();
+                    hasError = true;
+                }
+                if (hasError) {
+                    System.err.println("The dataset raised a Weka error " + strError);
+                    System.err.println("This happened while running [map key] " + keys +", dump_conf="+dump_conf+" training/test="+tt);
+                    System.err.println("Ignoging it, so to attempt to write the other results");
+                    System.err.println("");
+                }
                 csvFile.flush();
                 ruleFile.flush();
             }

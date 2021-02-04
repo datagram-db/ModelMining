@@ -21,7 +21,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>it.giacomobergami.unibz.CrawBenchmarkDataset</mainClass>
+                            <mainClass>it.giacomobergami.unibz.CrawlBenchmarkDataset</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

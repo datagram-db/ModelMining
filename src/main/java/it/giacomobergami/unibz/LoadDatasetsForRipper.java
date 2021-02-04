@@ -68,11 +68,12 @@ public class LoadDatasetsForRipper {
         }
     }
 
-    public static void dumpFile(String folder_name, String train, String test, String exp_setting_embedding, String sep, PrintWriter csvFile, PrintWriter ruleFile, int max_iteration) throws Exception {
+    public static boolean dumpFile(String folder_name, String train, String test, String exp_setting_embedding, String sep, PrintWriter csvFile, PrintWriter ruleFile, int max_iteration) throws Exception {
         String lerner = "RipperK";
         String conftype = "iteration";
         NumericToNominal nominal = new NumericToNominal();
         nominal.setOptions(new String[]{"-R", "last"});
+        boolean hasError = false;
         for (int i = 0; i< max_iteration; i++) {
             int optimization_i = i * 2;
             JRip ripperk = new JRip();
@@ -87,34 +88,80 @@ public class LoadDatasetsForRipper {
             } else {
                 testingSet = extracted(test,  "Label", nominal, sep);
             }
-
             Evaluation evaluation = new Evaluation(trainingSet);
             ripperk.setOptimizations(optimization_i);
             try {
                 ripperk.buildClassifier(trainingSet);
-            } catch (UnsupportedAttributeTypeException e) {
-                e.printStackTrace();
+            } catch (Exception e) {
+                System.err.println("Error while building the classifier!");
+                hasError = true;
             }
-            evaluation.evaluateModel(ripperk, testingSet);
-            double auc = evaluation.areaUnderROC(1);
-            double f1 = evaluation.fMeasure(1);
-            double precision = evaluation.precision(1);
-            double recall = evaluation.recall(1);
-            double acc = evaluation.correct();
-
-            int k = 0;
-            Attribute catt = trainingSet.classAttribute();
-            ArrayList<Rule> ruleSet = ripperk.getRuleset();
-
-            for (Rule rs : ruleSet) {
-                //double[] simStats = rs.getSimpleStats(k);
-                ArrayList<JRip.Antd> ants = ((JRip.RipperRule) ruleSet.get(k)).getAntds();
-                if ((ants != null) && (!ants.isEmpty())) {
-                    ruleFile.println(folder_name + "::" + lerner + "::test::" + exp_setting_embedding + "::" + conftype + "::" + optimization_i+"§\t"+(((JRip.RipperRule) ruleSet.get(k)).toString(catt) + " ("
-                            + 0 + "/" + 0 + ")"));
+            double auc = 0.0;
+            double f1 = 0.0;
+            double precision = 0.0;
+            double recall = 0.0;
+            double acc = 0.0;
+            if (ripperk.getRuleset() == null || ripperk.getRuleset().isEmpty()) {
+                System.err.println("ERROR: the classifier produced no rules! Skipping the model testing");
+            } else {
+                int k = 0;
+                Attribute catt = trainingSet.classAttribute();
+                ArrayList<Rule> ruleSet = ripperk.getRuleset();
+                for (Rule rs : ruleSet) {
+                    //double[] simStats = rs.getSimpleStats(k);
+                    ArrayList<JRip.Antd> ants = ((JRip.RipperRule) ruleSet.get(k)).getAntds();
+                    if ((ants != null) && (!ants.isEmpty())) {
+                        ruleFile.println(folder_name + "::" + lerner + "::test::" + exp_setting_embedding + "::" + conftype + "::" + optimization_i+"§\t"+(((JRip.RipperRule) ruleSet.get(k)).toString(catt) + " ("
+                                + 0 + "/" + 0 + ")"));
+                    }
+                    k++;
                 }
-                k++;
+                try {
+                    evaluation.evaluateModel(ripperk, testingSet);
+                } catch (Exception e) {
+                    System.err.println("Error while evaluating the classifier!");
+                    hasError = true;
+                }
+                //Normalize value to 1
+                try {
+                    auc = evaluation.areaUnderROC(1);
+                } catch (Exception e) {
+                    System.err.println("Error while computing auc: setting it to zero");
+                    auc = 0.0;
+                    hasError = true;
+                }
+                try {
+                    f1 = evaluation.fMeasure(1);
+                }catch (Exception e) {
+                    System.err.println("Error while computing f1: setting it to zero");
+                    f1 = 0.0;
+                    hasError = true;
+                }
+                try {
+                    precision = evaluation.precision(1);
+                }catch (Exception e) {
+                    System.err.println("Error while computing precision: setting it to zero");
+                    precision = 0.0;
+                    hasError = true;
+                }
+                try {
+                    recall = evaluation.recall(1);
+                }catch (Exception e) {
+                    System.err.println("Error while computing recall: setting it to zero");
+                    recall = 0.0;
+                    hasError = true;
+                }
+                try {
+                    acc = evaluation.pctCorrect()/100.0;
+                }catch (Exception e) {
+                    System.err.println("Error while computing acc: setting it to zero");
+                    acc = 0.0;
+                    hasError = true;
+                }
             }
+
+
+
 
             csvFile.println(folder_name + "," + lerner + ",test," + exp_setting_embedding + "," + conftype + "," + optimization_i + ",acc,"+(acc));
             csvFile.println(folder_name + "," + lerner + ",test," + exp_setting_embedding + "," + conftype + "," + optimization_i + ",auc," + (auc));
@@ -123,6 +170,7 @@ public class LoadDatasetsForRipper {
             csvFile.println(folder_name + "," + lerner + ",test," + exp_setting_embedding + "," + conftype + "," + optimization_i + ",recall," + (recall));
 
         }
+        return hasError;
     }
 
     /**
