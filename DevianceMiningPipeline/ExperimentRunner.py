@@ -221,12 +221,12 @@ class ExperimentRunner:
     #             XesXmlSerializer().serialize(new_log, file)
 
     @staticmethod
-    def create_folder_structure(directory, payload=False, payload_type=None):
+    def create_folder_structure(directory, max_iterations, payload=False, payload_type=None):
             os.makedirs("./output/", exist_ok=True)
             os.makedirs(directory, exist_ok=True)
 
             # first level
-            for i in range(1, 6):
+            for i in range(1, max_iterations+1):
                 current_dir = os.path.join(directory, "split"+ str(i))
                 #os.makedirs(current_dir) --> See documentation: this is completely useless, as it will be created with the first leaf creation
 
@@ -1109,7 +1109,7 @@ class ExperimentRunner:
 
 
     def prepare_data(self, max_splits, training_test_split, doForce = False):
-        self.create_folder_structure(self.results_folder, payload=self.payload, payload_type=self.payload_type)
+        self.create_folder_structure(self.results_folder, max_splits, payload=self.payload, payload_type=self.payload_type)
         ignored = []
         if self.payload_dwd_settings is not None:
             ignored = self.payload_dwd_settings["ignored"]

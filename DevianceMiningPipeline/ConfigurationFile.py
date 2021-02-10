@@ -141,5 +141,4 @@ class ConfigurationFile(object):
                 ex.prepare_cross_validation(max_splits, training_test_split)
                 ex.prepare_data(max_splits, training_test_split, doForce=self.forceTime)
 
-            ## TODO: test with the new data
             ex.train_and_eval_benchmark(max_splits)
