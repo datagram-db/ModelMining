@@ -19,7 +19,7 @@ import pandas as pd
 
 import os
 import shutil
-
+from . import PandaExpress
 
 def fisher_calculation(X, y):
     """
@@ -640,54 +640,49 @@ class DRC:
 
 
 def data_declare_main(inp_folder, log_name, ignored, split = 0.8, forceSomeElements = False):
-
-    drc = DRC()
     log = read_XES_log(log_name)
 
     # Transform log into suitable data structures
     transformed_log = xes_to_data_positional(log, forceSomeElements=forceSomeElements)
 
     train_log, test_log = split_log_train_test(transformed_log, split)
-    doStoreSecondFile = not (len(test_log)==0)
+    return declare_data_aware_embedding(ignored, inp_folder, train_log, test_log)
+
+
+def declare_data_aware_embedding(ignored, inp_folder, train_log, test_log):
+    drc = DRC()
+    doStoreSecondFile = not (len(test_log) == 0)
     if not doStoreSecondFile:
         test_log = train_log.copy()
-    #print(train_log[0])
-
+    # print(train_log[0])
     train_case_ids = [tr["name"] for tr in train_log]
     test_case_ids = [tr["name"] for tr in test_log]
-
-    train_names, train_features, test_names, test_features = drc.create_data_aware_features(train_log, test_log, ignored)
-
+    train_names, train_features, test_names, test_features = drc.create_data_aware_features(train_log, test_log,
+                                                                                            ignored)
     train_dict = {}
     test_dict = {}
     for i, tf in enumerate(train_features):
         train_dict[train_names[i]] = tf
-
     if doStoreSecondFile:
         for i, tf in enumerate(test_features):
             test_dict[test_names[i]] = tf
-
     train_df = pd.DataFrame.from_dict(train_dict)
     if doStoreSecondFile:
         test_df = pd.DataFrame.from_dict(test_dict)
-
-    #train_df = pd.DataFrame(train_features, columns=train_names)
-    #test_df = pd.DataFrame(test_features, columns=test_names)
-
-    #print(train_names)
+    # train_df = pd.DataFrame(train_features, columns=train_names)
+    # test_df = pd.DataFrame(test_features, columns=test_names)
+    # print(train_names)
     # add Case_ID
-
     train_df["Case_ID"] = train_case_ids
     if doStoreSecondFile:
         test_df["Case_ID"] = test_case_ids
-
-    if not train_df.empty:
-        train_df.to_csv(os.path.join(inp_folder, "dwd_train.csv"), index=False)
+    PandaExpress.serialize(train_df, os.path.join(inp_folder, "dwd_train.csv"))
     if doStoreSecondFile:
-        test_df.to_csv(os.path.join(inp_folder, "dwd_test.csv"), index=False)
+        PandaExpress.serialize(test_df, os.path.join(inp_folder, "dwd_test.csv"))
     return os.path.abspath(os.path.join(inp_folder, "dwd_train.csv"))
 
-from .pathutils import move_files
+
+from .PathUtils import move_files
 
 def move_dwd_files(inp_folder, output_folder, split_nr):
     move_files(inp_folder, output_folder, split_nr, "dwd")
@@ -706,15 +701,3 @@ def run_declare_with_data(log_path, settings, results_folder, doForce = False):
 
         data_declare_main(folder_name, logPath, ignored, forceSomeElements=(settings is None) or doForce)
         move_dwd_files(folder_name, results_folder, logNr + 1)
-
-
-
-if __name__ == "__main__":
-    for log_nr in [1,2,3,4,5]:
-        #log_path = "logs/sepsis_tagged_er.xes"
-        log_path = "EnglishBPI/EnglishBPIChallenge2011_tagged_cc_{}.xes".format(log_nr)
-        ignored = ["time:timestamp", "concept: name", "Label", "Start date", "End date", "Diagnosis", "Diagnosis code",
-                   "Diagnosis Treatment", "Combination ID", "Treatment code", "Activity code"]
-
-
-        data_declare_main(log_path, ignored)

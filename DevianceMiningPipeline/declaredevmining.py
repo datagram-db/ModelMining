@@ -7,10 +7,10 @@ from .declaretemplates_new import *
 #from declaretemplates import *
 from .deviancecommon import *
 import pandas as pd
-from .pathutils import *
+from .PathUtils import *
 import shutil
 import os
-
+from . import PandaExpress
 
 
 def reencode_map(val):
@@ -217,98 +217,51 @@ def declare_deviance_mining(output_path, log, templates=None, to_shuffle=False, 
         shuffle(transformed_log)
 
     train_log, test_log = split_log_train_test(transformed_log, split_size)
+    return declare_embedding(output_path, train_log, test_log, templates, filter_t, reencode,
+                             candidate_threshold, constraint_threshold)
 
+
+def declare_embedding(output_path, train_log, test_log, templates=None, filter_t=True, reencode=False,
+                      candidate_threshold=0.1, constraint_threshold=0.1):
+    if not templates:
+        templates = template_sizes.keys()
     # Extract unique activities from log
     events_set = extract_unique_events_transformed(train_log)
-
     # Brute force all possible candidates
     candidates = [(event,) for event in events_set] + [(e1, e2) for e1 in events_set for e2 in events_set if e1 != e2]
     print("Start candidates:", len(candidates))
-
     # Count by class
     normal_count, deviant_count = count_classes(train_log)
     print("{} deviant and {} normal traces in train set".format(deviant_count, normal_count))
     ev_support_norm = int(normal_count * candidate_threshold)
     ev_support_dev = int(deviant_count * candidate_threshold)
-
     if filter_t:
         print(filter_t)
         print("Filtering candidates by support")
         candidates = filter_candidates_by_support(candidates, train_log, ev_support_norm, ev_support_dev)
         print("Support filtered candidates:", len(candidates))
-
     constraint_support_dev = int(deviant_count * constraint_threshold)
     constraint_support_norm = int(normal_count * constraint_threshold)
-
     train_results = generate_train_candidate_constraints(candidates, templates, train_log, constraint_support_norm,
                                                          constraint_support_dev, filter_t=filter_t)
-
     test_results = generate_test_candidate_constraints(candidates, templates, test_log, train_results)
     print("Candidate constraints generated")
-
     # transform to numpy
     # get trace names
     train_data, train_labels, featurenames, train_names = transform_results_to_numpy(train_results, train_log)
     test_data, test_labels, _, test_names = transform_results_to_numpy(test_results, test_log)
-
     train_df = pd.DataFrame(train_data, columns=featurenames)
     test_df = pd.DataFrame(test_data, columns=featurenames)
-
     # Reencoding data
     if reencode:
         print("Reencoding data")
         train_df, test_df = reencode_declare_results(train_df, test_df)
-
     train_df["Case_ID"] = train_names
     train_df["Label"] = train_labels.tolist()
     test_df["Case_ID"] = test_names
     test_df["Label"] = test_labels.tolist()
-
     mkdir_test(output_path)
-    if not train_df.empty:
-        train_df.to_csv(os.path.join(output_path, "declare_train.csv"), index=False)
-    if not test_df.empty:
-        test_df.to_csv(os.path.join(output_path, "declare_test.csv"), index=False)
+
+    PandaExpress.serialize(train_df, os.path.join(output_path, "declare_train.csv"))
+    PandaExpress.serialize(test_df, os.path.join(output_path, "declare_test.csv"))
     return os.path.abspath(os.path.join(output_path, "declare_train.csv"))
-
-
-def run_deviance_new(log_path, results_folder, templates=None, filter_t=True, reencode=False):
-    for logNr in range(5):
-        args = {
-            "logPath": log_path.format(logNr + 1),
-            "labelled": True
-        }
-        
-        # folder_name ="./declareOutput/"
-        # if not os.path.exists(folder_name):
-        #     os.makedirs(folder_name)
-
-        print("Deviance mining filtering:", filter_t)
-
-        deviance_main(os.path.join(results_folder, "split"+str(logNr + 1), "declare"), args, templates=templates, filter_t=filter_t, reencode=reencode)
-        #move_out_files_new(logNr + 1, results_folder)
-
-
-# def move_out_files_new(splitNr, results_folder):
-#     move_files('./declareOutput/', results_folder, splitNr, "declare")
-#     # source = './declareOutput/'
-#     # dest1 = './' + results_folder + '/split' + str(splitNr) + "/declare/"
-#     # files = os.listdir(source)
-#     #
-#     # for f in files:
-#     #     shutil.move(source + f, dest1)
-
-
-def deviance_main(output_path, args, templates=None, filter_t=True, reencode=False):
-    print("Working on: " + args["logPath"], "Filtering:", filter_t)
-    log = read_XES_log(args["logPath"])
-    declare_deviance_mining(output_path, log, templates=templates, filter_t=filter_t, reencode=reencode)
-
-
-if __name__ == "__main__":
-    log_path = "../data/logs/sepsis_tagged_er.xes"
-    args = {
-        "logPath": log_path,
-        "labelled": True
-    }
-    deviance_main(args, reencode=True)

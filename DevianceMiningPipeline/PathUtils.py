@@ -1,13 +1,19 @@
+"""
+Utility functions for path operations
+
+@author: Giacomo Bergami
+"""
+
 import os
 from pathlib import Path
+from . import FileNameUtils
 
 def mkdir_test(dest1):
     Path(dest1).mkdir(parents=True, exist_ok=True)
 
 def move_files(inp_folder, output_folder, split_nr, base):
     source = inp_folder
-    dest1 = os.path.join(output_folder, "split"+str(split_nr), base)
-    mkdir_test(dest1)
+    dest1 = FileNameUtils.embedding_path(split_nr-1, output_folder, base)
     files = os.listdir(source)
     for f in files:
         dstFile = os.path.join(dest1, f)

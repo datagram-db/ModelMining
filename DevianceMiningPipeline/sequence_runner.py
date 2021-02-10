@@ -8,7 +8,7 @@ import subprocess
 import time
 import shutil
 import os
-from .pathutils import *
+from .PathUtils import *
 
 
 JAR_NAME = "GoSwift.jar"  # Jar file to run
@@ -117,7 +117,7 @@ def genParamStrings(sequence_threshold):
         ("--coverageThreshold {} ".format(sequence_threshold) + "--featureType Sequence --minimumSupport 0.1 --patternType TRA --encodingType Frequency", "SequenceTRA", "tra"),
     ]
 
-def run_sequences(inp_path, log_path, results_folder, err_logger, sequence_threshold=5):
+def run_sequences(inp_path, log_path, results_folder, err_logger, max_splits, sequence_threshold=5):
     """
     Runs GoSwift.jar with 4 different sets of parameters, to create sequential encodings.
     :param log_path:
@@ -130,19 +130,12 @@ def run_sequences(inp_path, log_path, results_folder, err_logger, sequence_thres
 
     for paramString, techName, folder in paramStrings:
         print("Working on {} @{}".format(techName, folder))
-        for splitNr in range(5):
-            
-            #folder_name = "./output/"
-            outputPath = os.path.join(results_folder, "split"+str(splitNr + 1), folder)
+        for splitNr in range(max_splits):
+            outputPath = FileNameUtils.embedding_path(splitNr, results_folder, folder)
             os.makedirs(outputPath, exist_ok=True)
-
-            print("Working on split {}".format(splitNr+1))
             inputFile = (log_path.format(splitNr+1), False)
             outputFilename = create_output_filename(inputFile[0], techName)
-            tic = time.time()
             call_params(inp_path, outputPath, paramString, inputFile, outputFilename, err_logger)
-            toc = time.time()
-            print("Time taken {0:.3f} seconds".format(toc - tic))
 
             # The jar will directly write to t
             move_files('./output/', results_folder, splitNr + 1, folder)

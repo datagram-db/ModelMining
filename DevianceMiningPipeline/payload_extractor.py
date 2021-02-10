@@ -872,17 +872,16 @@ def build_dataframes(train_data, test_data, settings):
 
 
 def payload_extractor(inp_folder, log_name, settings_file, split=0.8):
-
     log = read_XES_log(log_name)
-
     train, test = split_log_train_test(log, split)
-    doSaveFile = len(test)>0
+    return payload_embedding(inp_folder, settings_file, train, test)
 
+
+def payload_embedding(inp_folder, settings_file, train, test):
+    doSaveFile = len(test) > 0
     print("Lengths of logs train: {}, test: {}".format(len(train), len(test)))
     pex = PayloadExtractor()
-
     settings = settings_from_cfg(settings_file)
-
     ## Get first forms of data
     extracted_train_data = pex.get_overview_of_data(train, settings)
     extracted_test_data = None
@@ -890,16 +889,13 @@ def payload_extractor(inp_folder, log_name, settings_file, split=0.8):
         extracted_test_data = pex.get_overview_of_data(test, settings)
     else:
         extracted_test_data = extracted_train_data
-
     train_df, test_df = build_dataframes(extracted_train_data, extracted_test_data, settings)
-
     # Force all to float (except label?)
-
     train_df.to_csv(os.path.join(inp_folder, "payload_train.csv"), index=False)
     if doSaveFile:
         test_df.to_csv(os.path.join(inp_folder, "payload_test.csv"), index=False)
-
     return train_df, test_df
+
 
 def payload_extractor2(inp_folder, log_name, settings_file, split=1.0):
 
@@ -929,51 +925,13 @@ def payload_extractor2(inp_folder, log_name, settings_file, split=1.0):
     return os.path.abspath(f)
 
 
-from .pathutils import move_files
+from .PathUtils import move_files
 
 def move_payload_files(inp_folder, output_folder, split_nr):
     move_files(inp_folder, output_folder, split_nr, "payload")
-    # source = inp_folder # './baselineOutput/'
-    # dest1 = './' + output_folder + '/split' + str(split_nr) + "/payload/"
-    # files = os.listdir(source)
-    # for f in files:
-    #     shutil.move(source + f, dest1)
 
 
 def run_payload_extractor(log_path, settings_file, results_folder):
     for logNr in range(5):
-        logPath = log_path.format(logNr + 1)
-        folder_name = "./payloadOutput/"
-        if not os.path.exists(folder_name):
-            os.makedirs(folder_name)
-
-        payload_extractor(folder_name, logPath, settings_file)
-        move_payload_files(folder_name, results_folder, logNr + 1)
-
-
-
-def payload_extractor_trial(log_name, settings_file):
-    log = read_XES_log(log_name)
-
-    train, test = split_log_train_test(log, 0.8)
-
-    print("Lengths of logs train: {}, test: {}".format(len(train), len(test)))
-    pex = PayloadExtractor()
-
-    settings = settings_from_cfg(settings_file)
-
-    ## Get first forms of data
-    extracted_train_data = pex.get_overview_of_data(train, settings)
-    extracted_test_data = pex.get_overview_of_data(test, settings)
-
-    train_df, test_df = build_dataframes(extracted_train_data, extracted_test_data, settings)
-
-    return train_df, test_df
-
-if __name__ == "__main__":
-
-    log = "logs/sepsis_tagged_er.xes"
-    settings = "sepsis_settings.cfg"
-    train_df, test_df = payload_extractor_trial(log_name = log, settings_file = settings)
-
-    #print(test_df)
+        from . import FileNameUtils
+        payload_extractor(FileNameUtils.payload_path(logNr + 1, results_folder), log_path.format(logNr + 1), settings_file)

@@ -20,11 +20,10 @@ from sklearn.feature_selection import SelectKBest, chi2
 from opyenxes.data_out.XesXmlSerializer import XesXmlSerializer
 from opyenxes.factory.XFactory import XFactory
 
+from . import FairLogSplit, TraceUtils, baseline_runner, declaredevmining, LogUtils
 from .deviancecommon import read_XES_log
-from .baseline_runner import run_baseline
-from .declaredevmining import run_deviance_new
 from .sequence_runner import run_sequences, generateSequences
-from .ddm_newmethod_fixed_new import run_declare_with_data, data_declare_main
+from .ddm_newmethod_fixed_new import run_declare_with_data, data_declare_main, declare_data_aware_embedding
 
 from sklearn.preprocessing import StandardScaler
 
@@ -33,8 +32,10 @@ from skfeature.function.similarity_based import fisher_score
 from sklearn.decomposition import PCA
 from collections import defaultdict
 
-from .payload_extractor import run_payload_extractor, payload_extractor, payload_extractor2
+from .payload_extractor import run_payload_extractor, payload_extractor, payload_extractor2, payload_embedding
 from .run_weka_models import prune_duplicate_leaves, get_code, export_text2
+from . import FileNameUtils
+from . import FairLogSplit
 
 from pathlib import Path
 import arff
@@ -331,8 +332,7 @@ class ExperimentRunner:
             return models
 
     @staticmethod
-    def generate_cross_validation_logs(inp_path,log, log_name, output_folder, max_splits = 5):
-        split_perc = 0.2
+    def generate_cross_validation_logs(inp_path,log, log_name, output_folder, max_splits, split_perc): #split_perc = 0.2, max_splits = 5
         log_size = len(log)
         partition_size = int(split_perc * log_size)
         for log_nr in range(max_splits):
@@ -400,7 +400,7 @@ class ExperimentRunner:
                         os.makedirs(os.path.join(current_dir, "dwd"), exist_ok=True)
 
     @staticmethod
-    def cross_validation_pipeline(inp_path, log_name, output_folder, max_splits = 5):
+    def cross_validation_pipeline(inp_path, log_name, output_folder, max_splits, training_test_split):#max_splits = 5
         # 1. Load file
         log = read_XES_log(os.path.join(inp_path, log_name))
 
@@ -408,67 +408,14 @@ class ExperimentRunner:
         shuffle(log)
 
         # 3. Split into 5 parts for cross validation
-        ExperimentRunner.generate_cross_validation_logs(inp_path, log, log_name, output_folder, max_splits)
+        #ExperimentRunner.generate_cross_validation_logs(inp_path, log, log_name, output_folder, max_splits)
+        FairLogSplit.generateFairLogSplit(inp_path, log, log_name, output_folder, max_splits, training_test_split)
 
     @staticmethod
-    def readCompleteXES(inp_path, log_name, output_folder):
-        log = read_XES_log(os.path.join(inp_path, log_name))
-    # @staticmethod
-    # def read_baseline_log(results_folder, split_nr):
-    #     return(read_generic_log(results_folder, split_nr, "baseline"))
-    #     # split = "split" + str(split_nr)
-    #     # encoding = "base"
-    #     #
-    #     # file_loc = os.path.join(results_folder, split, encoding)
-    #     # train_path = os.path.join(file_loc, "baseline_train.csv")
-    #     # test_path = os.path.join(file_loc, "baseline_test.csv")
-    #     # train_df = pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False)
-    #     # test_df = pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False)
-    #     #
-    #     # return train_df, test_df
-    # @staticmethod
-    # def read_payload_log(results_folder, split_nr):
-    #     return(read_generic_log(results_folder, split_nr, "payload"))
-    #     # split = "split" + str(split_nr)
-    #     # encoding = "payload"
-    #     #
-    #     # file_loc = os.path.join(results_folder, split, encoding)
-    #     # train_path = os.path.join(file_loc, "payload_train.csv")
-    #     # test_path = os.path.join(file_loc, "payload_test.csv")
-    #     # train_df = pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False)
-    #     # test_df = pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False)
-    #     #
-    #     # return train_df, test_df
-    # @staticmethod
-    # def read_declare_with_data_log(results_folder, split_nr):
-    #     return(read_generic_log(results_folder, split_nr, "dwd"))
-    #     # split = "split" + str(split_nr)
-    #     # encoding = "dwd"
-    #     #
-    #     # file_loc =  os.path.join(results_folder, split, encoding)
-    #     # train_path = os.path.join(file_loc, "dwd_train.csv")
-    #     # test_path = os.path.join(file_loc, "dwd_test.csv")
-    #     # train_df = pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False)
-    #     # test_df = pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False)
-    #     #
-    #     # return train_df, test_df
-    # @staticmethod
-    # def read_declare_log(results_folder, split_nr):
-    #     return(read_generic_log(results_folder, split_nr, "declare"))
-    #     # split = "split" + str(split_nr)
-    #     # encoding = "declare"
-    #     #
-    #     # file_loc = results_folder + "/" + split + "/" + encoding
-    #     # train_path = file_loc + "/" + "declare_train.csv"
-    #     # test_path = file_loc + "/" + "declare_test.csv"
-    #     # train_df = pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False)
-    #     # test_df = pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False)
-    #     #
-    #     # return train_df, test_df
-
-    @staticmethod
-    def read_sequence_log(results_folder, encoding, split_nr):
+    def read_sequence_log(results_folder, encoding, split_nr, split_perc): #split_perc = 0.8
         split = "split" + str(split_nr)
+
+        ## TODO: perform fair loading: receive the offsets from the input
 
         file_loc = results_folder + "/" + split + "/" + encoding
         train_path = file_loc + "/" + "globalLog.csv"
@@ -476,7 +423,7 @@ class ExperimentRunner:
 
         size_df = len(global_df)
 
-        train_size = int(0.8 * size_df)
+        train_size = int(split_perc * size_df)
         train_df = global_df.iloc[:train_size, ]
         test_df = global_df.iloc[train_size:, ]
 
@@ -551,14 +498,6 @@ class ExperimentRunner:
             train_df = pd.concat([train_df, payload_train_df], axis=1)
             test_df = pd.concat([test_df, payload_test_df], axis=1)
 
-
-        #if payload_train_df is not None:
-        #    X_train_df = pd.concat([train_df.iloc[:, selected_ranks[:chosen]], payload_train_df], axis=1)
-        #    X_test_df = pd.concat([test_df.iloc[:, selected_ranks[:chosen]], payload_test_df], axis=1)
-        #    feature_names = X_train_df.columns
-        #    X_train = X_train_df.values
-        #    X_test = X_test_df.values
-
         ## Enforcing the fact that we want to perform analyses over numerical type
         ## Still, Joonas produces columns that contains strings, forsooth!
         train_df = train_df.select_dtypes(['number'])
@@ -575,27 +514,6 @@ class ExperimentRunner:
         # Turn into np object
         X_train = train_df.values
         X_test = test_df.values
-
-
-        # Same from payload data if needed
-        #if payload_train_df is not None:
-        #    payload_train_df = payload_train_df.loc[:, (payload_train_df != payload_train_df.iloc[0]).any()]
-        #    payload_test_df = payload_test_df[payload_train_df.columns]
-
-            # remove duplicates
-         #   payload_train_df = payload_train_df.transpose().drop_duplicates().transpose()
-         #   payload_remaining_columns = payload_train_df.columns
-         #   payload_test_df = payload_test_df[payload_remaining_columns]
-
-
-
-
-        # No feature selection performed on payload..
-
-        #sel = VarianceThreshold()
-        #sel.fit(X_train)
-        #X_train = sel.transform(X_train)
-        #X_test = sel.transform(X_test)
         feature_names = None
 
         selection_method = self.method
@@ -643,45 +561,6 @@ class ExperimentRunner:
             feature_names = train_df.columns[selected_ranks]
 
         elif selection_method == "coverage":
-            """
-            scores = fisher_calculation(X_train, y_train)
-            selected_ranks = fisher_score.feature_ranking(scores)
-            threshold = self.coverage_threshold
-
-            # Start selecting from selected_ranks until every trace is covered N times
-            trace_remaining = dict()
-            for i, trace_name in enumerate(train_df.index.values):
-                trace_remaining[i] = threshold
-
-            chosen = 0
-            chosen_ranks = []
-            # Go from higher to lower
-            for rank in selected_ranks:
-                is_chosen = False
-                if len(trace_remaining) == 0:
-                    break
-                chosen += 1
-                # Get column
-                marked_for_deletion = set()
-                for k in trace_remaining.keys():
-                    if train_df.iloc[k, rank] > 0:
-                        if not is_chosen:
-                            # Only choose as a feature, if there is at least one trace covered by it.
-                            chosen_ranks.append(rank)
-                            is_chosen = True
-
-                        trace_remaining[k] -= 1
-                        if trace_remaining[k] <= 0:
-                            marked_for_deletion.add(k)
-
-                for k in marked_for_deletion:
-                    del trace_remaining[k]
-
-            X_train = X_train[:, selected_ranks[chosen_ranks]]
-            X_test = X_test[:, selected_ranks[chosen_ranks]]
-            feature_names = train_df.columns[selected_ranks[chosen_ranks]]
-            """
-
             # Alternative version
             scores = fisher_calculation(X_train, y_train)
             selected_ranks = fisher_score.feature_ranking(scores)
@@ -723,17 +602,6 @@ class ExperimentRunner:
             feature_names = train_df.columns[selected_ranks[:chosen]]
 
 
-        #if payload_train_df is not None:
-        #    X_train_df = pd.concat([train_df.iloc[:, selected_ranks[:chosen]], payload_train_df], axis=1)
-        #    X_test_df = pd.concat([test_df.iloc[:, selected_ranks[:chosen]], payload_test_df], axis=1)
-        #    feature_names = X_train_df.columns
-        #    X_train = X_train_df.values
-        #    X_test = X_test_df.values
-        #else:
-
-        #print(feature_names)
-
-
         return X_train, X_test, feature_names
 
     def train_and_evaluate_select(self, train_df: pd.DataFrame, test_df: pd.DataFrame,
@@ -757,7 +625,6 @@ class ExperimentRunner:
         X_train, X_test, feature_names = self.feature_selection(train_df, test_df, y_train, params=params,
                                                                 payload_train_df=payload_train_df,
                                                                 payload_test_df=payload_test_df)
-
         if not (dump_to_folder is None):
             assert ((isinstance(dump_to_folder, tuple)) and ((len(dump_to_folder)==3)))
             X_traincpy = pd.DataFrame(data=X_train,  columns=feature_names)
@@ -765,55 +632,6 @@ class ExperimentRunner:
             X_testcpy = pd.DataFrame(data=X_test,  columns=feature_names)
             X_testcpy["Label"] = y_test
             dump_extended_dataframes(X_traincpy, X_testcpy, dump_to_folder[0], dump_to_folder[1], dump_to_folder[2])
-
-        # # Save input to arff file to be used for RIPPER!
-        # SAVE_ARFF = False
-        # if SAVE_ARFF:
-        #     encoded_features = [str(i) for i in range(len(feature_names)+1)]
-        #     features = list(feature_names)
-        #     features.append("Label")
-        #
-        #     with open("arff/feature_encoding_{}".format(self.counter), "w") as fc:
-        #         feature_pairs = zip(encoded_features, features)
-        #         for k, v in feature_pairs:
-        #             fc.write(k + ":" + v + "\n")
-        #
-        #     train_new = pd.DataFrame(X_train, columns=feature_names)
-        #     test_new = pd.DataFrame(X_test, columns=feature_names)
-        #     train_new["Label"] = y_train
-        #     test_new["Label"] = y_test
-        #     train_new["Label"] = train_new["Label"].astype("category")
-        #     test_new["Label"] = test_new["Label"].astype('category')
-        #
-        #     arff.dump('arff/train_data_{}.arff'.format(self.counter)
-        #               , train_new.values
-        #               , relation='data_arff'
-        #               , names=encoded_features)
-        #     arff.dump('arff/test_data_{}.arff'.format(self.counter)
-        #               , test_new.values
-        #               , relation='data_arff'
-        #               , names=encoded_features)
-
-        # # Toggle this to save snapshots
-        # SAVE_CSV = False
-        # if SAVE_CSV and exp_name and split_nr:
-        #     ## Save all
-        #     new_feature_names = list(map(lambda x: x.replace(",", "."), feature_names))
-        #     new_feature_names = list(map(lambda x: x.replace('"', ""), new_feature_names))
-        #     new_feature_names = list(map(lambda x: x.replace("'", ""), new_feature_names))
-        #     #new_feature_names = [str(i) for i in range(len(new_feature_names))]
-        #
-        #     savename ="synthmra_{}_{}_{}.csv".format(exp_name, self.coverage_threshold, split_nr)
-        #     train_new = pd.DataFrame(X_train, columns=new_feature_names)
-        #     test_new = pd.DataFrame(X_test, columns= new_feature_names)
-        #     train_new["Label"] = y_train
-        #     test_new["Label"] = y_test
-        #
-        #
-        #     # Save separately for each split, merged encoding type. To feed into RIPPER
-        #     train_new.to_csv("snapshots/train_" + savename, index=False)
-        #     test_new.to_csv("snapshots/test_" + savename, index=False)
-
 
         # Train classifier
         clf = DecisionTreeClassifier(max_depth=self.dt_max_depth)#, min_samples_leaf=self.dt_min_leaf)
@@ -834,9 +652,8 @@ class ExperimentRunner:
 
         #Same code from run_weka_models
         #prune_duplicate_leaves(clf)
-        rules = list(export_text2(clf, feature_names.to_list()))
+        rules = export_text2(clf, feature_names.to_list())
         #rules = get_code(clf, feature_names)
-
         return train_results, test_results, rules
 
     def train(self, train_df, test_df, payload_train_df=None, payload_test_df=None, split_nr=None, exp_name=None, dump_to_folder = None):
@@ -1219,35 +1036,6 @@ class ExperimentRunner:
         yaml_file[key] = elements
         return results
 
-    # def sequence_train_with_dwd(self, encoding):
-    #     """
-    #     Trains a sequence model with given encoding
-    #     :param encoding: sequence encoding
-    #     :return:
-    #     """
-    #
-    #     results = []
-    #     for split_nr in range(1, 6):
-    #         # Read the log
-    #         train_df, test_df = ExperimentRunner.read_sequence_log(self.results_folder, encoding, split_nr)
-    #         payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr,  "dwd")
-    #
-    #         #merged_train_df = pd.concat([train_df, payload_train_df], axis=1)
-    #         #merged_test_df = pd.concat([test_df, payload_test_df], axis=1)
-    #
-    #         tr_result = self.train(train_df, test_df, payload_train_df, payload_test_df, split_nr=split_nr, exp_name="sequence_dwd")
-    #
-    #
-    #         result = {
-    #             "result": tr_result,
-    #             "split": split_nr,
-    #             "encoding": encoding
-    #         }
-    #
-    #         results.append(result)
-    #
-    #     return results
-
     def hybrid_with_data(self, key, yaml_file):
         """
         Hybrid model training with additional data
@@ -1382,9 +1170,7 @@ class ExperimentRunner:
     def train_and_eval_benchmark(self):
         all_results = {}
         yaml_file = {}
-        # MAKE SURE ALL METHODS USED ARE HERE. AND METHODS NOT USED ARE NOT!
         if True:#not self.payload:
-            #print_order = ["bs", "dc", "tr", "tra", "mr", "mra", "hybrid"]
             print("Started working on baseline.")
             baseline_results = self.baseline_train("bs", yaml_file)
             all_results["bs"] = self.interpret_results(baseline_results, "baseline")
@@ -1414,9 +1200,6 @@ class ExperimentRunner:
             all_results["hybrid"] = self.interpret_results(hybrid_results, "hybrid")
 
         if self.payload:
-                #print_order = []
-                #if self.payload_type == "normal":
-                #print_order += ["payload", "bs_data", "dc_data", "tr_data", "tra_data", "mr_data", "mra_data", "hybrid_data"]
                 print("Started working on payload train.")
                 payload_results = self.payload_train("bs", yaml_file)
                 all_results["payload"] = self.interpret_results(payload_results, "payload")
@@ -1450,20 +1233,6 @@ class ExperimentRunner:
                 all_results["hybrid_data"] = self.interpret_results(payload_results, "hybrid_data")
 
                 if self.payload_type == "both":
-                    #print_order += ["bs", "dc", "dc_data", "dc_dwd",  "dc_dwd_payload", "hybrid", "hybrid_data", "hybrid_dwd", "hybrid_dwd_payload"]
-
-                    #print("Started working on baseline.")
-                    #baseline_results = self.baseline_train("bs", yaml_file)
-                    #all_results["bs"] = self.interpret_results(baseline_results, "baseline")
-
-                    #print("Started working on declare.")
-                    #declare_results = self.declare_train("dc", yaml_file)
-                    #all_results["dc"] = self.interpret_results(declare_results, "declare")
-
-                    #print("Started working on declare with payload.")
-                    #declare_results = self.declare_train_with_data("dc_data", yaml_file)
-                    #all_results["dc_data"] = self.interpret_results(declare_results, "declare_payload")
-
                     print("Started working on declare with dwd.")
                     declare_results = self.declare_train_with_dwd("dc_dwd", yaml_file)
                     all_results["dc_dwd"] = self.interpret_results(declare_results, "declare_dwd")
@@ -1471,15 +1240,6 @@ class ExperimentRunner:
                     print("Started working on declare with dwd and payload.")
                     declare_results = self.declare_train_with_dwd_data("dc_dwd_payload", yaml_file)
                     all_results["dc_dwd_payload"] = self.interpret_results(declare_results, "declare_payload_dwd")
-
-
-                    #print("Started working on hybrid.")
-                    #payload_results = self.hybrid_train()
-                    #all_results["hybrid"] = self.interpret_results(payload_results, "hybrid")
-
-                    #print("Started working on hybrid with data.")
-                    #payload_results = self.hybrid_with_data()
-                    #all_results["hybrid_data"] = self.interpret_results(payload_results, "hybrid_data")
 
                     print("Started working on hybrid with dwd.")
                     payload_results = self.hybrid_with_dwd("hybrid_dwd", yaml_file)
@@ -1506,34 +1266,9 @@ class ExperimentRunner:
                 printToFile(all_results, self.experiment_name, "Decision Tree", "max_depth", self.dt_max_depth, csvFile, rulesFile)
                 rulesFile.close()
             csvFile.close()
-        # if self.method == "fisher":
-        #     for selection_count in self.selection_counts:
-        #         # find the print
-        #         for meth in print_order:
-        #             for k, v in all_results.items():
-        #                 if meth == k:
-        #                     print(k)
-        #                     evalTrain = v[selection_count]["train"]
-        #                     evalTest = v[selection_count]["test"]
-        #                     evalTrain.print_statistics_drive()
-        #                     evalTest.print_statistics_drive()
-        #                     evalTrain.write_statistics_file_noname(self.train_output_file)
-        #                     evalTest.write_statistics_file_noname(self.test_output_file)
-        # else:
-        #     for meth in print_order:
-        #         for k, v in all_results.items():
-        #             if meth == k:
-        #                 print(k)
-        #
-        #                 evalTrain = v["train"]
-        #                 evalTest = v["test"]
-        #                 evalTrain.print_statistics_drive()
-        #                 evalTest.print_statistics_drive()
-        #                 evalTrain.write_statistics_file_noname(self.train_output_file)
-        #                 evalTest.write_statistics_file_noname(self.test_output_file)
 
-    def prepare_cross_validation(self, max_splits = 5):
-        self.cross_validation_pipeline(self.inp_path, self.log_name, self.output_folder, max_splits)
+    def prepare_cross_validation(self, max_splits, training_test_split): #max_splits = 5
+        self.cross_validation_pipeline(self.inp_path, self.log_name, self.output_folder, max_splits, training_test_split)
 
     def serialize_complete_dataset(self, isCompleteEmbedding):
         logFilePath = os.path.join(self.inp_path, self.log_name)
@@ -1561,18 +1296,56 @@ class ExperimentRunner:
             yaml.dump(yamlFile, file)
 
 
-    def prepare_data(self, doForce = False):
+    def prepare_data(self, max_splits, training_test_split, doForce = False):
         self.create_folder_structure(self.results_folder, payload=self.payload, payload_type=self.payload_type)
-        run_baseline(self.experiment_name, self.log_path, self.results_folder)
-        run_deviance_new(self.log_path, self.results_folder, reencode=self.reencode)
-        run_sequences(self.inp_path, self.log_path_seq, self.results_folder, self.err_logger, sequence_threshold=self.sequence_threshold)
+        ignored = []
+        if self.payload_dwd_settings is not None:
+            ignored = self.payload_dwd_settings["ignored"]
 
-        if self.payload:
-            if self.payload_type == "normal" or self.payload_type == "both":
-                run_payload_extractor(self.log_path, self.payload_settings, self.results_folder)
+        print("New code by Giacomo Bergami, for evenly splitting and storing the database")
+        for i in range(0):
+            print("Current run: " +str(i))
+            baseline_path = FileNameUtils.baseline_path(i, self.results_folder)
+            declare__path = FileNameUtils.declare_path(i, self.results_folder)
+            payload__path = FileNameUtils.payload_path(i, self.results_folder)
+            declared_path = FileNameUtils.declare_data_aware_path(i, self.results_folder)
 
-            if self.payload_type == "dwd" or self.payload_type == "both":
-                run_declare_with_data(self.log_path, self.payload_dwd_settings, self.results_folder, doForce=doForce)
+            print("\t - reading the log")
+            log = read_XES_log(FileNameUtils.getXesName(self.log_path, i))
+            TrainingId, TestingId = FairLogSplit.abstractFairSplit(log,
+                                           TraceUtils.isTraceLabelPositive,
+                                           TraceUtils.getTraceId,
+                                           training_test_split)
+
+            print("\t * obtaining the canonical XES representation")
+            logTraining, logTesting = \
+                LogUtils.xes_to_tracelist_split(log, TrainingId, TestingId)
+
+            print("\t * obtaining the splitted propositional representation")
+            propositionalTraining, propositionalTesting = \
+                LogUtils.xes_to_propositional_split(log, TrainingId, TestingId)
+
+            print("\t * obtaining the data propositional representation")
+            dataPropositionalTraining, dataPropositionalTesting = \
+                LogUtils.xes_to_data_propositional_split(log, TrainingId, TestingId, doForce)
+
+            print("\t - writing baseline split")
+            baseline_runner.baseline_embedding(baseline_path, propositionalTraining, propositionalTesting)
+
+            print("\t - writing declare split")
+            declaredevmining.declare_embedding(declare__path, propositionalTraining, propositionalTesting, reencode=self.reencode)
+
+            if self.payload:
+                if self.payload_type == "normal" or self.payload_type == "both":
+                    print("\t - writing payload embedding")
+                    payload_embedding(payload__path, self.payload_settings, logTraining, logTesting)
+                if self.payload_type == "dwd" or self.payload_type == "both":
+                    print("\t - writing declare with data embedding")
+                    declare_data_aware_embedding(ignored, declared_path, dataPropositionalTraining, dataPropositionalTesting)
+
+        print("Run sequence miner for all the params")
+        run_sequences(self.inp_path, self.log_path_seq, self.results_folder, self.err_logger, max_splits, sequence_threshold=self.sequence_threshold)
+
 
     def clean_data(self):
         shutil.rmtree(self.results_folder)

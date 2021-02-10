@@ -17,20 +17,13 @@ def get_attribute_type(val):
     elif isinstance(val, XAttributeContinuous.XAttributeContinuous):
         return "continuous"
 
-
-
-def split_log_train_test(log, train_size, test_size=None):
+def split_log_train_test(log, train_size):
     last_ind = (int)(len(log) * train_size)
     return log[:last_ind], log[last_ind:]
 
-def read_XES_log(path):
-    tic = time()
-    #print("Parsing log")
+def read_XES_log(path, ithLog = 0):
     with open(path) as log_file:
-        log = XUniversalParser().parse(log_file)[0]  # take first log from file
-    #print("Log parsed, took {} seconds..".format(time() - tic))
-
-    return log
+        return XUniversalParser().parse(log_file)[ithLog]
 
 
 def extract_attributes(event, attribs=None):
@@ -58,16 +51,10 @@ def xes_to_positional(log, label=True):
     :param log:
     :return:
     """
-
-    positional = [
-
-    ]
-
+    positional = list()
     for trace in log:
         trace_attribs = trace.get_attributes()
         trace_name = trace_attribs["concept:name"].get_value()
-        if label:
-            trace_label = int(trace_attribs["Label"].get_value())
 
         events = {}
         for pos, event in enumerate(trace):
@@ -80,18 +67,15 @@ def xes_to_positional(log, label=True):
             # transition? not for now
             events[event_name].append(pos)
 
-        positional.append({
-            "name": trace_name,
-            "events": events
-        })
-        if label:                                       # Appends the label to the last element, only if it was required
-            positional[-1]["label"] = trace_label
-
+        d = dict({"name": trace_name, "events": events})
+        if label:
+            d["label"] = int(trace_attribs["Label"].get_value())
+        positional.append(d)
     return positional
 
 
 
-def xes_to_data_positional(log, label=True, considered=None, forceSomeElements = False):
+def xes_to_data_positional(log, label=True, forceSomeElements = False):
     """
     [
         {tracename:name, tracelabel:label,

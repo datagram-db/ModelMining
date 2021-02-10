@@ -103,7 +103,7 @@ class ConfigurationFile(object):
             ex.payload_settings = self.payload_settings
         ex.serialize_complete_dataset(True)
 
-    def run(self, INP_PATH, DATA_EXP, coverage_thresholds, doNr0 = True, max_splits = 5):
+    def run(self, INP_PATH, DATA_EXP, coverage_thresholds, doNr0 = True, max_splits = 5, training_test_split = 0.7):
         from pathlib import Path
         import os
         Path(os.path.join(DATA_EXP, self.results_folder)).mkdir(parents=True, exist_ok=True)
@@ -112,20 +112,6 @@ class ConfigurationFile(object):
         for nr, i in enumerate(coverage_thresholds):
             print("Current run: "+ str(i))
             from DevianceMiningPipeline.ExperimentRunner import ExperimentRunner
-            # ex = ExperimentRunner(experiment_name=self.experiment_name,
-            #                       output_file=self.results_file,
-            #                       results_folder=os.path.join(DATA_EXP, self.results_folder),
-            #                       inp_path=INP_PATH,
-            #                       log_name=self.log_name,
-            #                       output_folder=os.path.join(DATA_EXP, self.output_folder),
-            #                       log_template=self.log_path_seq,
-            #                       dt_max_depth=self.dt_max_depth,
-            #                       dt_min_leaf=self.dt_min_leaf,
-            #                       selection_method="coverage",
-            #                       coverage_threshold=i,
-            #                       sequence_threshold=self.sequence_threshold,
-            #                       payload=True,
-            #                       payload_type=self.payload_type.value[0])
             ex = ExperimentRunner(experiment_name=self.experiment_name,
                                   output_file=self.results_file,
                                   results_folder=os.path.join(DATA_EXP, self.results_folder),
@@ -151,6 +137,9 @@ class ConfigurationFile(object):
             with open("test_" + self.results_file, "a+") as f:
                 f.write("\n")
             if (nr == 0) and doNr0:
-                ex.prepare_cross_validation(max_splits)  # Splits the log into max_splits different files. FIXME: the split is not accurately selected
-                ex.prepare_data(doForce=self.forceTime)
-            ex.train_and_eval_benchmark()
+                # Performs a fair split into distinct classes
+                ex.prepare_cross_validation(max_splits, training_test_split)
+                ex.prepare_data(max_splits, training_test_split, doForce=self.forceTime)
+
+            ## TODO: test with the new data
+            # ex.train_and_eval_benchmark()
