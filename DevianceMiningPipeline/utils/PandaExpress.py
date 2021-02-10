@@ -16,6 +16,13 @@ def ensureDataFrameQuality(df):
     assert ('Label' in df.columns)
     return df.sort_index()
 
+def ensureLoadedDataQuality(df):
+    if "Case_ID" not in df.columns:
+        df["Case_ID"] = df.index
+    assert ('Label' in df.columns)
+    return df.sort_index()
+
+
 def serialize(df, path, index = False):
     df = ensureDataFrameQuality(df)
     if not df.empty:

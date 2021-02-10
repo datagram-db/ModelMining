@@ -124,9 +124,11 @@ def run_sequences(inp_path, log_path, results_folder, err_logger, max_splits, se
     """
     ## Input parameters to GoSwift.jar
     paramStrings = genParamStrings(sequence_threshold)
+    strategies = list()
 
     for paramString, techName, folder in paramStrings:
         print("Working on {} @{}".format(techName, folder))
+        strategies.append(folder)
         for splitNr in range(max_splits):
             outputPath = FileNameUtils.embedding_path(splitNr, results_folder, folder)
             os.makedirs(outputPath, exist_ok=True)
@@ -136,6 +138,7 @@ def run_sequences(inp_path, log_path, results_folder, err_logger, max_splits, se
 
             # The jar will directly write to t
             move_files('./output/', results_folder, splitNr + 1, folder)
+    return strategies
 
 def generateSequences(inp_path, log_path, results_folder, sequence_threshold=5):
     yamlPart = {}

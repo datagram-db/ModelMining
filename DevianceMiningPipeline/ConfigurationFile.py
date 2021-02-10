@@ -142,4 +142,4 @@ class ConfigurationFile(object):
                 ex.prepare_data(max_splits, training_test_split, doForce=self.forceTime)
 
             ## TODO: test with the new data
-            # ex.train_and_eval_benchmark()
+            ex.train_and_eval_benchmark(max_splits)

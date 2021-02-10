@@ -36,9 +36,10 @@ from .payload_extractor import payload_extractor2, payload_embedding
 from .utils import *
 
 
-from .utils.DumpUtils import read_generic_embedding_dump, multidump_compact, read_arff_embedding_dump
-from .utils.FileNameUtils import trace_encodings, path_generic_log, extract_file_name_for_dump
-from .utils.PandaExpress import ExportDFRowNamesAsSets, ExportDFRowNamesAsLists, dump_extended_dataframes
+from .utils.DumpUtils import read_generic_embedding_dump, multidump_compact, read_arff_embedding_dump, \
+    dump_custom_dataframes, dump_extended_dataframes
+from .utils.FileNameUtils import arff_trace_encodings, path_generic_log, extract_file_name_for_dump, csv_trace_encodings
+from .utils.PandaExpress import ExportDFRowNamesAsSets, ExportDFRowNamesAsLists
 
 
 class ExperimentRunner:
@@ -252,11 +253,9 @@ class ExperimentRunner:
         FairLogSplit.generateFairLogSplit(inp_path, log, log_name, output_folder, max_splits, training_test_split)
 
     @staticmethod
-    def read_sequence_log(results_folder, encoding, split_nr, split_perc): #split_perc = 0.8
-        split = "split" + str(split_nr)
-
+    def correct_read_sequence_log(results_folder, encoding, split_nr, training_ids, testing_ids): #split_perc = 0.8
+        split = "split" + str(split_nr+1)
         ## TODO: perform fair loading: receive the offsets from the input
-
         file_loc = os.path.join(results_folder, split, encoding)
         #train_path = file_loc + "/" + "globalLog.csv"
         #global_df = pd.read_csv(train_path, sep=";", index_col="Case_ID", na_filter=False)
@@ -264,11 +263,10 @@ class ExperimentRunner:
         #train_size = int(split_perc * size_df)
         #train_df = global_df.iloc[:train_size, ]
         #test_df = global_df.iloc[train_size:, ]
-        train_df, test_df = read_arff_embedding_dump(file_loc, dict())
-
+        train_df, test_df = read_arff_embedding_dump(file_loc, training_ids, testing_ids)
         return train_df, test_df
 
-    @staticmethod
+
     def feature_selection(self, train_df, test_df, y_train, params, payload_train_df=None, payload_test_df=None, ):
         if payload_train_df is not None:
             train_df = pd.concat([train_df, payload_train_df], axis=1)
@@ -279,13 +277,14 @@ class ExperimentRunner:
         train_df = train_df.select_dtypes(['number'])
         test_df  = test_df.select_dtypes(['number'])
         train_df = train_df.transpose().drop_duplicates().transpose()
-        remaining_columns = train_df.columns
-
+        remaining_columns = list(set(train_df.columns).intersection(set(test_df.columns)))
         test_df = test_df[remaining_columns]
 
         # remove no-variance, constants
         train_df = train_df.loc[:, (train_df != train_df.iloc[0]).any()]
-        test_df = test_df[train_df.columns]
+        remaining_columns = list(set(train_df.columns).intersection(set(test_df.columns)))
+        test_df = test_df[remaining_columns]
+        train_df = train_df[remaining_columns]
 
         # Turn into np object
         X_train = train_df.values
@@ -395,6 +394,8 @@ class ExperimentRunner:
         # Pwoblem (sic!): sometimes, it happens that the Case_Id column is used for training.
         train_df = train_df.drop(['Case_Id'], axis=1, errors='ignore')
         test_df = test_df.drop(['Case_Id'], axis=1, errors='ignore')
+        train_df = train_df.drop(['Case_ID'], axis=1, errors='ignore')
+        test_df = test_df.drop(['Case_ID'], axis=1, errors='ignore')
 
         y_train = train_df.pop('Label').values # pop: removing the column from the table, while preserving the values
         y_test = test_df.pop('Label').values
@@ -503,6 +504,7 @@ class ExperimentRunner:
     def declare_train(self, str_key, yaml_file, max_range):
         return self.abstract_train(str_key, yaml_file, "declare", max_range)
 
+
     def sequence_train(self, encoding, yaml_file):
         """
         Trains a sequence model with given encoding
@@ -514,7 +516,7 @@ class ExperimentRunner:
         for split_nr in range(1, 6):
             # Read the log
             train_df, test_df = ExperimentRunner.read_sequence_log(self.results_folder, encoding, split_nr)
-            elements.append(trace_encodings(self.results_folder, encoding, split_nr))
+            elements.append(arff_trace_encodings(self.results_folder, encoding, split_nr))
             tr_result = self.train(train_df, test_df, split_nr=split_nr, exp_name="sequence_{}".format(encoding))
 
             result = {
@@ -918,9 +920,24 @@ class ExperimentRunner:
     def train_and_eval_benchmark(self, max_splits):
         all_results = {}
         yaml_file = {}
-        TrL, TeL = self.get_row_names_from_baseline_logs( max_splits, "baseline")
 
         if True:#not self.payload:
+            print("Started working on sequenceMR.")
+            sequence_results = self.abstract_train("mr", yaml_file, "mr", max_splits)#self.sequence_train("mr", yaml_file)
+            all_results["mr"] = self.interpret_results(sequence_results, "sequence", "mr")
+
+            print("Started working on sequenceTR.")
+            sequence_results = self.abstract_train("tr", yaml_file, "tr", max_splits)#self.sequence_train("tr", yaml_file)
+            all_results["tr"] = self.interpret_results(sequence_results, "sequence", "tr")
+
+            print("Started working on sequenceTRA.")
+            sequence_results = self.abstract_train("tra", yaml_file, "tra", max_splits)#self.sequence_train("tra", yaml_file)
+            all_results["tra"] = self.interpret_results(sequence_results, "sequence", "tra")
+
+            print("Started working on sequenceMRA.")
+            sequence_results = self.abstract_train("mra", yaml_file, "mra", max_splits)#self.sequence_train("mra", yaml_file)
+            all_results["mra"] = self.interpret_results(sequence_results, "sequence", "mra")
+
             print("Started working on baseline.")
             baseline_results = self.baseline_train("bs", yaml_file, max_splits)
             all_results["bs"] = self.interpret_results(baseline_results, "baseline")
@@ -928,22 +945,6 @@ class ExperimentRunner:
             print("Started working on declare.")
             declare_results = self.declare_train("dc", yaml_file, max_splits)
             all_results["dc"] = self.interpret_results(declare_results, "declare")
-
-            print("Started working on sequenceMR.")
-            sequence_results = self.sequence_train("mr", yaml_file)
-            all_results["mr"] = self.interpret_results(sequence_results, "sequence", "mr")
-
-            print("Started working on sequenceTR.")
-            sequence_results = self.sequence_train("tr", yaml_file)
-            all_results["tr"] = self.interpret_results(sequence_results, "sequence", "tr")
-
-            print("Started working on sequenceTRA.")
-            sequence_results = self.sequence_train("tra", yaml_file)
-            all_results["tra"] = self.interpret_results(sequence_results, "sequence", "tra")
-
-            print("Started working on sequenceMRA.")
-            sequence_results = self.sequence_train("mra", yaml_file)
-            all_results["mra"] = self.interpret_results(sequence_results, "sequence", "mra")
 
             print("Started working on hybrid.")
             hybrid_results = self.hybrid_train("hybrid", yaml_file)
@@ -1005,6 +1006,9 @@ class ExperimentRunner:
             with open(weka_yaml_file, 'w') as file:
                 yaml.dump(yaml_file, file)
 
+        self.do_dump_benchmark(all_results)
+
+    def do_dump_benchmark(self, all_results):
         from .GoodPrintResults import printToFile
         line = None
         if (not os.path.exists(os.path.join(self.results_folder, "benchmarks.csv"))):
@@ -1013,7 +1017,8 @@ class ExperimentRunner:
             with open(os.path.join(self.results_folder, "rules.txt"), "a") as rulesFile:
                 if not (line is None):
                     csvFile.write(line)
-                printToFile(all_results, self.experiment_name, "Decision Tree", "max_depth", self.dt_max_depth, csvFile, rulesFile)
+                printToFile(all_results, self.experiment_name, "Decision Tree", "max_depth", self.dt_max_depth, csvFile,
+                            rulesFile)
                 rulesFile.close()
             csvFile.close()
 
@@ -1051,6 +1056,7 @@ class ExperimentRunner:
         ignored = []
         if self.payload_dwd_settings is not None:
             ignored = self.payload_dwd_settings["ignored"]
+        TrL_TeL_pair_list = list()
 
         print("New code by Giacomo Bergami, for evenly splitting and storing the database")
         for i in range(max_splits):
@@ -1066,6 +1072,8 @@ class ExperimentRunner:
                                                                    TraceUtils.isTraceLabelPositive,
                                                                    TraceUtils.getTraceId,
                                                                    training_test_split)
+            TrL_TeL_pair_list.append([list(TrainingId), list(TestingId)])
+            continue
 
             print("\t * obtaining the canonical XES representation")
             logTraining, logTesting = \
@@ -1102,8 +1110,15 @@ class ExperimentRunner:
                     assert (STt == TestingId)
 
         print("~~ Run sequence miner for all the params")
-        run_sequences(self.inp_path, self.log_path_seq, self.results_folder, self.err_logger, max_splits, sequence_threshold=self.sequence_threshold)
+        strategies = run_sequences(self.inp_path, self.log_path_seq, self.results_folder, self.err_logger, max_splits, sequence_threshold=self.sequence_threshold)
 
+        print("~~ Providing the correct CSV dump for the sequence miner")
+        for i in range(max_splits):
+            TrainingId, TestingId = TrL_TeL_pair_list[i]
+            for strategy in strategies:
+                training_df, testing_df = ExperimentRunner.correct_read_sequence_log(self.results_folder, strategy, i, TrainingId, TestingId)
+                d = csv_trace_encodings(self.results_folder, strategy, i+1)
+                dump_custom_dataframes(training_df, testing_df, d["train"], d["test"])
 
     def clean_data(self):
         shutil.rmtree(self.results_folder)

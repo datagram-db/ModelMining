@@ -24,12 +24,19 @@ def declare_data_aware_path(logNr, results_folder):
 def payload_path(logNr, results_folder):
     return embedding_path(logNr, results_folder, "payload")
 
-def trace_encodings(results_folder, encoding, split_nr):
+def arff_trace_encodings(results_folder, encoding, split_nr):
         split = "split" + str(split_nr)
         file_loc = results_folder + "/" + split + "/" + encoding
         train_path = file_loc + "/" + "train_encodings.arff"
         test_path = file_loc + "/" + "test_encodings.arff"
         return {"train": os.path.abspath(train_path), "test": os.path.abspath(test_path)}
+
+def csv_trace_encodings(results_folder, encoding, split_nr):
+    split = "split" + str(split_nr)
+    file_loc = os.path.join(results_folder, split, encoding)
+    train_path = os.path.join(file_loc, encoding+"_train.csv")
+    test_path = os.path.join(file_loc,  encoding+"_test.csv")
+    return {"train": os.path.abspath(train_path), "test": os.path.abspath(test_path)}
 
 def extract_file_name_for_dump(results_folder, elements, key, split_nr):
         d = dict()
