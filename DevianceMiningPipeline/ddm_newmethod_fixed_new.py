@@ -19,6 +19,7 @@ import pandas as pd
 
 import os
 from .utils import PandaExpress
+from .utils.DumpUtils import genericDump
 from .utils.PandaExpress import extendDataFrameWithLabels
 from .utils.TraceUtils import trace_to_label_map, propositionalized_trace_to_label_map
 
@@ -678,9 +679,9 @@ def declare_data_aware_embedding(ignored, inp_folder, train_log, test_log):
         test_df = extendDataFrameWithLabels(test_df, propositionalized_trace_to_label_map(test_log))
 
     train_df = extendDataFrameWithLabels(train_df, propositionalized_trace_to_label_map(train_log))
-
-    PandaExpress.serialize(train_df, os.path.join(inp_folder, "dwd_train.csv"))
-    if doStoreSecondFile:
-        PandaExpress.serialize(test_df, os.path.join(inp_folder, "dwd_test.csv"))
-    return PandaExpress.ExportDFRowNamesAsSets(test_df, train_df)
+    return genericDump(inp_folder, train_df, test_df, "dwd_train.csv", "dwd_test.csv")
+    # PandaExpress.serialize(train_df, os.path.join(inp_folder, "dwd_train.csv"))
+    # if doStoreSecondFile:
+    #     PandaExpress.serialize(test_df, os.path.join(inp_folder, "dwd_test.csv"))
+    # return PandaExpress.ExportDFRowNamesAsSets(test_df, train_df)
 

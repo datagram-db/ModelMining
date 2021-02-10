@@ -73,10 +73,19 @@ def dump_custom_dataframes(train_df, test_df, train_path, test_path):
     PandaExpress.serialize(test_df[new_cols], test_path)
     return (train_path, test_path)
 
-def multidump_compact(results_folder, elements, forMultiDump, payload_test_df, payload_train_df, split_nr):
+def multidump_compact(results_folder, elements, forMultiDump,  payload_train_df, payload_test_df, split_nr):
         tr_f, t_f = dump_extended_dataframes(payload_train_df, payload_test_df, results_folder, split_nr,
                                              forMultiDump)
         d = dict()
         d["train"] = os.path.abspath(tr_f)
         d["test"] = os.path.abspath(t_f)
         elements.append(d)
+
+def genericDump(output_path, train_df, test_df, trainFile, testFile):
+    doSaveTest = len(test_df.index) > 0
+    train_df = PandaExpress.ensureDataFrameQuality(train_df)
+    test_df = PandaExpress.ensureDataFrameQuality(test_df)
+    PandaExpress.serialize(train_df, os.path.join(output_path, trainFile))
+    if doSaveTest:
+        PandaExpress.serialize(test_df, os.path.join(output_path, testFile))
+    return PandaExpress.ExportDFRowNamesAsSets(test_df, train_df)

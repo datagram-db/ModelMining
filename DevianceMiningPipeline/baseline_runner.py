@@ -8,6 +8,7 @@ from .declaredevmining import split_log_train_test
 import pandas as pd
 from DevianceMiningPipeline.utils.PathUtils import *
 from .utils import PandaExpress
+from .utils.DumpUtils import genericDump
 
 
 def transform_log(train_log, activity_set):
@@ -64,13 +65,7 @@ def baseline_embedding(inp_folder, train_log, test_log):
     mkdir_test(inp_folder)
 
     ## Sorting the dataframes by rowname, so to guarantee that the dataframes match by row id!
-    train_df = PandaExpress.ensureDataFrameQuality(train_df)
-    PandaExpress.serialize(train_df, os.path.join(inp_folder, "baseline_train.csv"))
-
-    test_df = PandaExpress.ensureDataFrameQuality(test_df)
-    PandaExpress.serialize(test_df, os.path.join(inp_folder, "baseline_test.csv"))
-
-    return PandaExpress.ExportDFRowNamesAsSets(test_df, train_df)
+    return genericDump(inp_folder, train_df, test_df, "baseline_train.csv", "baseline_test.csv")
 
 
 

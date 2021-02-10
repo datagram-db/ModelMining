@@ -10,6 +10,7 @@ import pandas as pd
 from DevianceMiningPipeline.utils.PathUtils import *
 import os
 from .utils import PandaExpress
+from .utils.DumpUtils import genericDump
 
 
 def reencode_map(val):
@@ -261,6 +262,7 @@ def declare_embedding(output_path, train_log, test_log, templates=None, filter_t
     test_df["Label"] = test_labels.tolist()
     mkdir_test(output_path)
 
-    PandaExpress.serialize(train_df, os.path.join(output_path, "declare_train.csv"))
-    PandaExpress.serialize(test_df, os.path.join(output_path, "declare_test.csv"))
-    return PandaExpress.ExportDFRowNamesAsSets(test_df, train_df)
+    return genericDump(output_path, train_df, test_df, "declare_train.csv", "declare_test.csv")
+
+
+

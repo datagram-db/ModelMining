@@ -15,6 +15,7 @@ from .utils import PandaExpress
 
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 
+from .utils.DumpUtils import genericDump
 from .utils.PandaExpress import extendDataFrameWithLabels
 from .utils.TraceUtils import trace_to_label_map
 
@@ -893,10 +894,11 @@ def payload_embedding(inp_folder, settings_file, train, test):
     train_df = extendDataFrameWithLabels(train_df, trace_to_label_map(train))
     test_df = extendDataFrameWithLabels(test_df, trace_to_label_map(test))
 
-    PandaExpress.serialize(train_df, os.path.join(inp_folder, "payload_train.csv"))
-    if doSaveFile:
-        PandaExpress.serialize(test_df, os.path.join(inp_folder, "payload_test.csv"))
-    return PandaExpress.ExportDFRowNamesAsSets(test_df, train_df)
+    return genericDump(inp_folder, train_df, test_df, "payload_train.csv", "payload_test.csv")
+    # PandaExpress.serialize(train_df, os.path.join(inp_folder, "payload_train.csv"))
+    # if doSaveFile:
+    #     PandaExpress.serialize(test_df, os.path.join(inp_folder, "payload_test.csv"))
+    # return PandaExpress.ExportDFRowNamesAsSets(test_df, train_df)
 
 
 def payload_extractor2(inp_folder, log_name, settings_file, split=1.0):
