@@ -8,6 +8,9 @@ from functools import reduce
 
 import pandas as pd
 
+from DevianceMiningPipeline.utils.FileNameUtils import path_generic_log
+
+
 def ensureDataFrameQuality(df):
     assert ('Case_ID' in df.columns)
     assert ('Label' in df.columns)
@@ -33,15 +36,16 @@ def extendDataFrameWithLabels(df, map_rowid_to_label):
     df["Label"] = ls
     return df
 
-def dataframe_join_withChecks(left, right, key="Case_Id"):
-    j = left.join(right, on=key, lsuffix='_left', rsuffix='_right')
+def dataframe_join_withChecks(left, right):
+    j = left.join(right, lsuffix='_left', rsuffix='_right')
     assert ('Label_left' in j)
     assert ('Label_right' in j)
     assert ('Case_ID' in j)
-    assert ((j["Label_right"] == j["Label_left"]).all())
+    assert ((list(map(lambda x: int(x), j["Label_right"].to_list())) == list(map(lambda x: int(x), j["Label_left"].to_list()))))
     j.rename(columns={'Label_right': 'Label'}, inplace=True)
     j.drop("Label_left", axis=1, inplace=True)
     return j
 
 def dataframe_multiway_equijoin(ls):
     return reduce(dataframe_join_withChecks, ls)
+

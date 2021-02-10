@@ -35,36 +35,10 @@ from collections import defaultdict
 from .payload_extractor import payload_extractor2, payload_embedding
 from .utils import *
 
-from pathlib import Path
-from scipy.io import arff
 
-from .utils.DumpUtils import read_generic_embedding_dump
-from .utils.FileNameUtils import trace_encodings
-from .utils.PandaExpress import ExportDFRowNamesAsSets, ExportDFRowNamesAsLists
-
-
-
-
-def path_generic_log(results_folder, split_nr, encoding):
-    split = "split" + str(split_nr)
-    file_loc = os.path.join(results_folder, split, encoding)
-    Path(file_loc).mkdir(parents=True, exist_ok=True)
-    train_path = os.path.join(file_loc, encoding + "_train.csv")
-    test_path = os.path.join(file_loc, encoding + "_test.csv")
-    return (train_path, test_path)
-
-def dump_extended_dataframes(train_df, test_df, results_folder, split_nr, encoding):
-    train_path, test_path = path_generic_log(results_folder, split_nr, encoding)
-    print("Dumping extended data frames into " + train_path +" and "+test_path)
-    new_cols = [col for col in train_df.columns if col != 'Label'] + ['Label']
-    train_df[new_cols].to_csv(train_path, index=False)
-    test_df[new_cols].to_csv(test_path, index=False)
-    return (train_path, test_path)
-
-
-
-
-
+from .utils.DumpUtils import read_generic_embedding_dump, multidump_compact, read_arff_embedding_dump
+from .utils.FileNameUtils import trace_encodings, path_generic_log, extract_file_name_for_dump
+from .utils.PandaExpress import ExportDFRowNamesAsSets, ExportDFRowNamesAsLists, dump_extended_dataframes
 
 
 class ExperimentRunner:
@@ -283,21 +257,18 @@ class ExperimentRunner:
 
         ## TODO: perform fair loading: receive the offsets from the input
 
-        file_loc = results_folder + "/" + split + "/" + encoding
-        train_path = file_loc + "/" + "globalLog.csv"
-        global_df = pd.read_csv(train_path, sep=";", index_col="Case_ID", na_filter=False)
-
-        size_df = len(global_df)
-
-        train_size = int(split_perc * size_df)
-        train_df = global_df.iloc[:train_size, ]
-        test_df = global_df.iloc[train_size:, ]
+        file_loc = os.path.join(results_folder, split, encoding)
+        #train_path = file_loc + "/" + "globalLog.csv"
+        #global_df = pd.read_csv(train_path, sep=";", index_col="Case_ID", na_filter=False)
+        #size_df = len(global_df)
+        #train_size = int(split_perc * size_df)
+        #train_df = global_df.iloc[:train_size, ]
+        #test_df = global_df.iloc[train_size:, ]
+        train_df, test_df = read_arff_embedding_dump(file_loc, dict())
 
         return train_df, test_df
 
     @staticmethod
-
-
     def feature_selection(self, train_df, test_df, y_train, params, payload_train_df=None, payload_test_df=None, ):
         if payload_train_df is not None:
             train_df = pd.concat([train_df, payload_train_df], axis=1)
@@ -586,7 +557,7 @@ class ExperimentRunner:
             merged_train_df = pd.concat([dec_train_df] + seq_train_list, axis=1)
             merged_test_df = pd.concat([dec_test_df] + seq_test_list, axis=1)
 
-            self.multidump_compact(elements, str_key, merged_train_df, merged_test_df, split_nr)
+            multidump_compact(self.results_folder, elements, str_key, merged_train_df, merged_test_df, split_nr)
             tr_result = self.train(merged_train_df, merged_test_df, split_nr=split_nr, exp_name="hybrid")
             result = {
                 "result": tr_result,
@@ -624,14 +595,14 @@ class ExperimentRunner:
 
         yaml_file["payload_for_training"] = elements
         return results
-
-    def multidump_compact(self, elements, forMultiDump, payload_test_df, payload_train_df, split_nr):
-        tr_f, t_f = dump_extended_dataframes(payload_train_df, payload_test_df, self.results_folder, split_nr,
-                                             forMultiDump)
-        d = dict()
-        d["train"] = os.path.abspath(tr_f)
-        d["test"] = os.path.abspath(t_f)
-        elements.append(d)
+    #
+    # def multidump_compact(self, elements, forMultiDump, payload_test_df, payload_train_df, split_nr):
+    #     tr_f, t_f = dump_extended_dataframes(payload_train_df, payload_test_df, self.results_folder, split_nr,
+    #                                          forMultiDump)
+    #     d = dict()
+    #     d["train"] = os.path.abspath(tr_f)
+    #     d["test"] = os.path.abspath(t_f)
+    #     elements.append(d)
 
     def baseline_train_with_data(self, key, yaml_file):
         """
@@ -661,12 +632,7 @@ class ExperimentRunner:
         yaml_file[key] = elements
         return results
 
-    def extract_file_name_for_dump(self, elements, key, split_nr):
-        d = dict()
-        tr_f, t_f = path_generic_log(self.results_folder, split_nr, key)
-        d["train"] = os.path.abspath(tr_f)
-        d["test"] = os.path.abspath(t_f)
-        elements.append(d)
+
 
     def baseline_train_with_dwd(self, key, yaml_file):
         """
@@ -685,7 +651,7 @@ class ExperimentRunner:
 
             tr_result = self.train(train_df, test_df, payload_train_df, payload_test_df,
                                    split_nr=split_nr, exp_name="baseline_dwd", dump_to_folder=(self.results_folder, split_nr, key))
-            self.extract_file_name_for_dump(elements, key, split_nr)
+            extract_file_name_for_dump(self.results_folder, elements, key, split_nr)
             result = {
                 "result": tr_result,
                 "split": split_nr
