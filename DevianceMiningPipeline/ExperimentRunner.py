@@ -34,7 +34,7 @@ from sklearn.decomposition import PCA
 from collections import defaultdict
 
 from .payload_extractor import run_payload_extractor, payload_extractor, payload_extractor2
-from .run_weka_models import prune_duplicate_leaves, get_code
+from .run_weka_models import prune_duplicate_leaves, get_code, export_text2
 
 from pathlib import Path
 import arff
@@ -118,7 +118,12 @@ def fisher_calculation(X, y):
         Fr[i] = n_positive * np.power(pos_means[i] - feature_mean[i], 2) + \
                 n_negative * np.power(neg_means[i] - feature_mean[i], 2)
 
-        Fr[i] /= (n_positive * pos_variances[i] + n_negative * neg_variances[i])
+        compute = (n_positive * pos_variances[i] + n_negative * neg_variances[i])
+        if (compute == 0):
+            print("WARNING: Division by zero (avoiding it by returning zero)")
+            Fr[i] = 0
+        else:
+            Fr[i] /= (n_positive * pos_variances[i] + n_negative * neg_variances[i])
 
     return Fr
 
@@ -829,7 +834,8 @@ class ExperimentRunner:
 
         #Same code from run_weka_models
         #prune_duplicate_leaves(clf)
-        rules = get_code(clf, feature_names)
+        rules = list(export_text2(clf, feature_names.to_list()))
+        #rules = get_code(clf, feature_names)
 
         return train_results, test_results, rules
 

@@ -55,6 +55,7 @@ def guaranteeUniqueXes():
     from DevianceMiningPipeline.RetagLogWithUniqueIds import  changeLog
     changeLog("data/logs/merged_xray.xes")
     changeLog("data/logs/sepsis.xes")
+    changeLog("data/logs/EnglishBPIChallenge2011.xes")
 
 def generate_configuration():
     from DevianceMiningPipeline import ConfigurationFile
@@ -223,32 +224,23 @@ def printWithColor(str):
 if __name__ == '__main__':
     from multiprocessing import Pool
     printWithColor("Generating the configuration JSONs")
-    generate_configuration()
+    #generate_configuration()
 
     printWithColor("Generating some randomly-generated datasets (unused in the current configuration)")
-    LogGeneration.write_xeses(LOGS_FOLDER)
+    #LogGeneration.write_xeses(LOGS_FOLDER)
 
     printWithColor("Guaranteeing that the logs used for the testing have unique trace ids (it is required for better training the dataset)")
-    guaranteeUniqueXes()
+    #guaranteeUniqueXes()
 
     printWithColor("Generates the jsons configurations")
-    generateTagging()
+    #generateTagging()
 
-    #conf_file = "sepsis_proc.json"
-    #if len(sys.argv)>1:
-    #    conf_file = sys.argv[1]
-    #preprocess = True
-    #if len(sys.argv)>2:
-    #    test = sys.argv[2]
-    #    preprocess = not (test == "skipPreprocessing")
-    #,
-    # ,
     LS = [ "sepsis_proc.json", "sepsis_decl.json", "sepsis_mr_tr.json", "sepsis_mra_tra.json", "sepsis_payload.json"]
     LS = ["xray_proc.json", "xray_decl.json", "xray_mr_tr.json", "xray_mra_tra.json", "xray_payload.json"]
     LS = ["sepsis_decl.json", "sepsis_mr_tr.json", "sepsis_mra_tra.json", "sepsis_payload.json"]
-    for conf_file in LS:
+    for conf_file in ["xray_payload.json", "xray_mra_tra.json"]:
         printWithColor("Now running: "+conf_file)
-        run_complete_configuration_and_run(conf_file)
+        run_complete_configuration_and_run(conf_file, False)
     # pool = Pool()
     # folders_to_merge = pool.map(test, LS)
     # pool.close()
