@@ -41,26 +41,7 @@ def xes_to_data_propositional_split(log, train_id, test_id, doForce):
 
 def xes_to_propositional_split(log, train_id, test_id):
     return abstract_split(log, train_id, test_id, xes_to_positional, lambda x: x["name"])
-    #
-    #
-    # assert (isinstance(train_id, set))
-    # assert (isinstance(test_id, set))
-    # train_log = []
-    # test_log = []
-    #
-    #
-    # for trace in xes_to_positional(log):
-    #     if trace["name"] in train_id:
-    #         train_log.append(trace)
-    #     elif trace["name"] in test_id:
-    #         test_log.append(trace)
-    #     else:
-    #         assert False
-    #
-    # assert (len(train_log)>0)
-    # assert (len(test_log)>0)
-    # return (train_log, test_log)
-
 
 def xes_to_tracelist_split(log, train_id, test_id):
     return abstract_split(log, train_id, test_id)
+

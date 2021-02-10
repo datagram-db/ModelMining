@@ -15,5 +15,17 @@ def isTraceLabelPositive(trace):
 def getTraceId(trace):
     return str(trace.get_attributes()["concept:name"])
 
+def trace_to_label_map(log):
+    d = dict()
+    for trace in log:
+        d[getTraceId(trace)] = getTraceLabel(trace)
+    return d
+
+def propositionalized_trace_to_label_map(log):
+    d = dict()
+    for trace in log:
+        d[trace["name"]] = trace["label"]
+    return d
+
 #trace_attribs = trace.get_attributes()
 #        trace_name = trace_attribs["concept:name"].get_value()

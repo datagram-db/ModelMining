@@ -20,10 +20,10 @@ from sklearn.feature_selection import SelectKBest, chi2
 from opyenxes.data_out.XesXmlSerializer import XesXmlSerializer
 from opyenxes.factory.XFactory import XFactory
 
-from . import baseline_runner, declaredevmining
+from . import baseline_runner, declaredevmining, model
 from .deviancecommon import read_XES_log
 from .sequence_runner import run_sequences, generateSequences
-from .ddm_newmethod_fixed_new import data_declare_main, declare_data_aware_embedding
+from .ddm_newmethod_fixed_new import data_declare_main, declare_data_aware_embedding, fisher_calculation
 
 from sklearn.preprocessing import StandardScaler
 
@@ -36,26 +36,14 @@ from .payload_extractor import payload_extractor2, payload_embedding
 from .utils import *
 
 from pathlib import Path
+from scipy.io import arff
+
+from .utils.DumpUtils import read_generic_embedding_dump
+from .utils.FileNameUtils import trace_encodings
+from .utils.PandaExpress import ExportDFRowNamesAsSets, ExportDFRowNamesAsLists
 
 
-def read_generic_log(results_folder, split_nr, encoding, dictionary):
-    """
-    This method reads the log, that has been already serialized for a vectorial representation
 
-    :param results_folder:  Folder from which we have to read the serialization
-    :param split_nr:        Number of current fold for the k-fold
-    :param encoding:        Encoding stored in the folder
-    :return:
-    """
-    split = "split" + str(split_nr)
-    file_loc = os.path.join(results_folder, split, encoding)
-    train_path = os.path.join(file_loc, encoding+"_train.csv")
-    test_path = os.path.join(file_loc, encoding+"_test.csv")
-    dictionary["train"] = os.path.abspath(train_path)
-    dictionary["test"] = os.path.abspath(test_path)
-    train_df = pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False)
-    test_df = pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False)
-    return train_df, test_df
 
 def path_generic_log(results_folder, split_nr, encoding):
     split = "split" + str(split_nr)
@@ -73,129 +61,13 @@ def dump_extended_dataframes(train_df, test_df, results_folder, split_nr, encodi
     test_df[new_cols].to_csv(test_path, index=False)
     return (train_path, test_path)
 
-def fisher_calculation(X, y):
-    # Calculates fisher score
-    """
-    Calculate fisher score
-    https://papers.nips.cc/paper/2909-laplacian-score-for-feature-selection.pdf
-    :param data:
-    :return:
-    """
-
-    #print(X[0,:])
-    # Find mean and variance for full dataset
-
-    #for i in range(X.shape[1]):
-    #    print(X[:,i].dtype)
-    feature_mean = np.mean(X, axis=0)
-    #feature_var = np.var(X, axis=0)
-
-    # Find variance for each class, maybe do normalization as well??
-    # ID's for
-    n_positive = (y == 1).sum()
-    n_negative = (y == 0).sum()
-
-    # Split positive and neg samples
-    pos_samples = X[y == 1]
-    neg_samples = X[y == 0]
-
-    # get variance and mean for positive and negative labels for all features
-    pos_variances = np.var(pos_samples, axis=0)
-    neg_variances = np.var(neg_samples, axis=0)
-
-    # get means
-    pos_means = np.mean(pos_samples, axis=0)
-    neg_means = np.mean(neg_samples, axis=0)
-
-    #print(pos_variances)
-    #print(neg_variances)
-
-    # Calculate Fisher score for each feature
-    Fr = np.zeros(X.shape[1])
-
-    for i in range(X.shape[1]):
-        Fr[i] = n_positive * np.power(pos_means[i] - feature_mean[i], 2) + \
-                n_negative * np.power(neg_means[i] - feature_mean[i], 2)
-
-        compute = (n_positive * pos_variances[i] + n_negative * neg_variances[i])
-        if (compute == 0):
-            print("WARNING: Division by zero (avoiding it by returning zero)")
-            Fr[i] = 0
-        else:
-            Fr[i] /= (n_positive * pos_variances[i] + n_negative * neg_variances[i])
-
-    return Fr
 
 
-class ModelEvaluation:
-    def __init__(self, name, ):
-        self.name = name
-        self.accuracies = []
-        self.precision = []
-        self.recall = []
-        self.f1 = []
-        self.auc = []
 
-    def add_to_file(self, filePath, text):
-        with open(filePath, "a+") as f:
-            f.write(text + "\n")
 
-    def add_results(self, accuracy, precision, rc, f1, auc):
-        self.accuracies.append(accuracy)
-        self.precision.append(precision)
-        self.recall.append(rc)
-        self.f1.append(f1)
-        self.auc.append(auc)
-
-    def add_results_dict(self, results):
-        self.accuracies.append(results["accuracy"])
-        self.precision.append(results["precision"])
-        self.recall.append(results["recall"])
-        self.f1.append(results["f1"])
-        self.auc.append(results["auc"])
-
-    def print_statistics(self):
-        print("Statistics for {}".format(self.name))
-        print("Accuracy mean:", np.mean(self.accuracies))
-        print("Accuracy std:", np.std(self.accuracies))
-        print("Precision mean:", np.mean(self.precision))
-        print("Precision std:", np.std(self.precision))
-        print("Recall mean:", np.mean(self.recall))
-        print("Recall std:", np.std(self.recall))
-        print("F1 mean:", np.mean(self.f1))
-        print("F1 std:", np.std(self.f1))
-        print("AUC mean:", np.mean(self.auc))
-        print("AUC std:", np.std(self.auc))
-        print("")
-
-    def print_statistics_drive(self):
-        print("Statistics for {}".format(self.name))
-        print("{} {} {} {} {} {} {} {} {} {}".format(np.mean(self.accuracies),
-                                                     np.std(self.accuracies), np.mean(self.auc), np.std(self.auc),
-                                                     np.mean(self.f1), np.std(self.f1),
-                                                     np.mean(self.recall), np.std(self.recall), np.mean(self.precision),
-                                                     np.std(self.precision)))
-        print("")
-
-    def write_statistics_file(self, filePath):
-        text = "Statistics for {}".format(self.name) + "\n" + "{} {} {} {} {} {} {} {} {} {}".format(
-            np.mean(self.accuracies),
-            np.std(self.accuracies), np.mean(self.auc), np.std(self.auc), np.mean(self.f1), np.std(self.f1),
-            np.mean(self.recall), np.std(self.recall), np.mean(self.precision), np.std(self.precision)) + "\n"
-
-        self.add_to_file(filePath, text)
-
-    def write_statistics_file_noname(self, filePath):
-        text = "{} {} {} {} {} {} {} {} {} {}".format(
-            np.mean(self.accuracies),
-            np.std(self.accuracies), np.mean(self.auc), np.std(self.auc), np.mean(self.f1), np.std(self.f1),
-            np.mean(self.recall), np.std(self.recall), np.mean(self.precision), np.std(self.precision))
-
-        self.add_to_file(filePath, text)
 
 
 class ExperimentRunner:
-
     def __init__(self, experiment_name, output_file, results_folder, inp_path, log_name, output_folder, log_template,
                  dt_max_depth=15, dt_min_leaf=None, selection_method="fisher", selection_counts=None,
                  coverage_threshold=None, sequence_threshold=5, payload=False, payload_settings=None,
@@ -277,20 +149,20 @@ class ExperimentRunner:
             for selection_count in self.selection_counts:
                 # for encoding per selection
                 if model_type == "sequence":
-                    test_model_eval = ModelEvaluation(
+                    test_model_eval = model.ModelEvaluation.ModelEvaluation(
                         "TEST Model {} {} with selection {} with {} features".format(model_type, sequence_encoding,
                                                                                      self.method,
                                                                                      selection_count))
-                    train_model_eval = ModelEvaluation(
+                    train_model_eval = model.ModelEvaluation.ModelEvaluation(
                         "TRAIN Model {} {} with selection {} with {} features".format(model_type, sequence_encoding,
                                                                                       self.method,
                                                                                       selection_count))
                 else:
-                    test_model_eval = ModelEvaluation(
+                    test_model_eval = model.ModelEvaluation.ModelEvaluation(
                         "TEST Model {} with selection {} with {} features".format(model_type,
                                                                                   self.method,
                                                                                   selection_count))
-                    train_model_eval = ModelEvaluation(
+                    train_model_eval = model.ModelEvaluation.ModelEvaluation(
                         "TRAIN Model {} with selection {} with {} features".format(model_type,
                                                                                    self.method,
                                                                                    selection_count))
@@ -308,14 +180,14 @@ class ExperimentRunner:
             rules = []
 
             if model_type == "sequence":
-                test_model_eval = ModelEvaluation(
+                test_model_eval = model.ModelEvaluation.ModelEvaluation(
                     "TEST Model {} {} with selection {}".format(model_type, sequence_encoding, self.method))
-                train_model_eval = ModelEvaluation(
+                train_model_eval = model.ModelEvaluation.ModelEvaluation(
                     "TRAIN Model {} {} with selection {}".format(model_type, sequence_encoding, self.method))
             else:
-                test_model_eval = ModelEvaluation(
+                test_model_eval = model.ModelEvaluation.ModelEvaluation(
                     "TEST Model {} with selection {}".format(model_type, self.method))
-                train_model_eval = ModelEvaluation(
+                train_model_eval = model.ModelEvaluation.ModelEvaluation(
                     "TRAIN Model {} with selection {} ".format(model_type, self.method))
 
             for r in results:
@@ -329,49 +201,49 @@ class ExperimentRunner:
 
             return models
 
-    @staticmethod
-    def generate_cross_validation_logs(inp_path,log, log_name, output_folder, max_splits, split_perc): #split_perc = 0.2, max_splits = 5
-        log_size = len(log)
-        partition_size = int(split_perc * log_size)
-        for log_nr in range(max_splits):
-            new_log = XFactory.create_log(log.get_attributes().clone())
-            for elem in log.get_extensions():
-                new_log.get_extensions().add(elem)
-
-            #new_log.__classifiers = log.get_classifiers().copy()
-            new_log.__globalTraceAttributes = log.get_global_trace_attributes().copy()
-            new_log.__globalEventAttributes = log.get_global_event_attributes().copy()
-
-            # Add first part.
-            for i in range(0, (log_nr * partition_size)):
-                new_log.append(log[i])
-
-            # Add last part.
-            for i in range((log_nr + 1) * partition_size, log_size):
-                new_log.append(log[i])
-
-            # This is the test partitions, added to end
-            for i in range(log_nr * partition_size, (log_nr + 1) * partition_size):
-                if i >= log_size:
-                    break  # edge case
-                new_log.append(log[i])
-
-            count = 0
-            for trace in new_log:
-                if (trace.get_attributes()["Label"].get_value() == "1"):
-                    count = count +1
-            assert(count > 0)
-            count = 0
-            for trace in new_log:
-                if (trace.get_attributes()["Label"].get_value() == "0"):
-                    count = count +1
-            assert(count > 0)
-
-            with open(os.path.join(output_folder,  log_name[:-4] + "_" + str(log_nr + 1) + ".xes"), "w") as file:
-                XesXmlSerializer().serialize(new_log, file)
-
-            with open(os.path.join(inp_path, log_name[:-4] + "_" + str(log_nr + 1) + ".xes"), "w") as file:
-                XesXmlSerializer().serialize(new_log, file)
+    # @staticmethod
+    # def generate_cross_validation_logs(inp_path,log, log_name, output_folder, max_splits, split_perc): #split_perc = 0.2, max_splits = 5
+    #     log_size = len(log)
+    #     partition_size = int(split_perc * log_size)
+    #     for log_nr in range(max_splits):
+    #         new_log = XFactory.create_log(log.get_attributes().clone())
+    #         for elem in log.get_extensions():
+    #             new_log.get_extensions().add(elem)
+    #
+    #         #new_log.__classifiers = log.get_classifiers().copy()
+    #         new_log.__globalTraceAttributes = log.get_global_trace_attributes().copy()
+    #         new_log.__globalEventAttributes = log.get_global_event_attributes().copy()
+    #
+    #         # Add first part.
+    #         for i in range(0, (log_nr * partition_size)):
+    #             new_log.append(log[i])
+    #
+    #         # Add last part.
+    #         for i in range((log_nr + 1) * partition_size, log_size):
+    #             new_log.append(log[i])
+    #
+    #         # This is the test partitions, added to end
+    #         for i in range(log_nr * partition_size, (log_nr + 1) * partition_size):
+    #             if i >= log_size:
+    #                 break  # edge case
+    #             new_log.append(log[i])
+    #
+    #         count = 0
+    #         for trace in new_log:
+    #             if (trace.get_attributes()["Label"].get_value() == "1"):
+    #                 count = count +1
+    #         assert(count > 0)
+    #         count = 0
+    #         for trace in new_log:
+    #             if (trace.get_attributes()["Label"].get_value() == "0"):
+    #                 count = count +1
+    #         assert(count > 0)
+    #
+    #         with open(os.path.join(output_folder,  log_name[:-4] + "_" + str(log_nr + 1) + ".xes"), "w") as file:
+    #             XesXmlSerializer().serialize(new_log, file)
+    #
+    #         with open(os.path.join(inp_path, log_name[:-4] + "_" + str(log_nr + 1) + ".xes"), "w") as file:
+    #             XesXmlSerializer().serialize(new_log, file)
 
     @staticmethod
     def create_folder_structure(directory, payload=False, payload_type=None):
@@ -402,11 +274,7 @@ class ExperimentRunner:
         # 1. Load file
         log = read_XES_log(os.path.join(inp_path, log_name))
 
-        # 2. Randomize order of traces. ---> FIXME: should split the data evenly
-        shuffle(log)
-
-        # 3. Split into 5 parts for cross validation
-        #ExperimentRunner.generate_cross_validation_logs(inp_path, log, log_name, output_folder, max_splits)
+        # 2. Shuffling & Split into 5 parts for cross validation
         FairLogSplit.generateFairLogSplit(inp_path, log, log_name, output_folder, max_splits, training_test_split)
 
     @staticmethod
@@ -428,12 +296,7 @@ class ExperimentRunner:
         return train_df, test_df
 
     @staticmethod
-    def test_encodings(results_folder, encoding, split_nr):
-        split = "split" + str(split_nr)
-        file_loc = results_folder + "/" + split + "/" + encoding
-        train_path = file_loc + "/" + "train_encodings.arff"
-        test_path = file_loc + "/" + "test_encodings.arff"
-        return {"train": os.path.abspath(train_path), "test": os.path.abspath(test_path)}
+
 
     def feature_selection(self, train_df, test_df, y_train, params, payload_train_df=None, payload_test_df=None, ):
         if payload_train_df is not None:
@@ -638,55 +501,36 @@ class ExperimentRunner:
 
             return result
 
-    def baseline_train(self, str_key, yamlfile):
-        """
+    def get_row_names_from_baseline_logs(self, max_range, dataset):
+        for split_nr in range(1, max_range+1):
+            d = dict()
+            train_df, test_df = read_generic_embedding_dump(self.results_folder, split_nr, dataset, d)
+            yield ExportDFRowNamesAsLists(train_df, test_df)
 
-        :return:
-        """
-
+    def abstract_train(self, str_key, yamlfile, dataset, max_range):
         results = []
         elements = []
-        for split_nr in range(1, 6):
+        for split_nr in range(1, max_range+1):
             d = dict()
-            train_df, test_df = read_generic_log(self.results_folder, split_nr, "baseline", d)
+            train_df, test_df = read_generic_embedding_dump(self.results_folder, split_nr, dataset, d)
             elements.append(d)
-            tr_result = self.train(train_df, test_df, split_nr=split_nr, exp_name="baseline")
+            tr_result = self.train(train_df, test_df, split_nr=split_nr, exp_name=dataset)
 
             result = {
                 "result": tr_result,
                 "split": split_nr
             }
-
             results.append(result)
 
         assert (not (str_key in yamlfile))
         yamlfile[str_key] = elements
         return results
 
-    def declare_train(self, str_key, yaml_file):
-        """
-        Train and evaluate declare models
-        :return:
-        """
+    def baseline_train(self, str_key, yamlfile, max_range):
+        return self.abstract_train(str_key, yamlfile, "baseline", max_range)
 
-        results = []
-        elements = []
-        # Separately for every split. Reduce total number of file parsing.
-        for split_nr in range(1, 6):
-            d = dict()
-            train_df, test_df = read_generic_log(self.results_folder, split_nr,  "declare", d)
-            elements.append(d)
-            tr_result = self.train(train_df, test_df, split_nr=split_nr, exp_name="declare")
-
-            result = {
-                "result": tr_result,
-                "split": split_nr
-            }
-
-            results.append(result)
-
-        yaml_file[str_key] = elements
-        return results
+    def declare_train(self, str_key, yaml_file, max_range):
+        return self.abstract_train(str_key, yaml_file, "declare", max_range)
 
     def sequence_train(self, encoding, yaml_file):
         """
@@ -694,13 +538,12 @@ class ExperimentRunner:
         :param encoding: sequence encoding
         :return:
         """
-
         results = []
         elements = []
         for split_nr in range(1, 6):
             # Read the log
             train_df, test_df = ExperimentRunner.read_sequence_log(self.results_folder, encoding, split_nr)
-            elements.append(ExperimentRunner.test_encodings(self.results_folder, encoding, split_nr))
+            elements.append(trace_encodings(self.results_folder, encoding, split_nr))
             tr_result = self.train(train_df, test_df, split_nr=split_nr, exp_name="sequence_{}".format(encoding))
 
             result = {
@@ -724,7 +567,7 @@ class ExperimentRunner:
         results = []
         elements = []
         for split_nr in range(1, 6):
-            dec_train_df, dec_test_df = read_generic_log(self.results_folder, split_nr,  "declare", dict())
+            dec_train_df, dec_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "declare", dict())
             seq_train_list = []
             seq_test_list = []
             for encoding in encodings:
@@ -763,8 +606,8 @@ class ExperimentRunner:
         results = []
         elements = []
         for split_nr in range(1, 6):
-            baseline_train_df, baseline_test_df = read_generic_log(self.results_folder, split_nr, "baseline", dict())
-            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr, "payload", dict())
+            baseline_train_df, baseline_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "baseline", dict())
+            payload_train_df, payload_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "payload", dict())
 
             payload_train_df["Label"] = baseline_train_df["Label"]
             payload_test_df["Label"] = baseline_test_df["Label"]
@@ -799,8 +642,8 @@ class ExperimentRunner:
         results = []
         elements = []
         for split_nr in range(1, 6):
-            train_df, test_df = read_generic_log(self.results_folder, split_nr, "baseline", dict())
-            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr, "payload", dict())
+            train_df, test_df = read_generic_embedding_dump(self.results_folder, split_nr, "baseline", dict())
+            payload_train_df, payload_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "payload", dict())
             #merged_train_df = pd.concat([train_df, payload_train_df], axis=1)
             #merged_test_df = pd.concat([test_df, payload_test_df], axis=1)
 
@@ -834,8 +677,8 @@ class ExperimentRunner:
         results = []
         elements = []
         for split_nr in range(1, 6):
-            train_df, test_df = read_generic_log(self.results_folder, split_nr, "baseline", dict())
-            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr,  "dwd", dict())
+            train_df, test_df = read_generic_embedding_dump(self.results_folder, split_nr, "baseline", dict())
+            payload_train_df, payload_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "dwd", dict())
 
             # merged_train_df = pd.concat([train_df, payload_train_df], axis=1)
             # merged_test_df = pd.concat([test_df, payload_test_df], axis=1)
@@ -864,8 +707,8 @@ class ExperimentRunner:
         elements = []
         # Separately for every split. Reduce total number of file parsing.
         for split_nr in range(1, 6):
-            train_df, test_df = read_generic_log(self.results_folder, split_nr,  "declare", dict())
-            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr, "payload", dict())
+            train_df, test_df = read_generic_embedding_dump(self.results_folder, split_nr, "declare", dict())
+            payload_train_df, payload_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "payload", dict())
 
 
             tr_result = self.train(train_df, test_df, payload_train_df, payload_test_df,
@@ -893,8 +736,8 @@ class ExperimentRunner:
         elements = []
         # Separately for every split. Reduce total number of file parsing.
         for split_nr in range(1, 6):
-            train_df, test_df = read_generic_log(self.results_folder, split_nr,  "declare", dict())
-            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr,  "dwd", dict())
+            train_df, test_df = read_generic_embedding_dump(self.results_folder, split_nr, "declare", dict())
+            payload_train_df, payload_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "dwd", dict())
 
             tr_result = self.train(train_df, test_df, payload_train_df, payload_test_df,
                                    split_nr=split_nr, exp_name="declare_dwd", dump_to_folder=(self.results_folder, split_nr, key))
@@ -920,9 +763,9 @@ class ExperimentRunner:
         elements = []
         # Separately for every split. Reduce total number of file parsing.
         for split_nr in range(1, 6):
-            train_df, test_df = read_generic_log(self.results_folder, split_nr,  "declare", dict())
-            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr, "payload", dict())
-            payload_train_df_2, payload_test_df_2 = read_generic_log(self.results_folder, split_nr,  "dwd", dict())
+            train_df, test_df = read_generic_embedding_dump(self.results_folder, split_nr, "declare", dict())
+            payload_train_df, payload_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "payload", dict())
+            payload_train_df_2, payload_test_df_2 = read_generic_embedding_dump(self.results_folder, split_nr, "dwd", dict())
 
             merged_train_df = pd.concat([train_df, payload_train_df_2], axis=1)
             merged_test_df = pd.concat([test_df, payload_test_df_2], axis=1)
@@ -955,7 +798,7 @@ class ExperimentRunner:
         for split_nr in range(1, 6):
             # Read the log
             train_df, test_df = ExperimentRunner.read_sequence_log(self.results_folder, encoding, split_nr)
-            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr, "payload", dict())
+            payload_train_df, payload_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "payload", dict())
 
             #merged_train_df = pd.concat([train_df, payload_train_df], axis=1)
             #merged_test_df = pd.concat([test_df, payload_test_df], axis=1)
@@ -985,8 +828,8 @@ class ExperimentRunner:
         elements = []
         results = []
         for split_nr in range(1, 6):
-            dec_train_df, dec_test_df = read_generic_log(self.results_folder, split_nr,  "declare", dict())
-            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr, "payload", dict())
+            dec_train_df, dec_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "declare", dict())
+            payload_train_df, payload_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "payload", dict())
             seq_train_list = []
             seq_test_list = []
             for encoding in encodings:
@@ -1029,8 +872,8 @@ class ExperimentRunner:
         results = []
         elements = []
         for split_nr in range(1, 6):
-            dec_train_df, dec_test_df = read_generic_log(self.results_folder, split_nr,  "declare", dict())
-            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr,  "dwd", dict())
+            dec_train_df, dec_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "declare", dict())
+            payload_train_df, payload_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "dwd", dict())
             seq_train_list = []
             seq_test_list = []
             for encoding in encodings:
@@ -1072,9 +915,9 @@ class ExperimentRunner:
         results = []
         elements = []
         for split_nr in range(1, 6):
-            dec_train_df, dec_test_df = read_generic_log(self.results_folder, split_nr,  "declare", dict())
-            payload_train_df, payload_test_df = read_generic_log(self.results_folder, split_nr,  "dwd", dict())
-            payload_train_df_2, payload_test_df_2 = read_generic_log(self.results_folder, split_nr, "payload", dict())
+            dec_train_df, dec_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "declare", dict())
+            payload_train_df, payload_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "dwd", dict())
+            payload_train_df_2, payload_test_df_2 = read_generic_embedding_dump(self.results_folder, split_nr, "payload", dict())
             seq_train_list = []
             seq_test_list = []
             for encoding in encodings:
@@ -1106,16 +949,18 @@ class ExperimentRunner:
         return results
 
 
-    def train_and_eval_benchmark(self):
+    def train_and_eval_benchmark(self, max_splits):
         all_results = {}
         yaml_file = {}
+        TrL, TeL = self.get_row_names_from_baseline_logs( max_splits, "baseline")
+
         if True:#not self.payload:
             print("Started working on baseline.")
-            baseline_results = self.baseline_train("bs", yaml_file)
+            baseline_results = self.baseline_train("bs", yaml_file, max_splits)
             all_results["bs"] = self.interpret_results(baseline_results, "baseline")
 
             print("Started working on declare.")
-            declare_results = self.declare_train("dc", yaml_file)
+            declare_results = self.declare_train("dc", yaml_file, max_splits)
             all_results["dc"] = self.interpret_results(declare_results, "declare")
 
             print("Started working on sequenceMR.")

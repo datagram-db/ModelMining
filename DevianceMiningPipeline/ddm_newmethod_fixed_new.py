@@ -19,6 +19,8 @@ import pandas as pd
 
 import os
 from .utils import PandaExpress
+from .utils.PandaExpress import extendDataFrameWithLabels
+from .utils.TraceUtils import trace_to_label_map, propositionalized_trace_to_label_map
 
 
 def fisher_calculation(X, y):
@@ -669,15 +671,16 @@ def declare_data_aware_embedding(ignored, inp_folder, train_log, test_log):
     train_df = pd.DataFrame.from_dict(train_dict)
     if doStoreSecondFile:
         test_df = pd.DataFrame.from_dict(test_dict)
-    # train_df = pd.DataFrame(train_features, columns=train_names)
-    # test_df = pd.DataFrame(test_features, columns=test_names)
-    # print(train_names)
-    # add Case_ID
+
     train_df["Case_ID"] = train_case_ids
     if doStoreSecondFile:
         test_df["Case_ID"] = test_case_ids
+        test_df = extendDataFrameWithLabels(test_df, propositionalized_trace_to_label_map(test_log))
+
+    train_df = extendDataFrameWithLabels(train_df, propositionalized_trace_to_label_map(train_log))
+
     PandaExpress.serialize(train_df, os.path.join(inp_folder, "dwd_train.csv"))
     if doStoreSecondFile:
         PandaExpress.serialize(test_df, os.path.join(inp_folder, "dwd_test.csv"))
-    return PandaExpress.ExportDFRowNames(test_df, train_df)
+    return PandaExpress.ExportDFRowNamesAsSets(test_df, train_df)
 

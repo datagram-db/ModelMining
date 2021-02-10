@@ -15,6 +15,10 @@ from .utils import PandaExpress
 
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 
+from .utils.PandaExpress import extendDataFrameWithLabels
+from .utils.TraceUtils import trace_to_label_map
+
+
 def containsSubstringOf(str, ls):
     for k in ls:
         if (str.startswith(k)):
@@ -850,18 +854,18 @@ def build_dataframes(train_data, test_data, settings):
             test_df = pd.concat([test_df, dfOneHot], axis=1)
             test_df.pop(selection)
 
-    # Save onehot transformations
-    # Write transformations into file
-    with open("data/onehot_transformations.txt", "w") as f:
-        for i, selection in enumerate(selected_one_hot):
-            f.write("Feature:" + selection + "\n")
-
-            for nr, cls in enumerate(transformations[i]):
-                f.write(str(nr) + ":" + str(cls) + "\n")
-
-
-    train_df.to_csv("debug_train_payload.csv", index=False)
-    test_df.to_csv("debug_test_payload.csv", index=False)
+    # # Save onehot transformations
+    # # Write transformations into file
+    # with open("data/onehot_transformations.txt", "w") as f:
+    #     for i, selection in enumerate(selected_one_hot):
+    #         f.write("Feature:" + selection + "\n")
+    #
+    #         for nr, cls in enumerate(transformations[i]):
+    #             f.write(str(nr) + ":" + str(cls) + "\n")
+    #
+    #
+    # train_df.to_csv("debug_train_payload.csv", index=False)
+    # test_df.to_csv("debug_test_payload.csv", index=False)
 
     for column in train_df.columns:
         if column != "concept:name":
@@ -886,11 +890,13 @@ def payload_embedding(inp_folder, settings_file, train, test):
         extracted_test_data = extracted_train_data
     train_df, test_df = build_dataframes(extracted_train_data, extracted_test_data, settings)
 
+    train_df = extendDataFrameWithLabels(train_df, trace_to_label_map(train))
+    test_df = extendDataFrameWithLabels(test_df, trace_to_label_map(test))
 
     PandaExpress.serialize(train_df, os.path.join(inp_folder, "payload_train.csv"))
     if doSaveFile:
         PandaExpress.serialize(test_df, os.path.join(inp_folder, "payload_test.csv"))
-    return PandaExpress.ExportDFRowNames(test_df, train_df)
+    return PandaExpress.ExportDFRowNamesAsSets(test_df, train_df)
 
 
 def payload_extractor2(inp_folder, log_name, settings_file, split=1.0):

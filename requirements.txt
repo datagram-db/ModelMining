@@ -14,3 +14,5 @@ arff==0.9
 jsonpickle==1.4.2
 pyyaml
 dateparser
+colorama=0.4.4
+scipy

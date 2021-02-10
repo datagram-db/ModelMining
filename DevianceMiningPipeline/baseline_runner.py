@@ -70,7 +70,7 @@ def baseline_embedding(inp_folder, train_log, test_log):
     test_df = PandaExpress.ensureDataFrameQuality(test_df)
     PandaExpress.serialize(test_df, os.path.join(inp_folder, "baseline_test.csv"))
 
-    return PandaExpress.ExportDFRowNames(test_df, train_df)
+    return PandaExpress.ExportDFRowNamesAsSets(test_df, train_df)
 
 
 
