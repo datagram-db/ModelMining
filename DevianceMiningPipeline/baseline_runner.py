@@ -2,15 +2,12 @@
 Code to find and encode IA encoding (Individual Activities) or baseline
 
 """
-from . import FileNameUtils
 from .deviancecommon import read_XES_log, xes_to_positional, extract_unique_events_transformed
 import numpy as np
 from .declaredevmining import split_log_train_test
 import pandas as pd
-from pathlib import Path
-import os, shutil
-from .PathUtils import *
-from . import PandaExpress
+from DevianceMiningPipeline.utils.PathUtils import *
+from .utils import PandaExpress
 
 
 def transform_log(train_log, activity_set):
@@ -73,5 +70,8 @@ def baseline_embedding(inp_folder, train_log, test_log):
     test_df = PandaExpress.ensureDataFrameQuality(test_df)
     PandaExpress.serialize(test_df, os.path.join(inp_folder, "baseline_test.csv"))
 
-    return os.path.abspath(os.path.join(inp_folder, "baseline_train.csv"))
+    return PandaExpress.ExportDFRowNames(test_df, train_df)
+
+
+
 

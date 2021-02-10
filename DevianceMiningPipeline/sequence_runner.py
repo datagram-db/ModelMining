@@ -5,10 +5,7 @@ Might need to change VMOptions dependent on the version of Java the machine is r
 
 """
 import subprocess
-import time
-import shutil
-import os
-from .PathUtils import *
+from DevianceMiningPipeline.utils.PathUtils import *
 
 
 JAR_NAME = "GoSwift.jar"  # Jar file to run

@@ -7,13 +7,10 @@ Performing a fair split of the traces. (We could be more accurate than that, but
 import os
 from random import shuffle
 
-from opyenxes.data_in.XUniversalParser import XUniversalParser
 from opyenxes.data_out.XesXmlSerializer import XesXmlSerializer
-from opyenxes.model import XAttributeBoolean, XAttributeLiteral, XAttributeTimestamp, XAttributeDiscrete, XAttributeContinuous
 from opyenxes.factory.XFactory import XFactory
-import colorama
 import numpy
-from DevianceMiningPipeline import TraceUtils
+from DevianceMiningPipeline.utils import TraceUtils
 
 
 def joonas_split_log_train_test(log, train_size):

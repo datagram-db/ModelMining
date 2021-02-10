@@ -10,7 +10,8 @@ from opyenxes.model import XAttributeBoolean, XAttributeLiteral, XAttributeTimes
 from collections import defaultdict
 
 import pandas as pd
-import os, shutil
+import os
+from .utils import PandaExpress
 
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 
@@ -871,12 +872,6 @@ def build_dataframes(train_data, test_data, settings):
     return train_df, test_df
 
 
-def payload_extractor(inp_folder, log_name, settings_file, split=0.8):
-    log = read_XES_log(log_name)
-    train, test = split_log_train_test(log, split)
-    return payload_embedding(inp_folder, settings_file, train, test)
-
-
 def payload_embedding(inp_folder, settings_file, train, test):
     doSaveFile = len(test) > 0
     print("Lengths of logs train: {}, test: {}".format(len(train), len(test)))
@@ -890,11 +885,12 @@ def payload_embedding(inp_folder, settings_file, train, test):
     else:
         extracted_test_data = extracted_train_data
     train_df, test_df = build_dataframes(extracted_train_data, extracted_test_data, settings)
-    # Force all to float (except label?)
-    train_df.to_csv(os.path.join(inp_folder, "payload_train.csv"), index=False)
+
+
+    PandaExpress.serialize(train_df, os.path.join(inp_folder, "payload_train.csv"))
     if doSaveFile:
-        test_df.to_csv(os.path.join(inp_folder, "payload_test.csv"), index=False)
-    return train_df, test_df
+        PandaExpress.serialize(test_df, os.path.join(inp_folder, "payload_test.csv"))
+    return PandaExpress.ExportDFRowNames(test_df, train_df)
 
 
 def payload_extractor2(inp_folder, log_name, settings_file, split=1.0):
@@ -923,15 +919,3 @@ def payload_extractor2(inp_folder, log_name, settings_file, split=1.0):
     f = os.path.join(inp_folder, "payload_train.csv")
     train_df.to_csv(os.path.join(inp_folder, "payload_train.csv"), index=False)
     return os.path.abspath(f)
-
-
-from .PathUtils import move_files
-
-def move_payload_files(inp_folder, output_folder, split_nr):
-    move_files(inp_folder, output_folder, split_nr, "payload")
-
-
-def run_payload_extractor(log_path, settings_file, results_folder):
-    for logNr in range(5):
-        from . import FileNameUtils
-        payload_extractor(FileNameUtils.payload_path(logNr + 1, results_folder), log_path.format(logNr + 1), settings_file)

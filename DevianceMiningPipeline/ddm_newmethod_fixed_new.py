@@ -9,7 +9,7 @@ from .declaredevmining import filter_candidates_by_support, count_classes
 
 from skfeature.function.similarity_based import fisher_score
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
-from sklearn.tree import DecisionTreeClassifier, _tree, export_graphviz
+from sklearn.tree import DecisionTreeClassifier, export_graphviz
 
 
 
@@ -18,8 +18,8 @@ import numpy as np
 import pandas as pd
 
 import os
-import shutil
-from . import PandaExpress
+from .utils import PandaExpress
+
 
 def fisher_calculation(X, y):
     """
@@ -679,25 +679,5 @@ def declare_data_aware_embedding(ignored, inp_folder, train_log, test_log):
     PandaExpress.serialize(train_df, os.path.join(inp_folder, "dwd_train.csv"))
     if doStoreSecondFile:
         PandaExpress.serialize(test_df, os.path.join(inp_folder, "dwd_test.csv"))
-    return os.path.abspath(os.path.join(inp_folder, "dwd_train.csv"))
+    return PandaExpress.ExportDFRowNames(test_df, train_df)
 
-
-from .PathUtils import move_files
-
-def move_dwd_files(inp_folder, output_folder, split_nr):
-    move_files(inp_folder, output_folder, split_nr, "dwd")
-
-
-def run_declare_with_data(log_path, settings, results_folder, doForce = False):
-    for logNr in range(5):
-        logPath = log_path.format(logNr + 1)
-        folder_name = "./dwdOutput/"
-        if not os.path.exists(folder_name):
-            os.makedirs(folder_name)
-
-        ignored = []
-        if settings is not None:
-            ignored = settings["ignored"]
-
-        data_declare_main(folder_name, logPath, ignored, forceSomeElements=(settings is None) or doForce)
-        move_dwd_files(folder_name, results_folder, logNr + 1)

@@ -7,10 +7,9 @@ from .declaretemplates_new import *
 #from declaretemplates import *
 from .deviancecommon import *
 import pandas as pd
-from .PathUtils import *
-import shutil
+from DevianceMiningPipeline.utils.PathUtils import *
 import os
-from . import PandaExpress
+from .utils import PandaExpress
 
 
 def reencode_map(val):
@@ -264,4 +263,4 @@ def declare_embedding(output_path, train_log, test_log, templates=None, filter_t
 
     PandaExpress.serialize(train_df, os.path.join(output_path, "declare_train.csv"))
     PandaExpress.serialize(test_df, os.path.join(output_path, "declare_test.csv"))
-    return os.path.abspath(os.path.join(output_path, "declare_train.csv"))
+    return PandaExpress.ExportDFRowNames(test_df, train_df)

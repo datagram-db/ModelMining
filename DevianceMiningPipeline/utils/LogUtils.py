@@ -1,4 +1,4 @@
-from . import TraceUtils
+from DevianceMiningPipeline.utils import TraceUtils
 from DevianceMiningPipeline.deviancecommon import xes_to_positional, xes_to_data_positional
 
 def abstract_split(log, train_id, test_id, log_conversion = None, id_extractor = None):

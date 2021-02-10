@@ -14,16 +14,16 @@ import shutil
 import yaml
 
 from sklearn.metrics import roc_auc_score, accuracy_score, precision_score, recall_score, f1_score
-from sklearn.tree import DecisionTreeClassifier, _tree, export_graphviz
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.feature_selection import SelectKBest, chi2
 
 from opyenxes.data_out.XesXmlSerializer import XesXmlSerializer
 from opyenxes.factory.XFactory import XFactory
 
-from . import FairLogSplit, TraceUtils, baseline_runner, declaredevmining, LogUtils
+from . import baseline_runner, declaredevmining
 from .deviancecommon import read_XES_log
 from .sequence_runner import run_sequences, generateSequences
-from .ddm_newmethod_fixed_new import run_declare_with_data, data_declare_main, declare_data_aware_embedding
+from .ddm_newmethod_fixed_new import data_declare_main, declare_data_aware_embedding
 
 from sklearn.preprocessing import StandardScaler
 
@@ -32,13 +32,11 @@ from skfeature.function.similarity_based import fisher_score
 from sklearn.decomposition import PCA
 from collections import defaultdict
 
-from .payload_extractor import run_payload_extractor, payload_extractor, payload_extractor2, payload_embedding
-from .run_weka_models import prune_duplicate_leaves, get_code, export_text2
-from . import FileNameUtils
-from . import FairLogSplit
+from .payload_extractor import payload_extractor2, payload_embedding
+from .utils import *
 
 from pathlib import Path
-import arff
+
 
 def read_generic_log(results_folder, split_nr, encoding, dictionary):
     """
@@ -437,62 +435,6 @@ class ExperimentRunner:
         test_path = file_loc + "/" + "test_encodings.arff"
         return {"train": os.path.abspath(train_path), "test": os.path.abspath(test_path)}
 
-    @staticmethod
-    def evaluate_dt_model(clf, X_train, y_train, X_test, y_test) -> (dict, dict):
-        """
-        Evaluates the model
-        :param y_test:
-        :param predictions:
-        :param probabilities:
-        :return:
-        """
-
-        # predict on train data
-
-        predictions = clf.predict(X_train)
-        probabilities = clf.predict_proba(X_train).T[1]
-
-
-        # get metrics
-        train_accuracy = accuracy_score(y_train, predictions)
-        train_precision = precision_score(y_train, predictions)
-        train_rc = recall_score(y_train, predictions)
-        train_f1 = f1_score(y_train, predictions)
-        train_auc = roc_auc_score(y_train, probabilities)
-
-        # predict on test data
-        predictions = clf.predict(X_test)
-        probabilities = clf.predict_proba(X_test).T[1]
-
-        # get metrics
-        test_accuracy = accuracy_score(y_test, predictions)
-        test_precision = precision_score(y_test, predictions)
-        test_rc = recall_score(y_test, predictions)
-        test_f1 = f1_score(y_test, predictions)
-        test_auc = 0
-        try:
-            test_auc = roc_auc_score(y_test, probabilities)
-        except:
-            test_auc = 0
-
-        train_results = {
-            "accuracy": train_accuracy,
-            "precision": train_precision,
-            "recall": train_rc,
-            "f1": train_f1,
-            "auc": train_auc
-        }
-
-        test_results = {
-            "accuracy": test_accuracy,
-            "precision": test_precision,
-            "recall": test_rc,
-            "f1": test_f1,
-            "auc": test_auc
-        }
-
-        return train_results, test_results
-
     def feature_selection(self, train_df, test_df, y_train, params, payload_train_df=None, payload_test_df=None, ):
         if payload_train_df is not None:
             train_df = pd.concat([train_df, payload_train_df], axis=1)
@@ -648,12 +590,9 @@ class ExperimentRunner:
         clf.fit(X_train, y_train, check_input=False)
 
         # Evaluate model
-        train_results, test_results = ExperimentRunner.evaluate_dt_model(clf, X_train, y_train, X_test, y_test)
+        train_results, test_results = ModelUtils.evaluate_dt_model(clf, X_train, y_train, X_test, y_test)
+        rules = ModelUtils.export_text2(clf, feature_names.to_list())
 
-        #Same code from run_weka_models
-        #prune_duplicate_leaves(clf)
-        rules = export_text2(clf, feature_names.to_list())
-        #rules = get_code(clf, feature_names)
         return train_results, test_results, rules
 
     def train(self, train_df, test_df, payload_train_df=None, payload_test_df=None, split_nr=None, exp_name=None, dump_to_folder = None):
@@ -1303,7 +1242,7 @@ class ExperimentRunner:
             ignored = self.payload_dwd_settings["ignored"]
 
         print("New code by Giacomo Bergami, for evenly splitting and storing the database")
-        for i in range(0):
+        for i in range(max_splits):
             print("Current run: " +str(i))
             baseline_path = FileNameUtils.baseline_path(i, self.results_folder)
             declare__path = FileNameUtils.declare_path(i, self.results_folder)
@@ -1313,9 +1252,9 @@ class ExperimentRunner:
             print("\t - reading the log")
             log = read_XES_log(FileNameUtils.getXesName(self.log_path, i))
             TrainingId, TestingId = FairLogSplit.abstractFairSplit(log,
-                                           TraceUtils.isTraceLabelPositive,
-                                           TraceUtils.getTraceId,
-                                           training_test_split)
+                                                                   TraceUtils.isTraceLabelPositive,
+                                                                   TraceUtils.getTraceId,
+                                                                   training_test_split)
 
             print("\t * obtaining the canonical XES representation")
             logTraining, logTesting = \
@@ -1330,20 +1269,28 @@ class ExperimentRunner:
                 LogUtils.xes_to_data_propositional_split(log, TrainingId, TestingId, doForce)
 
             print("\t - writing baseline split")
-            baseline_runner.baseline_embedding(baseline_path, propositionalTraining, propositionalTesting)
+            STr, STt = baseline_runner.baseline_embedding(baseline_path, propositionalTraining, propositionalTesting)
+            assert (STr == TrainingId)
+            assert (STt == TestingId)
 
             print("\t - writing declare split")
-            declaredevmining.declare_embedding(declare__path, propositionalTraining, propositionalTesting, reencode=self.reencode)
+            STr, STt = declaredevmining.declare_embedding(declare__path, propositionalTraining, propositionalTesting, reencode=self.reencode)
+            assert (STr == TrainingId)
+            assert (STt == TestingId)
 
             if self.payload:
                 if self.payload_type == "normal" or self.payload_type == "both":
                     print("\t - writing payload embedding")
-                    payload_embedding(payload__path, self.payload_settings, logTraining, logTesting)
+                    STr, STt = payload_embedding(payload__path, self.payload_settings, logTraining, logTesting)
+                    assert (STr == TrainingId)
+                    assert (STt == TestingId)
                 if self.payload_type == "dwd" or self.payload_type == "both":
                     print("\t - writing declare with data embedding")
-                    declare_data_aware_embedding(ignored, declared_path, dataPropositionalTraining, dataPropositionalTesting)
+                    STr, STt = declare_data_aware_embedding(ignored, declared_path, dataPropositionalTraining, dataPropositionalTesting)
+                    assert (STr == TrainingId)
+                    assert (STt == TestingId)
 
-        print("Run sequence miner for all the params")
+        print("~~ Run sequence miner for all the params")
         run_sequences(self.inp_path, self.log_path_seq, self.results_folder, self.err_logger, max_splits, sequence_threshold=self.sequence_threshold)
 
 
