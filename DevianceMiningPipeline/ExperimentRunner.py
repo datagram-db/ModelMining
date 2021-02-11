@@ -307,10 +307,8 @@ class ExperimentRunner:
                 trace_remaining[i] = threshold
     
             chosen = 0
-            #chosen_ranks = []
             # Go from higher to lower
             for rank in selected_ranks:
-                #is_chosen = False
                 if len(trace_remaining) == 0:
                     break
                 chosen += 1
@@ -318,10 +316,6 @@ class ExperimentRunner:
                 marked_for_deletion = set()
                 for k in trace_remaining.keys():
                     if train_df.iloc[k, rank] > 0:
-                        #if not is_chosen:
-                            # Only choose as a feature, if there is at least one trace covered by it.
-                            #chosen_ranks.append(rank)
-                            #is_chosen = True
     
                         trace_remaining[k] -= 1
                         if trace_remaining[k] <= 0:
@@ -449,32 +443,6 @@ class ExperimentRunner:
             test_df = PandaExpress.dataframe_multiway_equijoin(testls)
             multidump_compact(self.results_folder, [], str_key, train_df, test_df, split_nr)
 
-    def multijoined_train(self, str_key, yamlfile, dataset_list, resulting_dataset, max_range):
-        results = []
-        elements = []
-        for split_nr in range(1, max_range+1):
-            trainls = []
-            testls = []
-            for dataset1 in dataset_list:
-                train1_df, test1_df = read_generic_embedding_dump(self.results_folder, split_nr, dataset1, dict())
-                trainls.append(train1_df)
-                testls.append(test1_df)
-
-            train_df = PandaExpress.dataframe_multiway_equijoin(trainls)
-            test_df = PandaExpress.dataframe_multiway_equijoin(testls)
-
-            multidump_compact(self.results_folder, elements, str_key, train_df, test_df, split_nr)
-            tr_result = self.train(train_df, test_df, split_nr=split_nr, exp_name=resulting_dataset)
-            result = {
-                "result": tr_result,
-                "split": split_nr
-            }
-            results.append(result)
-
-        assert (not (str_key in yamlfile))
-        yamlfile[str_key] = elements
-        return results
-
     def baseline_train(self, yamlfile, max_range):
         return self.abstract_train("bs", yamlfile, "baseline", max_range)
 
@@ -486,44 +454,34 @@ class ExperimentRunner:
 
     def hybrid_train(self, yaml_file, max_range):
         return self.abstract_train("hybrid", yaml_file, "hybrid", max_range)
-        #return self.multijoined_train("hybrid", yaml_file, ["declare", "combined_for_hybrid"], "hybrid", max_range)
 
     def baseline_train_with_data(self, yaml_file, max_range):
         return self.abstract_train("bs_data", yaml_file, "bs_data", max_range)
-        #return self.multijoined_train("bs_data", yaml_file, ["baseline", "payload"], "baseline_payload", max_range)
 
     def baseline_train_with_dwd(self, yaml_file, max_range):
         return self.abstract_train("baseline_dwd", yaml_file, "baseline_dwd", max_range)
-        #return self.multijoined_train("baseline_dwd", yaml_file, ["baseline", "dwd"], "baseline_dwd", max_range)
 
     def sequence_train_with_data(self, encoding, yaml_file, max_range):
         key = encoding+"_data"
         return self.abstract_train(key, yaml_file, key, max_range)
-        #return self.multijoined_train(key, yaml_file, [encoding, "payload"], "sequence_data_{}".format(encoding), max_range)
 
     def declare_train_with_data(self, yaml_file, max_range):
         return self.abstract_train("dc_data", yaml_file, "dc_data", max_range)
-        #return self.multijoined_train("dc_data", yaml_file, ["declare", "payload"], "declare_data", max_range)
 
     def declare_train_with_dwd(self, yaml_file, max_range):
         return self.abstract_train("dc_dwd", yaml_file, "dc_dwd", max_range)
-        #return self.multijoined_train("dc_dwd", yaml_file, ["declare", "dwd"], "declare_dwd", max_range)
 
     def declare_train_with_dwd_data(self, yaml_file, max_range):
         return self.abstract_train("dc_dwd_payload", yaml_file, "dc_dwd_payload", max_range)
-        #return self.multijoined_train("dc_dwd_payload", yaml_file, ["declare", "payload", "dwd"], "declare_dwd_data", max_range)
 
     def hybrid_with_data(self, yaml_file, max_range):
         return self.abstract_train("hybrid_data", yaml_file, "hybrid_data", max_range)
-        #return self.multijoined_train("hybrid_data", yaml_file, ["declare", "payload", "combined_for_hybrid"], "hybrid_data", max_range)
 
     def hybrid_with_dwd(self, yaml_file, max_range):
         return self.abstract_train("hybrid_dwd", yaml_file, "hybrid_dwd", max_range)
-        #return self.multijoined_train("hybrid_dwd", yaml_file, ["declare", "dwd", "combined_for_hybrid"], "hybrid_dwd", max_range)
 
     def hybrid_with_dwd_and_payload(self, yaml_file, max_range):
         return self.abstract_train("hybrid_dwd_payload", yaml_file, "hybrid_dwd_payload", max_range)
-        #return self.multijoined_train("hybrid_dwd_payload", yaml_file, ["declare", "dwd", "payload", "combined_for_hybrid"], "hybrid_dwd_payload", max_range)
 
     def train_and_eval_benchmark(self, max_splits):
         all_results = {}
