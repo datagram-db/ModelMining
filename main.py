@@ -7,7 +7,7 @@ from DevianceMiningPipeline.DataPreparation.RunWholeStrategy import RunWholeStra
 from DevianceMiningPipeline.deviancecommon import read_XES_log
 import DevianceMiningPipeline.LogTaggingViaPredicates
 from DevianceMiningPipeline.DataPreparation.TaggingStrategy import TaggingStrategy
-from DevianceMiningPipeline.declaretemplates_new import template_response
+from DevianceMiningPipeline.declaretemplates_new import template_response, template_init
 from DevianceMiningPipeline.LogTaggingViaPredicates import SatCases
 from DevianceMiningPipeline import ConfigurationFile, PayloadType
 from DevianceMiningPipeline.DataPreparation.RetagLogWithUniqueIds import changeLog
@@ -57,18 +57,7 @@ def guaranteeUniqueXes():
 def generate_configuration():
     pass
     from DevianceMiningPipeline import ConfigurationFile
-    # cf = ConfigurationFile()
-    # cf.setExperimentName("synth_xray")
-    # cf.setLogName("merged_xray.xes_unique.xes")
-    # cf.setOutputFolder("xray")
-    # cf.setMaxDepth(10)
-    # cf.setMinLeaf(10)
-    # cf.setSequenceThreshold(5)
-    # cf.setPayloadType(PayloadType.both)
-    # cf.setAutoIgnore(["concept: name", "Label", "lifecycle: transition"])
-    # cf.doForceTime()
-    # cf.setPayloadSettings("xray_settings.cfg")
-    # cf.dump("synth_xray.json")
+
 
 
 # def write_log_file_with_label_cond(log, filen, attn, val):
@@ -195,34 +184,35 @@ def generateTagging():
 #     conf.setExperimentName("xray_payload")
 #     conf.dump("xray_payload.json")
 
-# def test(x):
-#         from pathlib import Path
-#         folder_not_copy = ".thread"
-#         pid = "Process-"+str(os.getpid())
-#         print("[" + threading.currentThread().getName() + "] Current: "+ os.getcwd() +" name: "+os.path.basename(os.getcwd()))
-#         #if not (os.path.basename(os.getcwd()) == pid):
-#         Path(pid).mkdir(parents=True, exist_ok=True)
-#         print("["+threading.currentThread().getName()+"] Creating folder")
-#         data_path = os.path.abspath(os.path.join(pid, "data"))
-#         if not (os.path.exists(data_path)):
-#             print("["+pid+"] Copying to the thread folder: " + os.path.join(pid, "data"))
-#             shutil.copyfile("bpi11.json", os.path.join(pid, "bpi11.json"))
-#             #TODO:
-#             #shutil.copytree("./data", data_path)
-#             #for file in os.listdir("."):
-#             #    if (os.path.isfile(file)):
-#             #        shutil.copyfile(file, os.path.join(pid, file))
-#             #shutil.copyfile("GoSwift.jar", os.path.join(pid, "GoSwift.jar"))
-#         #os.chdir(pid)
-#         #print("Creating placeholder: "+os.path.abspath(os.path.join(pid, folder_not_copy))+" for current"+ os.getcwd() +" name: "+os.path.basename(os.getcwd()))
-#         #open(os.path.abspath(os.path.join(pid, folder_not_copy)), "a").close()
-#         #print("["+threading.currentThread().getName()+"] Now running: " + x)
-#         #run_complete_configuration_and_run(x)
-#         return pid
 
 def printWithColor(str):
     print("\x1b[6;30;42m " + str + "\x1b[0m")
 
+def run_xray(pipeline):
+    assert isinstance(pipeline, RunWholeStrategy)
+
+    cf = ConfigurationFile()
+    cf.setExperimentName("synth_xray")
+    cf.setLogName("merged_xray.xes")
+    cf.setOutputFolder("xray")
+    cf.setMaxDepth(10)
+    cf.setMinLeaf(10)
+    cf.setSequenceThreshold(5)
+    cf.setPayloadType(PayloadType.both)
+    cf.setAutoIgnore(["concept: name", "Label", "lifecycle: transition"])
+    cf.doForceTime()
+    cf.setPayloadSettings("xray_settings.cfg")
+    cf.dump("synth_xray.json")
+
+    xray_map = {
+        "xray_payload": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverIthEventAttn(x, "DisfuncOrg", True, 0),
+        "xray_mra_tra": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x, ["apply_cast", "perform_reposition", "prescribe_rehabilitation"], 2),
+        "xray_mr_tr": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactOccurrence(x, ["apply_cast", "perform_reposition", "prescribe_rehabilitation"], 1),
+        "xray_proc": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactSubsequence(x, ["check_X_ray_risk", "examine_patient", "perform_surgery"]),
+        "xray_decl": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAnyProp(x, [(template_init, ["check_X_ray_risk"])], SatCases.NotVacuitySat)
+    }
+
+    runWholeConfiguration(pipeline, "merged_xray.xes", cf, xray_map)
 
 def run_sepsis(pipeline):
     assert isinstance(pipeline, RunWholeStrategy)
@@ -235,7 +225,7 @@ def run_sepsis(pipeline):
     cf.setMinLeaf(5)
     cf.setSequenceThreshold(5)
     cf.setPayloadType(PayloadType.both)
-    cf.setAutoIgnore(["Diagnosis", "Diagnose", "time:timestamp", "concept: name", "Label", "lifecycle: transition"])
+    cf.setAutoIgnore(["Diagnosis", "Diagnose", "time:timestamp", "concept: name", "Label", "lifecycle: transition", "org:group", "org: group"])
     cf.setPayloadSettings("sepsis_settings.cfg")
     cf.dump("sepsis_er.json")
 
@@ -263,27 +253,9 @@ def run_sepsis(pipeline):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    pipeline = RunWholeStrategy(LOGS_FOLDER, DATA_EXP, False, None, 4)
+    pipeline = RunWholeStrategy(os.path.join("data","logs"),
+                                os.path.join("data","experiments"),
+                                True,
+                                [5, 10, 15, 20, 25, 30],
+                                4)
     run_sepsis(pipeline)
-    # from colorama import init
-    # init()
-    # printWithColor("Generating the configuration JSONs")
-    # generate_configuration()
-    #
-    # printWithColor("Generating some randomly-generated datasets (unused in the current configuration)")
-    # LogGeneration.write_xeses(LOGS_FOLDER)
-    #
-    # printWithColor("Guaranteeing that the logs used for the testing have unique trace ids (it is required for better training the dataset)")
-    # guaranteeUniqueXes()
-    #
-    # printWithColor("Generates the jsons configurations")
-    # generateTagging()
-    #
-    # LS = [ "sepsis_proc.json",  "sepsis_decl.json", "sepsis_mr_tr.json", "sepsis_mra_tra.json", "sepsis_payload.json"]
-    # for conf_file in LS:
-    #     printWithColor("Now running: "+conf_file)
-    #     run_complete_configuration_and_run(conf_file, doNr0 = True, max_splits=4)
-    # pool = Pool()
-    # folders_to_merge = pool.map(test, LS)
-    # pool.close()
-    # pool.join()
