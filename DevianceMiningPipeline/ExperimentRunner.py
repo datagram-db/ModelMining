@@ -177,49 +177,6 @@ class ExperimentRunner:
 
             return models
 
-    # @staticmethod
-    # def generate_cross_validation_logs(inp_path,log, log_name, output_folder, max_splits, split_perc): #split_perc = 0.2, max_splits = 5
-    #     log_size = len(log)
-    #     partition_size = int(split_perc * log_size)
-    #     for log_nr in range(max_splits):
-    #         new_log = XFactory.create_log(log.get_attributes().clone())
-    #         for elem in log.get_extensions():
-    #             new_log.get_extensions().add(elem)
-    #
-    #         #new_log.__classifiers = log.get_classifiers().copy()
-    #         new_log.__globalTraceAttributes = log.get_global_trace_attributes().copy()
-    #         new_log.__globalEventAttributes = log.get_global_event_attributes().copy()
-    #
-    #         # Add first part.
-    #         for i in range(0, (log_nr * partition_size)):
-    #             new_log.append(log[i])
-    #
-    #         # Add last part.
-    #         for i in range((log_nr + 1) * partition_size, log_size):
-    #             new_log.append(log[i])
-    #
-    #         # This is the test partitions, added to end
-    #         for i in range(log_nr * partition_size, (log_nr + 1) * partition_size):
-    #             if i >= log_size:
-    #                 break  # edge case
-    #             new_log.append(log[i])
-    #
-    #         count = 0
-    #         for trace in new_log:
-    #             if (trace.get_attributes()["Label"].get_value() == "1"):
-    #                 count = count +1
-    #         assert(count > 0)
-    #         count = 0
-    #         for trace in new_log:
-    #             if (trace.get_attributes()["Label"].get_value() == "0"):
-    #                 count = count +1
-    #         assert(count > 0)
-    #
-    #         with open(os.path.join(output_folder,  log_name[:-4] + "_" + str(log_nr + 1) + ".xes"), "w") as file:
-    #             XesXmlSerializer().serialize(new_log, file)
-    #
-    #         with open(os.path.join(inp_path, log_name[:-4] + "_" + str(log_nr + 1) + ".xes"), "w") as file:
-    #             XesXmlSerializer().serialize(new_log, file)
 
     @staticmethod
     def create_folder_structure(directory, max_iterations, payload=False, payload_type=None):
@@ -432,41 +389,27 @@ class ExperimentRunner:
 
         return train_results, test_results, rules
 
-    def train(self, train_df, test_df, payload_train_df=None, payload_test_df=None, split_nr=None, exp_name=None, dump_to_folder = None):
+    def train(self, train_df, test_df, split_nr=None, exp_name=None):
         if self.method == "fisher":
-            assert (False) # Dead code
             selection_counts = self.selection_counts
             results = []
             # Trying all selection counts
             for selection_count in selection_counts:
-                if payload_train_df is not None:
-                    train_results, test_results, rules = self.train_and_evaluate_select(train_df.copy(), test_df.copy(),
-                                                                             payload_train_df.copy(), payload_test_df.copy(), params={"selection_count": selection_count})
-                else:
-                    train_results, test_results, rules = self.train_and_evaluate_select(train_df.copy(), test_df.copy(),
-                                                                                 params={"selection_count": selection_count})
+                train_results, test_results, rules = self.train_and_evaluate_select(train_df.copy(), test_df.copy(),
+                                                                                                 params={"selection_count": selection_count})
                 result = {
                     "train": train_results,
                     "test": test_results,
                     "selection_count": selection_count,
                     "rules": rules
                 }
-
                 results.append(result)
 
             return results
         else:
-            if payload_train_df is not None:
-                train_results, test_results, rules = self.train_and_evaluate_select(train_df.copy(),
-                                                                             test_df.copy(),
-                                                                             payload_train_df.copy(),
-                                                                             payload_test_df.copy(),
-                                                                             split_nr=split_nr, exp_name=exp_name, dump_to_folder = dump_to_folder)
-            else:
-                train_results, test_results, rules = self.train_and_evaluate_select(train_df.copy(),
-                                                                            test_df.copy(),
-                                                                            split_nr=split_nr, exp_name=exp_name)
-
+            train_results, test_results, rules = self.train_and_evaluate_select(train_df.copy(),
+                                                                                        test_df.copy(),
+                                                                                        split_nr=split_nr, exp_name=exp_name)
             result = {
                 "train": train_results,
                 "test": test_results,
@@ -474,26 +417,6 @@ class ExperimentRunner:
             }
 
             return result
-
-    def get_row_names_from_baseline_logs(self, max_range, dataset):
-        for split_nr in range(1, max_range+1):
-            d = dict()
-            train_df, test_df = read_generic_embedding_dump(self.results_folder, split_nr, dataset, d)
-            yield ExportDFRowNamesAsLists(train_df, test_df)
-
-    def single_load(self, dataset, split_nr):
-            return read_generic_embedding_dump(self.results_folder, split_nr + 1, dataset, dict())
-
-    def join_encodings(self, split_nr, encodings=None):
-        if encodings is None:
-            encodings = ["mr", "mra", "tr", "tra"]
-        trL = []
-        teL = []
-        for strategy in encodings:
-            tr, te = self.single_load(strategy, split_nr)
-            trL.append(tr)
-            teL.append(te)
-        return dataframe_multiway_equijoin(trL), dataframe_multiway_equijoin(teL)
 
     def abstract_train(self, str_key, yamlfile, dataset, max_range):
         results = []
