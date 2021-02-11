@@ -1,5 +1,5 @@
-from .ConfigurationFile import ConfigurationFile
+from DevianceMiningPipeline.DataPreparation.ConfigurationFile import ConfigurationFile
 from .PayloadType       import PayloadType
 from . import deviancecommon
 from . import LogTaggingViaPredicates
-from . import RetagLogWithUniqueIds
+from .DataPreparation import RetagLogWithUniqueIds

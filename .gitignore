@@ -7,6 +7,8 @@ SepsisDWD/*
 __pycache__
 __pycache__/
 __pycache__/*
+data/logs/class_single_extra_1.xes
+data/logs/class_single_missing_1.xes
 data/logs/sepsis_decl.xes
 data/logs/sepsis_mr_tr.xes
 data/logs/sepsis_mra_tra.xes
@@ -55,3 +57,5 @@ train_synth_xray_results.txt
 *.7z
 data/logs/sepsis.xes_unique.xes
 data/logs/merged_xray.xes_unique.xes
+EnglishBPIChallenge2011.xes
+EnglishBPIChallenge2011.xes_unique.xes

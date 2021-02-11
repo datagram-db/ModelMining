@@ -6,7 +6,6 @@ def ifneg_right(lhs, rhs):
     else:
         return (lhs)
 
-
 class ConfigurationFile(object):
     def __init__(self):
         self.auto_ignored = None

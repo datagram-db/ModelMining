@@ -4,7 +4,6 @@ Full pipeline for deviance mining experiments
 Author: Joonas Puura
 """
 
-from random import shuffle
 import os
 
 import pandas as pd
@@ -13,15 +12,11 @@ import numpy as np
 import shutil
 import yaml
 
-from sklearn.metrics import roc_auc_score, accuracy_score, precision_score, recall_score, f1_score
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.feature_selection import SelectKBest, chi2
 
-from opyenxes.data_out.XesXmlSerializer import XesXmlSerializer
-from opyenxes.factory.XFactory import XFactory
-
 from . import baseline_runner, declaredevmining, model
-from .GoodPrintResults import do_dump_benchmark
+from DevianceMiningPipeline.utils.GoodPrintResults import do_dump_benchmark
 from .deviancecommon import read_XES_log
 from .sequence_runner import run_sequences, generateSequences
 from .ddm_newmethod_fixed_new import data_declare_main, declare_data_aware_embedding, fisher_calculation
@@ -39,8 +34,8 @@ from .utils import *
 
 from .utils.DumpUtils import read_generic_embedding_dump, multidump_compact, read_arff_embedding_dump, \
     dump_custom_dataframes, dump_extended_dataframes, genericDump
-from .utils.FileNameUtils import arff_trace_encodings, path_generic_log, extract_file_name_for_dump, csv_trace_encodings
-from .utils.PandaExpress import ExportDFRowNamesAsSets, ExportDFRowNamesAsLists, dataframe_multiway_equijoin
+from .utils.FileNameUtils import csv_trace_encodings
+from .utils.PandaExpress import dataframe_multiway_equijoin
 
 
 class ExperimentRunner:

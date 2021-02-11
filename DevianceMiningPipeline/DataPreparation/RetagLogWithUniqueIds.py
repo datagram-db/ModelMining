@@ -21,19 +21,22 @@ def numberToBase(n, b):
 def generateStringFromNumber(n):
     return "".join(map(lambda x: defaults[x], numberToBase(n, len(defaults))))
 
-def changeLog(logFileName):
+def changeLog(logFileName, doQualityCheck = True):
     with open(logFileName) as file:
         log = XUniversalParser().parse(file)[0]
         i = 0
         for trace in log:
             trace.get_attributes()["concept:name"] = XFactory.create_attribute_literal("concept:name", generateStringFromNumber(i))
             i = i+1
-        with open(logFileName+"_unique.xes", "w") as file2:
+        final_file_name = logFileName+"_unique.xes"
+        with open(final_file_name, "w") as file2:
             XesXmlSerializer().serialize(log, file2)
             file2.close()
-        with open(logFileName+"_unique.xes") as file2:
-            log = XUniversalParser().parse(file2)[0]
-            l = list(map(lambda x: x.get_attributes()["concept:name"].get_value(), log))
-            assert(len(l) == len(set(l)))
-            file2.close()
+        if doQualityCheck:
+            with open(final_file_name) as file2:
+                log = XUniversalParser().parse(file2)[0]
+                l = list(map(lambda x: x.get_attributes()["concept:name"].get_value(), log))
+                assert(len(l) == len(set(l)))
+                file2.close()
         file.close()
+        return final_file_name, log
