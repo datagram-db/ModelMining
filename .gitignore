@@ -59,3 +59,6 @@ data/logs/sepsis.xes_unique.xes
 data/logs/merged_xray.xes_unique.xes
 EnglishBPIChallenge2011.xes
 EnglishBPIChallenge2011.xes_unique.xes
+RulesExtraction/__pycache__/__init__.cpython-38.pyc
+RulesExtraction/__pycache__/rules_statistics.cpython-38.pyc
+RulesExtraction/__pycache__/*
