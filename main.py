@@ -45,11 +45,13 @@ def describe_logs():
     for key,value in to_describe.items():
         Other.describe(key, LOGS_FOLDER, value)
 
-def run_complete_configuration_and_run(conf_file, doNr0 = True):
+def run_complete_configuration_and_run(conf_file, doNr0 = True, ranges = None, max_splits = 5):
+    if ranges is None:
+        ranges=[5, 10, 15, 20, 25, 30]
     conf = jsonpickle.decode(open(conf_file).read())
     assert (isinstance(conf, ConfigurationFile))
     #conf.complete_embedding_generation(LOGS_FOLDER, DATA_EXP)
-    conf.run(LOGS_FOLDER, DATA_EXP, ranges, doNr0)
+    conf.run(LOGS_FOLDER, DATA_EXP, ranges, doNr0, max_splits=max_splits)
 
 def guaranteeUniqueXes():
     from DevianceMiningPipeline.RetagLogWithUniqueIds import  changeLog
@@ -238,9 +240,9 @@ if __name__ == '__main__':
     #generateTagging()
 
     LS = [ "sepsis_proc.json", "sepsis_decl.json", "sepsis_mr_tr.json", "sepsis_mra_tra.json", "sepsis_payload.json", "xray_proc.json"]
-    for conf_file in ["sepsis_proc.json"]:
+    for conf_file in ["sepsis_mr_tr.json"]:
         printWithColor("Now running: "+conf_file)
-        run_complete_configuration_and_run(conf_file, True)
+        run_complete_configuration_and_run(conf_file, doNr0 = False, ranges=[5], max_splits=3)
     # pool = Pool()
     # folders_to_merge = pool.map(test, LS)
     # pool.close()

@@ -1,3 +1,4 @@
+import os
 
 confPrettyPrint = {"bs": "IA",
                     "bs_data": "Data+IA",
@@ -19,6 +20,20 @@ confPrettyPrint = {"bs": "IA",
                    "hybrid_dwd": "Hybrid+Declare Data Aware",
                    "hybrid_dwd_payload": "Hybrid+Payload+Declare Data Aware"
                    }
+
+def do_dump_benchmark(all_results, results_folder, dt_max_depth, experiment_name):
+    from .GoodPrintResults import printToFile
+    line = None
+    if (not os.path.exists(os.path.join(results_folder, "benchmarks.csv"))):
+        line = "dataset,learner,outcome_type,strategy,conftype,confvalue,metrictype,metricvalue\n"
+    with open(os.path.join(results_folder, "benchmarks.csv"), "a") as csvFile:
+        with open(os.path.join(results_folder, "rules.txt"), "a") as rulesFile:
+            if not (line is None):
+                csvFile.write(line)
+            printToFile(all_results, experiment_name, "Decision Tree", "max_depth", dt_max_depth, csvFile,
+                        rulesFile)
+            rulesFile.close()
+        csvFile.close()
 
 def printToFile(entry, dataset, lerner, conftype, confvalue, csvFile, rulesFile):
     import _io

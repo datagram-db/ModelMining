@@ -65,9 +65,11 @@ def fisher_calculation(X, y):
     for i in range(X.shape[1]):
         Fr[i] = n_positive * np.power(pos_means[i] - feature_mean[i], 2) + \
                 n_negative * np.power(neg_means[i] - feature_mean[i], 2)
-
-        Fr[i] /= (n_positive * pos_variances[i] + n_negative * neg_variances[i])
-
+        denom = (n_positive * pos_variances[i] + n_negative * neg_variances[i])
+        if (denom == 0):
+            Fr[i] = 0
+        else:
+            Fr[i] /= (n_positive * pos_variances[i] + n_negative * neg_variances[i])
     return Fr
 
 

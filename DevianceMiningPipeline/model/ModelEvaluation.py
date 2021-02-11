@@ -14,8 +14,9 @@ class ModelEvaluation:
         self.auc = []
 
     def add_to_file(self, filePath, text):
-        with open(filePath, "a+") as f:
-            f.write(text + "\n")
+        #with open(filePath, "a+") as f:
+        #    f.write(text + "\n")
+        pass
 
     def add_results(self, accuracy, precision, rc, f1, auc):
         self.accuracies.append(accuracy)

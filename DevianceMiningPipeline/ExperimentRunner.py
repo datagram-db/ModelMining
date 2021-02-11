@@ -21,6 +21,7 @@ from opyenxes.data_out.XesXmlSerializer import XesXmlSerializer
 from opyenxes.factory.XFactory import XFactory
 
 from . import baseline_runner, declaredevmining, model
+from .GoodPrintResults import do_dump_benchmark
 from .deviancecommon import read_XES_log
 from .sequence_runner import run_sequences, generateSequences
 from .ddm_newmethod_fixed_new import data_declare_main, declare_data_aware_embedding, fisher_calculation
@@ -1004,7 +1005,7 @@ class ExperimentRunner:
             all_results["mra"] = self.interpret_results(sequence_results, "sequence", "mra")
 
             print("Started working on hybrid.")
-            hybrid_results = self.hybrid_train("hybrid", yaml_file)
+            hybrid_results = self.hybrid_train("hybrid", yaml_file, max_splits)
             all_results["hybrid"] = self.interpret_results(hybrid_results, "hybrid")
 
         if self.payload:
@@ -1063,21 +1064,7 @@ class ExperimentRunner:
             with open(weka_yaml_file, 'w') as file:
                 yaml.dump(yaml_file, file)
 
-        self.do_dump_benchmark(all_results)
-
-    def do_dump_benchmark(self, all_results):
-        from .GoodPrintResults import printToFile
-        line = None
-        if (not os.path.exists(os.path.join(self.results_folder, "benchmarks.csv"))):
-            line = "dataset,learner,outcome_type,strategy,conftype,confvalue,metrictype,metricvalue\n"
-        with open(os.path.join(self.results_folder, "benchmarks.csv"), "a") as csvFile:
-            with open(os.path.join(self.results_folder, "rules.txt"), "a") as rulesFile:
-                if not (line is None):
-                    csvFile.write(line)
-                printToFile(all_results, self.experiment_name, "Decision Tree", "max_depth", self.dt_max_depth, csvFile,
-                            rulesFile)
-                rulesFile.close()
-            csvFile.close()
+        do_dump_benchmark(all_results, self.results_folder, self.dt_max_depth, self.experiment_name)
 
     def prepare_cross_validation(self, max_splits, training_test_split): #max_splits = 5
         self.cross_validation_pipeline(self.inp_path, self.log_name, self.output_folder, max_splits, training_test_split)
@@ -1167,7 +1154,6 @@ class ExperimentRunner:
 
         print("~~ Run sequence miner for all the params")
         strategies = run_sequences(self.inp_path, self.log_path_seq, self.results_folder, self.err_logger, max_splits, sequence_threshold=self.sequence_threshold)
-
         print("~~ Providing the correct CSV dump for the sequence miner")
 
         for i in range(max_splits):

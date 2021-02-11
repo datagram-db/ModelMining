@@ -44,13 +44,22 @@ def extendDataFrameWithLabels(df, map_rowid_to_label):
     return df
 
 def dataframe_join_withChecks(left, right):
+    j = None
+    idTest = ('Case_ID' in left.columns) and ('Case_ID' in right.columns)
     j = left.join(right, lsuffix='_left', rsuffix='_right')
+    if idTest:
+        assert ((list(map(lambda x: str(x), j["Case_ID_right"].to_list())) == list(map(lambda x: str(x), j["Case_ID_left"].to_list()))))
+        assert ((list(map(lambda x: str(x), j["Case_ID_right"].to_list())) == list(map(lambda x: str(x), j.index))))
+    assert ((list(map(lambda x: int(x), j["Label_right"].to_list())) == list(map(lambda x: int(x), j["Label_left"].to_list()))))
     assert ('Label_left' in j)
     assert ('Label_right' in j)
-    assert ('Case_ID' in j)
-    assert ((list(map(lambda x: int(x), j["Label_right"].to_list())) == list(map(lambda x: int(x), j["Label_left"].to_list()))))
-    j.rename(columns={'Label_right': 'Label'}, inplace=True)
     j.drop("Label_left", axis=1, inplace=True)
+    if idTest:
+        assert (('Case_ID_left' in j) and ('Case_ID_right' in j))
+        j.drop("Case_ID_left", axis=1, inplace=True)
+        j.rename(columns={'Label_right': 'Label', 'Case_ID_right': 'Case_ID'}, inplace=True)
+    else:
+        assert ('Case_ID' in j)
     return j
 
 def dataframe_multiway_equijoin(ls):
