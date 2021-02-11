@@ -540,485 +540,89 @@ class ExperimentRunner:
         yamlfile[str_key] = elements
         return results
 
-    def baseline_train(self, str_key, yamlfile, max_range):
-        return self.abstract_train(str_key, yamlfile, "baseline", max_range)
+    def baseline_train(self, yamlfile, max_range):
+        return self.abstract_train("bs", yamlfile, "baseline", max_range)
 
-    def declare_train(self, str_key, yaml_file, max_range):
-        return self.abstract_train(str_key, yaml_file, "declare", max_range)
+    def declare_train(self, yaml_file, max_range):
+        return self.abstract_train("dc", yaml_file, "declare", max_range)
 
-    def payload_train(self, str_key, yaml_file, max_range):
-        return self.abstract_train(str_key, yaml_file, "payload", max_range)
+    def payload_train(self, yaml_file, max_range):
+        return self.abstract_train("payload_for_training", yaml_file, "payload", max_range)
 
-    # def sequence_train(self, encoding, yaml_file):
-    #     """
-    #     Trains a sequence model with given encoding
-    #     :param encoding: sequence encoding
-    #     :return:
-    #     """
-    #     results = []
-    #     elements = []
-    #     for split_nr in range(1, 6):
-    #         # Read the log
-    #         train_df, test_df = ExperimentRunner.read_sequence_log(self.results_folder, encoding, split_nr)
-    #         elements.append(arff_trace_encodings(self.results_folder, encoding, split_nr))
-    #         tr_result = self.train(train_df, test_df, split_nr=split_nr, exp_name="sequence_{}".format(encoding))
-    #
-    #         result = {
-    #             "result": tr_result,
-    #             "split": split_nr,
-    #             "encoding": encoding
-    #         }
-    #
-    #         results.append(result)
-    #
-    #     yaml_file[encoding] = elements
-    #     return results
+    def hybrid_train(self, yaml_file, max_range):
+        return self.multijoined_train("hybrid", yaml_file, ["declare", "combined_for_hybrid"], "hybrid", max_range)
 
-    def hybrid_train(self, str_key, yaml_file, max_range):
-        return self.multijoined_train(str_key, yaml_file, ["declare", "combined_for_hybrid"], "hybrid", max_range)
-        # """
-        # Hybrid model training
-        # :return:
-        # """
-        # encodings = ["mr", "mra", "tr", "tra"]
-        #
-        # results = []
-        # elements = []
-        # for split_nr in range(1, 6):
-        #     dec_train_df, dec_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "declare", dict())
-        #     seq_train_list = []
-        #     seq_test_list = []
-        #     for encoding in encodings:
-        #         seq_train_df, seq_test_df = ExperimentRunner.read_sequence_log(self.results_folder, encoding, split_nr)
-        #
-        #         seq_train_df = seq_train_df.drop("Label", axis=1)
-        #         seq_test_df = seq_test_df.drop("Label", axis=1)
-        #
-        #         new_columns = [column + "_{}".format(encoding) for column in seq_train_df.columns]
-        #         seq_train_df.columns = new_columns
-        #         seq_test_df.columns = new_columns
-        #
-        #         seq_train_list.append(seq_train_df)
-        #         seq_test_list.append(seq_test_df)
-        #
-        #     merged_train_df = pd.concat([dec_train_df] + seq_train_list, axis=1)
-        #     merged_test_df = pd.concat([dec_test_df] + seq_test_list, axis=1)
-        #
-        #     multidump_compact(self.results_folder, elements, str_key, merged_train_df, merged_test_df, split_nr)
-        #     tr_result = self.train(merged_train_df, merged_test_df, split_nr=split_nr, exp_name="hybrid")
-        #     result = {
-        #         "result": tr_result,
-        #         "split": split_nr
-        #     }
-        #
-        #     results.append(result)
-        #
-        # yaml_file[str_key] = elements
-        # return results
+    def baseline_train_with_data(self, yaml_file, max_range):
+        return self.multijoined_train("bs_data", yaml_file, ["baseline", "payload"], "baseline_payload", max_range)
 
-    # def payload_train(self, key, yaml_file):
-    #     """
-    #     Trains and tests models just on payload data.
-    #     :return:
-    #     """
-    #     results = []
-    #     elements = []
-    #     for split_nr in range(1, 6):
-    #         baseline_train_df, baseline_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "baseline", dict())
-    #         payload_train_df, payload_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "payload", dict())
-    #
-    #         payload_train_df["Label"] = baseline_train_df["Label"]
-    #         payload_test_df["Label"] = baseline_test_df["Label"]
-    #
-    #         multidump_compact(self.results_folder, elements, "payload_for_training", payload_train_df, payload_test_df,  split_nr)
-    #         tr_result = self.train(payload_train_df, payload_test_df, split_nr=split_nr, exp_name="payload")
-    #
-    #         result = {
-    #             "result": tr_result,
-    #             "split": split_nr
-    #         }
-    #
-    #         results.append(result)
-    #
-    #     yaml_file["payload_for_training"] = elements
-    #     return results
-    #
-    # def multidump_compact(self, elements, forMultiDump, payload_test_df, payload_train_df, split_nr):
-    #     tr_f, t_f = dump_extended_dataframes(payload_train_df, payload_test_df, self.results_folder, split_nr,
-    #                                          forMultiDump)
-    #     d = dict()
-    #     d["train"] = os.path.abspath(tr_f)
-    #     d["test"] = os.path.abspath(t_f)
-    #     elements.append(d)
-
-    def baseline_train_with_data(self, key, yaml_file, max_range):
-        return self.multijoined_train(key, yaml_file, ["baseline", "payload"], "baseline_payload", max_range)
-        # """
-        #
-        # :return:
-        # """
-        #
-        # results = []
-        # elements = []
-        # for split_nr in range(1, 6):
-        #     train_df, test_df = read_generic_embedding_dump(self.results_folder, split_nr, "baseline", dict())
-        #     payload_train_df, payload_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "payload", dict())
-        #     #merged_train_df = pd.concat([train_df, payload_train_df], axis=1)
-        #     #merged_test_df = pd.concat([test_df, payload_test_df], axis=1)
-        #
-        #     tr_result = self.train(train_df, test_df, payload_train_df, payload_test_df,
-        #                            split_nr=split_nr, exp_name="baseline_payload", dump_to_folder=(self.results_folder, split_nr, key))
-        #
-        #     extract_file_name_for_dump(self.results_folder, elements, key, split_nr)
-        #     result = {
-        #         "result": tr_result,
-        #         "split": split_nr
-        #     }
-        #
-        #     results.append(result)
-        #
-        # yaml_file[key] = elements
-        # return results
-
-
-
-    def baseline_train_with_dwd(self, key, yaml_file, max_range):
-        return self.multijoined_train(key, yaml_file, ["baseline", "dwd"], "baseline_dwd", max_range)
-        #
-        # """
-        #
-        # :return:
-        # """
-        #
-        # results = []
-        # elements = []
-        # for split_nr in range(1, 6):
-        #     train_df, test_df = read_generic_embedding_dump(self.results_folder, split_nr, "baseline", dict())
-        #     payload_train_df, payload_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "dwd", dict())
-        #
-        #     # merged_train_df = pd.concat([train_df, payload_train_df], axis=1)
-        #     # merged_test_df = pd.concat([test_df, payload_test_df], axis=1)
-        #
-        #     tr_result = self.train(train_df, test_df, payload_train_df, payload_test_df,
-        #                            split_nr=split_nr, exp_name="baseline_dwd", dump_to_folder=(self.results_folder, split_nr, key))
-        #     extract_file_name_for_dump(self.results_folder, elements, key, split_nr)
-        #     result = {
-        #         "result": tr_result,
-        #         "split": split_nr
-        #     }
-        #
-        #     results.append(result)
-        #
-        # yaml_file[key] = elements
-        # return results
-
-
-    def declare_train_with_data(self, key, yaml_file, max_range):
-        return self.multijoined_train(key, yaml_file, ["declare", "payload"], "declare_data", max_range)
-        # """
-        # Train and evaluate declare models
-        # :return:
-        # """
-        #
-        # results = []
-        # elements = []
-        # # Separately for every split. Reduce total number of file parsing.
-        # for split_nr in range(1, 6):
-        #     train_df, test_df = read_generic_embedding_dump(self.results_folder, split_nr, "declare", dict())
-        #     payload_train_df, payload_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "payload", dict())
-        #
-        #
-        #     tr_result = self.train(train_df, test_df, payload_train_df, payload_test_df,
-        #                            split_nr=split_nr, exp_name="declare_data", dump_to_folder=(self.results_folder, split_nr, key))
-        #
-        #     extract_file_name_for_dump(self.results_folder, elements, key, split_nr)
-        #     result = {
-        #         "result": tr_result,
-        #         "split": split_nr
-        #     }
-        #
-        #     results.append(result)
-        #
-        # yaml_file[key] = elements
-        # return results
-
-
-    def declare_train_with_dwd(self, key, yaml_file, max_range):
-        return self.multijoined_train(key, yaml_file, ["declare", "dwd"], "declare_dwd", max_range)
-        # """
-        # Train and evaluate declare models
-        # :return:
-        # """
-        #
-        # results = []
-        # elements = []
-        # # Separately for every split. Reduce total number of file parsing.
-        # for split_nr in range(1, 6):
-        #     train_df, test_df = read_generic_embedding_dump(self.results_folder, split_nr, "declare", dict())
-        #     payload_train_df, payload_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "dwd", dict())
-        #
-        #     tr_result = self.train(train_df, test_df, payload_train_df, payload_test_df,
-        #                            split_nr=split_nr, exp_name="declare_dwd", dump_to_folder=(self.results_folder, split_nr, key))
-        #
-        #     extract_file_name_for_dump(self.results_folder, elements, key, split_nr)
-        #     result = {
-        #         "result": tr_result,
-        #         "split": split_nr
-        #     }
-        #
-        #     results.append(result)
-        #
-        # yaml_file[key] = elements
-        # return results
-
-
-    def declare_train_with_dwd_data(self, key, yaml_file, max_range):
-        return self.multijoined_train(key, yaml_file, ["declare", "payload", "dwd"], "declare_dwd_data", max_range)
-        # """
-        # Train and evaluate declare models
-        # :return:
-        # """
-        # results = []
-        # elements = []
-        # # Separately for every split. Reduce total number of file parsing.
-        # for split_nr in range(1, 6):
-        #     train_df, test_df = read_generic_embedding_dump(self.results_folder, split_nr, "declare", dict())
-        #     payload_train_df, payload_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "payload", dict())
-        #     payload_train_df_2, payload_test_df_2 = read_generic_embedding_dump(self.results_folder, split_nr, "dwd", dict())
-        #
-        #     merged_train_df = pd.concat([train_df, payload_train_df_2], axis=1)
-        #     merged_test_df = pd.concat([test_df, payload_test_df_2], axis=1)
-        #
-        #     tr_result = self.train(merged_train_df, merged_test_df, payload_train_df, payload_test_df,
-        #                            split_nr=split_nr, exp_name="declare_dwd_data", dump_to_folder=(self.results_folder, split_nr, key))
-        #
-        #     extract_file_name_for_dump(self.results_folder, elements, key, split_nr)
-        #     result = {
-        #         "result": tr_result,
-        #         "split": split_nr
-        #     }
-        #
-        #     results.append(result)
-        #
-        # yaml_file[key] = elements
-        # return results
-
+    def baseline_train_with_dwd(self, yaml_file, max_range):
+        return self.multijoined_train("baseline_dwd", yaml_file, ["baseline", "dwd"], "baseline_dwd", max_range)
 
     def sequence_train_with_data(self, encoding, yaml_file, max_range):
         key = encoding+"_data"
         return self.multijoined_train(key, yaml_file, [encoding, "payload"], "sequence_data_{}".format(encoding), max_range)
-        # """
-        # Trains a sequence model with given encoding
-        # :param encoding: sequence encoding
-        # :return:
-        # """
-        #
-        # results = []
-        # elements = []
-        #
-        # for split_nr in range(1, 6):
-        #     # Read the log
-        #     train_df, test_df = ExperimentRunner.read_sequence_log(self.results_folder, encoding, split_nr)
-        #     payload_train_df, payload_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "payload", dict())
-        #
-        #     #merged_train_df = pd.concat([train_df, payload_train_df], axis=1)
-        #     #merged_test_df = pd.concat([test_df, payload_test_df], axis=1)
-        #
-        #     tr_result = self.train(train_df, test_df, payload_train_df, payload_test_df,
-        #                            split_nr=split_nr, exp_name="sequence_data_{}".format(encoding), dump_to_folder=(self.results_folder, split_nr, key))
-        #
-        #     extract_file_name_for_dump(self.results_folder, elements, key, split_nr)
-        #     result = {
-        #         "result": tr_result,
-        #         "split": split_nr,
-        #         "encoding": encoding
-        #     }
-        #
-        #     results.append(result)
-        #
-        # yaml_file[key] = elements
-        return results
 
-    def hybrid_with_data(self, key, yaml_file, max_range):
-        return self.multijoined_train(key, yaml_file, ["declare", "payload", "combined_for_hybrid"], "hybrid_data", max_range)
-        #
-        # """
-        # Hybrid model training with additional data
-        # :return:
-        # """
-        #
-        # encodings = ["mr", "mra", "tr", "tra"]
-        # elements = []
-        # results = []
-        # for split_nr in range(1, 6):
-        #     dec_train_df, dec_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "declare", dict())
-        #     payload_train_df, payload_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "payload", dict())
-        #     seq_train_list = []
-        #     seq_test_list = []
-        #     for encoding in encodings:
-        #         seq_train_df, seq_test_df = ExperimentRunner.read_sequence_log(self.results_folder, encoding, split_nr)
-        #
-        #         seq_train_df = seq_train_df.drop("Label", axis=1)
-        #         seq_test_df = seq_test_df.drop("Label", axis=1)
-        #
-        #         new_columns = [column + "_{}".format(encoding) for column in seq_train_df.columns]
-        #         seq_train_df.columns = new_columns
-        #         seq_test_df.columns = new_columns
-        #
-        #         seq_train_list.append(seq_train_df)
-        #         seq_test_list.append(seq_test_df)
-        #
-        #     merged_train_df = pd.concat([dec_train_df] + seq_train_list, axis=1)
-        #     merged_test_df = pd.concat([dec_test_df] + seq_test_list, axis=1)
-        #     # , payload_train_df, payload_test_df
-        #     tr_result = self.train(merged_train_df, merged_test_df, payload_train_df, payload_test_df, split_nr=split_nr, exp_name="hybrid_data", dump_to_folder=(self.results_folder, split_nr, key))
-        #     extract_file_name_for_dump(self.results_folder, elements, key, split_nr)
-        #     result = {
-        #         "result": tr_result,
-        #         "split": split_nr
-        #     }
-        #
-        #     results.append(result)
-        #
-        # yaml_file[key] = elements
-        # return results
+    def declare_train_with_data(self, yaml_file, max_range):
+        return self.multijoined_train("dc_data", yaml_file, ["declare", "payload"], "declare_data", max_range)
 
+    def declare_train_with_dwd(self, yaml_file, max_range):
+        return self.multijoined_train("dc_dwd", yaml_file, ["declare", "dwd"], "declare_dwd", max_range)
 
-    def hybrid_with_dwd(self, key, yaml_file, max_range):
-        return self.multijoined_train(key, yaml_file, ["declare", "dwd", "combined_for_hybrid"], "hybrid_dwd", max_range)
-        # """
-        # Hybrid model training with additional data
-        # :return:
-        # """
-        #
-        # encodings = ["mr", "mra", "tr", "tra"]
-        #
-        # results = []
-        # elements = []
-        # for split_nr in range(1, 6):
-        #     dec_train_df, dec_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "declare", dict())
-        #     payload_train_df, payload_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "dwd", dict())
-        #     seq_train_list = []
-        #     seq_test_list = []
-        #     for encoding in encodings:
-        #         seq_train_df, seq_test_df = ExperimentRunner.read_sequence_log(self.results_folder, encoding, split_nr)
-        #
-        #         seq_train_df = seq_train_df.drop("Label", axis=1)
-        #         seq_test_df = seq_test_df.drop("Label", axis=1)
-        #
-        #         new_columns = [column + "_{}".format(encoding) for column in seq_train_df.columns]
-        #         seq_train_df.columns = new_columns
-        #         seq_test_df.columns = new_columns
-        #
-        #         seq_train_list.append(seq_train_df)
-        #         seq_test_list.append(seq_test_df)
-        #
-        #     merged_train_df = pd.concat([dec_train_df] + seq_train_list, axis=1)
-        #     merged_test_df = pd.concat([dec_test_df] + seq_test_list, axis=1)
-        #     # , payload_train_df, payload_test_df
-        #     tr_result = self.train(merged_train_df, merged_test_df, payload_train_df, payload_test_df, split_nr=split_nr, exp_name="hybrid_dwd", dump_to_folder=(self.results_folder, split_nr, key))
-        #     extract_file_name_for_dump(self.results_folder, elements, key, split_nr)
-        #     result = {
-        #         "result": tr_result,
-        #         "split": split_nr
-        #     }
-        #
-        #     results.append(result)
-        #
-        # yaml_file[key] = elements
-        # return results
+    def declare_train_with_dwd_data(self, yaml_file, max_range):
+        return self.multijoined_train("dc_dwd_payload", yaml_file, ["declare", "payload", "dwd"], "declare_dwd_data", max_range)
 
-    def hybrid_with_dwd_and_payload(self, key, yaml_file, max_range):
-        return self.multijoined_train(key, yaml_file, ["declare", "dwd", "payload", "combined_for_hybrid"], "hybrid_dwd_payload", max_range)
-        #
-        # """
-        # Hybrid model training with additional data
-        # :return:
-        # """
-        #
-        # encodings = ["mr", "mra", "tr", "tra"]
-        #
-        # results = []
-        # elements = []
-        # for split_nr in range(1, 6):
-        #     dec_train_df, dec_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "declare", dict())
-        #     payload_train_df, payload_test_df = read_generic_embedding_dump(self.results_folder, split_nr, "dwd", dict())
-        #     payload_train_df_2, payload_test_df_2 = read_generic_embedding_dump(self.results_folder, split_nr, "payload", dict())
-        #     seq_train_list = []
-        #     seq_test_list = []
-        #     for encoding in encodings:
-        #         seq_train_df, seq_test_df = ExperimentRunner.read_sequence_log(self.results_folder, encoding, split_nr)
-        #
-        #         seq_train_df = seq_train_df.drop("Label", axis=1)
-        #         seq_test_df = seq_test_df.drop("Label", axis=1)
-        #
-        #         new_columns = [column + "_{}".format(encoding) for column in seq_train_df.columns]
-        #         seq_train_df.columns = new_columns
-        #         seq_test_df.columns = new_columns
-        #
-        #         seq_train_list.append(seq_train_df)
-        #         seq_test_list.append(seq_test_df)
-        #
-        #     merged_train_df = pd.concat([dec_train_df, payload_train_df_2] + seq_train_list, axis=1)
-        #     merged_test_df = pd.concat([dec_test_df, payload_test_df_2] + seq_test_list, axis=1)
-        #     # , payload_train_df, payload_test_df
-        #     tr_result = self.train(merged_train_df, merged_test_df, payload_train_df, payload_test_df, split_nr=split_nr, exp_name="hybrid_dwd_payload", dump_to_folder=(self.results_folder, split_nr, key))
-        #     extract_file_name_for_dump(self.results_folder, elements, key, split_nr)
-        #     result = {
-        #         "result": tr_result,
-        #         "split": split_nr
-        #     }
-        #
-        #     results.append(result)
-        #
-        # yaml_file[key] = elements
-        # return results
+    def hybrid_with_data(self, yaml_file, max_range):
+        return self.multijoined_train("hybrid_data", yaml_file, ["declare", "payload", "combined_for_hybrid"], "hybrid_data", max_range)
 
+    def hybrid_with_dwd(self, yaml_file, max_range):
+        return self.multijoined_train("hybrid_dwd", yaml_file, ["declare", "dwd", "combined_for_hybrid"], "hybrid_dwd", max_range)
+
+    def hybrid_with_dwd_and_payload(self, yaml_file, max_range):
+        return self.multijoined_train("hybrid_dwd_payload", yaml_file, ["declare", "dwd", "payload", "combined_for_hybrid"], "hybrid_dwd_payload", max_range)
 
     def train_and_eval_benchmark(self, max_splits):
         all_results = {}
         yaml_file = {}
 
-        if True:#not self.payload:
-            print("Started working on baseline.")
-            baseline_results = self.baseline_train("bs", yaml_file, max_splits)
-            all_results["bs"] = self.interpret_results(baseline_results, "baseline")
+        print("Started working on baseline.")
+        baseline_results = self.baseline_train(yaml_file, max_splits)
+        all_results["bs"] = self.interpret_results(baseline_results, "baseline")
 
-            print("Started working on declare.")
-            declare_results = self.declare_train("dc", yaml_file, max_splits)
-            all_results["dc"] = self.interpret_results(declare_results, "declare")
+        print("Started working on declare.")
+        declare_results = self.declare_train(yaml_file, max_splits)
+        all_results["dc"] = self.interpret_results(declare_results, "declare")
 
-            print("Started working on sequenceMR.")
-            sequence_results = self.abstract_train("mr", yaml_file, "mr", max_splits)#self.sequence_train("mr", yaml_file)
-            all_results["mr"] = self.interpret_results(sequence_results, "sequence", "mr")
+        print("Started working on sequenceMR.")
+        sequence_results = self.abstract_train("mr", yaml_file, "mr", max_splits)#self.sequence_train("mr", yaml_file)
+        all_results["mr"] = self.interpret_results(sequence_results, "sequence", "mr")
 
-            print("Started working on sequenceTR.")
-            sequence_results = self.abstract_train("tr", yaml_file, "tr", max_splits)#self.sequence_train("tr", yaml_file)
-            all_results["tr"] = self.interpret_results(sequence_results, "sequence", "tr")
+        print("Started working on sequenceTR.")
+        sequence_results = self.abstract_train("tr", yaml_file, "tr", max_splits)#self.sequence_train("tr", yaml_file)
+        all_results["tr"] = self.interpret_results(sequence_results, "sequence", "tr")
 
-            print("Started working on sequenceTRA.")
-            sequence_results = self.abstract_train("tra", yaml_file, "tra", max_splits)#self.sequence_train("tra", yaml_file)
-            all_results["tra"] = self.interpret_results(sequence_results, "sequence", "tra")
+        print("Started working on sequenceTRA.")
+        sequence_results = self.abstract_train("tra", yaml_file, "tra", max_splits)#self.sequence_train("tra", yaml_file)
+        all_results["tra"] = self.interpret_results(sequence_results, "sequence", "tra")
 
-            print("Started working on sequenceMRA.")
-            sequence_results = self.abstract_train("mra", yaml_file, "mra", max_splits)#self.sequence_train("mra", yaml_file)
-            all_results["mra"] = self.interpret_results(sequence_results, "sequence", "mra")
+        print("Started working on sequenceMRA.")
+        sequence_results = self.abstract_train("mra", yaml_file, "mra", max_splits)#self.sequence_train("mra", yaml_file)
+        all_results["mra"] = self.interpret_results(sequence_results, "sequence", "mra")
 
-            print("Started working on hybrid.")
-            hybrid_results = self.hybrid_train("hybrid", yaml_file, max_splits)
-            all_results["hybrid"] = self.interpret_results(hybrid_results, "hybrid")
+        print("Started working on hybrid.")
+        hybrid_results = self.hybrid_train(yaml_file, max_splits)
+        all_results["hybrid"] = self.interpret_results(hybrid_results, "hybrid")
 
         if self.payload:
                 print("Started working on payload train.")
-                payload_results = self.payload_train("payload_for_training", yaml_file, max_splits)#self.payload_train("bs", yaml_file)
+                payload_results = self.payload_train(yaml_file, max_splits)#self.payload_train("bs", yaml_file)
                 all_results["payload"] = self.interpret_results(payload_results, "payload")
 
                 print("Started working on baseline with data.")
-                baseline_results = self.baseline_train_with_data("bs_data", yaml_file, max_splits)
+                baseline_results = self.baseline_train_with_data(yaml_file, max_splits)
                 all_results["bs_data"] = self.interpret_results(baseline_results, "baseline")
 
                 print("Started working on declare with data.")
-                declare_results = self.declare_train_with_data("dc_data", yaml_file, max_splits)
+                declare_results = self.declare_train_with_data(yaml_file, max_splits)
                 all_results["dc_data"] = self.interpret_results(declare_results, "declare")
 
                 print("Started working on sequenceMR with data.")
@@ -1038,24 +642,24 @@ class ExperimentRunner:
                 all_results["mra_data"] = self.interpret_results(sequence_results, "sequence", "mra")
 
                 print("Started working on hybrid with data.")
-                payload_results = self.hybrid_with_data("hybrid_data", yaml_file, max_splits)
+                payload_results = self.hybrid_with_data(yaml_file, max_splits)
                 all_results["hybrid_data"] = self.interpret_results(payload_results, "hybrid_data")
 
                 if self.payload_type == "both":
                     print("Started working on declare with dwd.")
-                    declare_results = self.declare_train_with_dwd("dc_dwd", yaml_file, max_splits)
+                    declare_results = self.declare_train_with_dwd(yaml_file, max_splits)
                     all_results["dc_dwd"] = self.interpret_results(declare_results, "declare_dwd")
 
                     print("Started working on declare with dwd and payload.")
-                    declare_results = self.declare_train_with_dwd_data("dc_dwd_payload", yaml_file, max_splits)
+                    declare_results = self.declare_train_with_dwd_data(yaml_file, max_splits)
                     all_results["dc_dwd_payload"] = self.interpret_results(declare_results, "declare_payload_dwd")
 
                     print("Started working on hybrid with dwd.")
-                    payload_results = self.hybrid_with_dwd("hybrid_dwd", yaml_file, max_splits)
+                    payload_results = self.hybrid_with_dwd(yaml_file, max_splits)
                     all_results["hybrid_dwd"] = self.interpret_results(payload_results, "hybrid_dwd")
 
                     print("Started working on hybrid with dwd and usual payload.")
-                    payload_results = self.hybrid_with_dwd_and_payload("hybrid_dwd_payload", yaml_file, max_splits)
+                    payload_results = self.hybrid_with_dwd_and_payload(yaml_file, max_splits)
                     all_results["hybrid_dwd_payload"] = self.interpret_results(payload_results, "hybrid_data_dwd")
 
         weka_yaml_file = os.path.join(self.results_folder, "for_weka_experiments.yaml")
