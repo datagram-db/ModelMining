@@ -405,13 +405,13 @@ class DRC:
 
         count=0
 
-        for key in train_df.columns:
+        for (template, candidate) in train_df.columns:
 
             count += 1
             #print(key)
             # Go over all and find with data
-            template = key[0]
-            candidate = key[1]
+            #template = key[0]
+            #candidate = key[1]
 
             # First have to find all locations of fulfillments
             outp_train = find_fulfillments_violations(candidate, template, train_log)
@@ -448,6 +448,9 @@ class DRC:
 
                 for s in negative:
                     test_negative_samples.append((s, label, i))
+
+            if (len(test_positive_samples) == 0) and (len(test_negative_samples) == 0):
+                continue # Skip if I cannot (later on) test the configuration
 
             # Get all where fulfilled only. Train on train_positive_samples vs Label of log
             ignored_features = set(ignored) # set([('Diagnose', 'literal')])
@@ -503,7 +506,7 @@ class DRC:
 
             # Possible values for each literal value is those in train_df or missing
 
-            if len(literal_features) > 0:
+            if (len(literal_features) > 0):# and (len(test_df.index) > 0):
                 for selection in literal_features:
                     train_df[selection] = pd.Categorical(train_df[selection])
                     test_df[selection] = pd.Categorical(test_df[selection])
@@ -520,8 +523,10 @@ class DRC:
                     ohe.fit(np.concatenate((test_df[selection].values.reshape(-1, 1),
                                             feature_train_df[selection].values.reshape(-1, 1)), axis=0),)
 
+                    test_transformed = None
                     train_transformed = ohe.transform(train_df[selection].values.reshape(-1, 1)).toarray()
-                    test_transformed = ohe.transform(test_df[selection].values.reshape(-1, 1)).toarray()
+                    if (len(test_df.index) > 0):
+                        test_transformed = ohe.transform(test_df[selection].values.reshape(-1, 1)).toarray()
                     feature_train_transformed = ohe.transform(feature_train_df[selection].values.reshape(-1, 1)).toarray()
 
                     dfOneHot = pd.DataFrame(train_transformed,
@@ -529,11 +534,12 @@ class DRC:
                                                      range(train_transformed.shape[1])])
                     train_df = pd.concat([train_df, dfOneHot], axis=1)
                     train_df.pop(selection)
-                    dfOneHot = pd.DataFrame(test_transformed,
+                    if (len(test_df.index) > 0):
+                        dfOneHot = pd.DataFrame(test_transformed,
                                             columns=[(selection[0] + "_" + classes[i], selection[1]) for i in
                                                      range(train_transformed.shape[1])])
-                    test_df = pd.concat([test_df, dfOneHot], axis=1)
-                    test_df.pop(selection)
+                        test_df = pd.concat([test_df, dfOneHot], axis=1)
+                        test_df.pop(selection)
 
                     dfOneHot = pd.DataFrame(feature_train_transformed,
                                             columns=[(selection[0] + "_" + classes[i], selection[1]) for i in
@@ -633,12 +639,12 @@ class DRC:
 
                 new_test_features.append(new_test_feature)
                 new_test_feature_names.append(template + ":({},{}):Data".format(candidate[0], candidate[1]))
-
-                # Save decision tree
-                save_dt = False
-                if save_dt:
-                    export_graphviz(data_dt, out_file="sample_dwd_trees/outputfile_{}.dot".format(str(key)),
-                                    feature_names=list(map(str, train_fts)))
+                #
+                # # Save decision tree
+                # save_dt = False
+                # if save_dt:
+                #     export_graphviz(data_dt, out_file="sample_dwd_trees/outputfile_{}.dot".format(str(key)),
+                #                     feature_names=list(map(str, train_fts)))
 
         return new_train_feature_names, new_train_features, new_test_feature_names, new_test_features
 
