@@ -437,6 +437,18 @@ class ExperimentRunner:
         yamlfile[str_key] = elements
         return results
 
+    def multijoined_dump(self, str_key, dataset_list, max_range):
+        for split_nr in range(1, max_range+1):
+            trainls = []
+            testls = []
+            for dataset1 in dataset_list:
+                train1_df, test1_df = read_generic_embedding_dump(self.results_folder, split_nr, dataset1, dict())
+                trainls.append(train1_df)
+                testls.append(test1_df)
+            train_df = PandaExpress.dataframe_multiway_equijoin(trainls)
+            test_df = PandaExpress.dataframe_multiway_equijoin(testls)
+            multidump_compact(self.results_folder, [], str_key, train_df, test_df, split_nr)
+
     def multijoined_train(self, str_key, yamlfile, dataset_list, resulting_dataset, max_range):
         results = []
         elements = []
@@ -473,35 +485,45 @@ class ExperimentRunner:
         return self.abstract_train("payload_for_training", yaml_file, "payload", max_range)
 
     def hybrid_train(self, yaml_file, max_range):
-        return self.multijoined_train("hybrid", yaml_file, ["declare", "combined_for_hybrid"], "hybrid", max_range)
+        return self.abstract_train("hybrid", yaml_file, "hybrid", max_range)
+        #return self.multijoined_train("hybrid", yaml_file, ["declare", "combined_for_hybrid"], "hybrid", max_range)
 
     def baseline_train_with_data(self, yaml_file, max_range):
-        return self.multijoined_train("bs_data", yaml_file, ["baseline", "payload"], "baseline_payload", max_range)
+        return self.abstract_train("bs_data", yaml_file, "bs_data", max_range)
+        #return self.multijoined_train("bs_data", yaml_file, ["baseline", "payload"], "baseline_payload", max_range)
 
     def baseline_train_with_dwd(self, yaml_file, max_range):
-        return self.multijoined_train("baseline_dwd", yaml_file, ["baseline", "dwd"], "baseline_dwd", max_range)
+        return self.abstract_train("baseline_dwd", yaml_file, "baseline_dwd", max_range)
+        #return self.multijoined_train("baseline_dwd", yaml_file, ["baseline", "dwd"], "baseline_dwd", max_range)
 
     def sequence_train_with_data(self, encoding, yaml_file, max_range):
         key = encoding+"_data"
-        return self.multijoined_train(key, yaml_file, [encoding, "payload"], "sequence_data_{}".format(encoding), max_range)
+        return self.abstract_train(key, yaml_file, key, max_range)
+        #return self.multijoined_train(key, yaml_file, [encoding, "payload"], "sequence_data_{}".format(encoding), max_range)
 
     def declare_train_with_data(self, yaml_file, max_range):
-        return self.multijoined_train("dc_data", yaml_file, ["declare", "payload"], "declare_data", max_range)
+        return self.abstract_train("dc_data", yaml_file, "dc_data", max_range)
+        #return self.multijoined_train("dc_data", yaml_file, ["declare", "payload"], "declare_data", max_range)
 
     def declare_train_with_dwd(self, yaml_file, max_range):
-        return self.multijoined_train("dc_dwd", yaml_file, ["declare", "dwd"], "declare_dwd", max_range)
+        return self.abstract_train("dc_dwd", yaml_file, "dc_dwd", max_range)
+        #return self.multijoined_train("dc_dwd", yaml_file, ["declare", "dwd"], "declare_dwd", max_range)
 
     def declare_train_with_dwd_data(self, yaml_file, max_range):
-        return self.multijoined_train("dc_dwd_payload", yaml_file, ["declare", "payload", "dwd"], "declare_dwd_data", max_range)
+        return self.abstract_train("dc_dwd_payload", yaml_file, "dc_dwd_payload", max_range)
+        #return self.multijoined_train("dc_dwd_payload", yaml_file, ["declare", "payload", "dwd"], "declare_dwd_data", max_range)
 
     def hybrid_with_data(self, yaml_file, max_range):
-        return self.multijoined_train("hybrid_data", yaml_file, ["declare", "payload", "combined_for_hybrid"], "hybrid_data", max_range)
+        return self.abstract_train("hybrid_data", yaml_file, "hybrid_data", max_range)
+        #return self.multijoined_train("hybrid_data", yaml_file, ["declare", "payload", "combined_for_hybrid"], "hybrid_data", max_range)
 
     def hybrid_with_dwd(self, yaml_file, max_range):
-        return self.multijoined_train("hybrid_dwd", yaml_file, ["declare", "dwd", "combined_for_hybrid"], "hybrid_dwd", max_range)
+        return self.abstract_train("hybrid_dwd", yaml_file, "hybrid_dwd", max_range)
+        #return self.multijoined_train("hybrid_dwd", yaml_file, ["declare", "dwd", "combined_for_hybrid"], "hybrid_dwd", max_range)
 
     def hybrid_with_dwd_and_payload(self, yaml_file, max_range):
-        return self.multijoined_train("hybrid_dwd_payload", yaml_file, ["declare", "dwd", "payload", "combined_for_hybrid"], "hybrid_dwd_payload", max_range)
+        return self.abstract_train("hybrid_dwd_payload", yaml_file, "hybrid_dwd_payload", max_range)
+        #return self.multijoined_train("hybrid_dwd_payload", yaml_file, ["declare", "dwd", "payload", "combined_for_hybrid"], "hybrid_dwd_payload", max_range)
 
     def train_and_eval_benchmark(self, max_splits):
         all_results = {}
@@ -679,6 +701,21 @@ class ExperimentRunner:
                     assert (STr == TrainingId)
                     assert (STt == TestingId)
 
+        print("\t - writing bs_data")
+        self.multijoined_dump("bs_data", ["baseline", "payload"], max_splits)
+
+        print("\t - writing baseline_dwd")
+        self.multijoined_dump("baseline_dwd", ["baseline", "dwd"], max_splits)
+
+        print("\t - writing dc_data")
+        self.multijoined_dump("dc_data", ["declare", "payload"], max_splits)
+
+        print("\t - writing dc_dwd")
+        self.multijoined_dump("dc_dwd", ["declare", "dwd"], max_splits)
+
+        print("\t - writing dc_dwd_payload")
+        self.multijoined_dump("dc_dwd_payload", ["declare", "payload", "dwd"], max_splits)
+
         print("~~ Run sequence miner for all the params")
         strategies = run_sequences(self.inp_path, self.log_path_seq, self.results_folder, self.err_logger, max_splits, sequence_threshold=self.sequence_threshold)
         print("~~ Providing the correct CSV dump for the sequence miner")
@@ -697,6 +734,22 @@ class ExperimentRunner:
             allTr = dataframe_multiway_equijoin(allTr)
             allTe = dataframe_multiway_equijoin(allTe)
             genericDump(hybrid___path, allTr, allTe, "combined_for_hybrid_train.csv", "combined_for_hybrid_test.csv")
+
+        for strategy in strategies:
+            print("\t - writing "+strategy+"_data")
+            self.multijoined_dump(strategy+"_data", [strategy, "payload"], max_splits)
+
+        print("\t - writing hybrid")
+        self.multijoined_dump("hybrid", ["declare", "combined_for_hybrid"], max_splits)
+
+        print("\t - writing hybrid_data")
+        self.multijoined_dump("hybrid_data", ["declare", "payload", "combined_for_hybrid"], max_splits)
+
+        print("\t - writing hybrid_dwd")
+        self.multijoined_dump("hybrid_dwd", ["declare", "dwd", "combined_for_hybrid"], max_splits)
+
+        print("\t - writing hybrid_dwd")
+        self.multijoined_dump("hybrid_dwd_payload", ["declare", "dwd", "payload", "combined_for_hybrid"], max_splits)
 
     def clean_data(self):
         shutil.rmtree(self.results_folder)

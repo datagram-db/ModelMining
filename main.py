@@ -55,24 +55,24 @@ def run_complete_configuration_and_run(conf_file, doNr0 = True, ranges = None, m
 
 def guaranteeUniqueXes():
     from DevianceMiningPipeline.RetagLogWithUniqueIds import  changeLog
-    changeLog("data/logs/merged_xray.xes")
+    #changeLog("data/logs/merged_xray.xes")
     changeLog("data/logs/sepsis.xes")
     changeLog("data/logs/EnglishBPIChallenge2011.xes")
 
 def generate_configuration():
     from DevianceMiningPipeline import ConfigurationFile
-    cf = ConfigurationFile()
-    cf.setExperimentName("synth_xray")
-    cf.setLogName("merged_xray.xes_unique.xes")
-    cf.setOutputFolder("xray")
-    cf.setMaxDepth(10)
-    cf.setMinLeaf(10)
-    cf.setSequenceThreshold(5)
-    cf.setPayloadType(PayloadType.both)
-    cf.setAutoIgnore(["concept: name", "Label", "lifecycle: transition"])
-    cf.doForceTime()
-    cf.setPayloadSettings("xray_settings.cfg")
-    cf.dump("synth_xray.json")
+    # cf = ConfigurationFile()
+    # cf.setExperimentName("synth_xray")
+    # cf.setLogName("merged_xray.xes_unique.xes")
+    # cf.setOutputFolder("xray")
+    # cf.setMaxDepth(10)
+    # cf.setMinLeaf(10)
+    # cf.setSequenceThreshold(5)
+    # cf.setPayloadType(PayloadType.both)
+    # cf.setAutoIgnore(["concept: name", "Label", "lifecycle: transition"])
+    # cf.doForceTime()
+    # cf.setPayloadSettings("xray_settings.cfg")
+    # cf.dump("synth_xray.json")
 
     cf = ConfigurationFile()
     cf.setExperimentName("sepsis_er")
@@ -111,16 +111,16 @@ def write_log_file_with_label_cond(log, filen, attn, val):
     write_log_file_with_cond(log, filen, lambda x : DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x, attn, val))
 
 def generateTagging():
-    #assert os.path.isfile("data/logs/EnglishBPIChallenge2011.xes")
-    #if (not os.path.isfile("data/logs/bpi2011_dCC.xes")) or (not os.path.isfile("data/logs/bpi2011_t101.xes")) or (not os.path.isfile("data/logs/bpi2011_m13.xes")) or (not os.path.isfile("data/logs/bpi2011_m16.xes")):
-    #    log = read_XES_log("data/logs/EnglishBPIChallenge2011.xes")
-    #    write_log_file_with_label_cond(log, "data/logs/bpi2011_dCC.xes", "Diagnosis", "maligniteit cervix")
-    #    write_log_file_with_label_cond(log, "data/logs/bpi2011_t101.xes", "Treatment code", 101)
-    #    write_log_file_with_label_cond(log, "data/logs/bpi2011_m13.xes", "Diagnosis code", "M13")
-    #    write_log_file_with_label_cond(log, "data/logs/bpi2011_m16.xes", "Diagnosis code", "M16")
-    assert os.path.isfile("data/logs/sepsis.xes_unique.xes")
-    assert os.path.isfile("sepsis_er.json")
-    if ((not os.path.isfile("data/logs/sepsis_payload.xes")) or (not os.path.isfile("data/logs/sepsis_proc.xes")) or (not os.path.isfile("data/logs/sepsis_decl.xes")) or (not os.path.isfile("data/logs/sepsis_mr_tr.xes")) or (not os.path.isfile("data/logs/sepsis_mra_tra.xes"))):
+        #assert os.path.isfile("data/logs/EnglishBPIChallenge2011.xes")
+        #if (not os.path.isfile("data/logs/bpi2011_dCC.xes")) or (not os.path.isfile("data/logs/bpi2011_t101.xes")) or (not os.path.isfile("data/logs/bpi2011_m13.xes")) or (not os.path.isfile("data/logs/bpi2011_m16.xes")):
+        #    log = read_XES_log("data/logs/EnglishBPIChallenge2011.xes")
+        #    write_log_file_with_label_cond(log, "data/logs/bpi2011_dCC.xes", "Diagnosis", "maligniteit cervix")
+        #    write_log_file_with_label_cond(log, "data/logs/bpi2011_t101.xes", "Treatment code", 101)
+        #    write_log_file_with_label_cond(log, "data/logs/bpi2011_m13.xes", "Diagnosis code", "M13")
+        #    write_log_file_with_label_cond(log, "data/logs/bpi2011_m16.xes", "Diagnosis code", "M16")
+        assert os.path.isfile("data/logs/sepsis.xes_unique.xes")
+        assert os.path.isfile("sepsis_er.json")
+        #if ((not os.path.isfile("data/logs/sepsis_payload.xes")) or (not os.path.isfile("data/logs/sepsis_proc.xes")) or (not os.path.isfile("data/logs/sepsis_decl.xes")) or (not os.path.isfile("data/logs/sepsis_mr_tr.xes")) or (not os.path.isfile("data/logs/sepsis_mra_tra.xes"))):
         log = read_XES_log("data/logs/sepsis.xes_unique.xes")
         conf = jsonpickle.decode(open("sepsis_er.json").read())
         assert(isinstance(conf, ConfigurationFile))
@@ -139,7 +139,7 @@ def generateTagging():
         conf.setExperimentName("sepsis_decl")
         conf.dump("sepsis_decl.json")
 
-        write_log_file_with_cond(log, "data/logs/sepsis_mr_tr.xes", lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactOccurrence(x, ["IV Liquid", "LacticAcid", "Leucocytes"], 1))
+        write_log_file_with_cond(log, "data/logs/sepsis_mr_tr.xes", lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactOccurrence(x, ["Admission NC", "CRP"], 1))
         conf.setLogName("sepsis_mr_tr.xes")
         conf.setOutputFolder("sepsis_mr_tr_out")
         conf.setExperimentName("sepsis_mr_tr")
@@ -157,42 +157,42 @@ def generateTagging():
         conf.setExperimentName("sepsis_payload")
         conf.dump("sepsis_payload.json")
 
-    assert os.path.isfile("data/logs/merged_xray.xes_unique.xes")
-    assert os.path.isfile("synth_xray.json")
-    if ((not os.path.isfile("data/logs/xray_proc.xes")) or (not os.path.isfile("data/logs/xray_decl.xes")) or (not os.path.isfile("data/logs/xray_mr_tr.xes")) or (not os.path.isfile("data/logs/xray_mra_tra.xes"))):
-        log = read_XES_log("data/logs/merged_xray.xes_unique.xes")
-        conf = jsonpickle.decode(open("synth_xray.json").read())
-        assert(isinstance(conf, ConfigurationFile))
-
-        write_log_file_with_cond(log, "data/logs/xray_proc.xes", lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactSubsequence(x, ["check_X_ray_risk", "examine_patient", "perform_surgery"]))
-        conf.setLogName("xray_proc.xes")
-        conf.setOutputFolder("xray_proc_out")
-        conf.setExperimentName("xray_proc")
-        conf.dump("xray_proc.json")
-
-        write_log_file_with_cond(log, "data/logs/xray_decl.xes", lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAnyProp(x, [(template_init, ["check_X_ray_risk"])], SatCases.NotVacuitySat))
-        conf.setLogName("xray_decl.xes")
-        conf.setOutputFolder("xray_decl_out")
-        conf.setExperimentName("xray_decl")
-        conf.dump("xray_decl.json")
-
-        write_log_file_with_cond(log, "data/logs/xray_mr_tr.xes", lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactOccurrence(x, ["apply_cast", "perform_reposition", "prescribe_rehabilitation"], 1))
-        conf.setLogName("xray_mr_tr.xes")
-        conf.setOutputFolder("xray_mr_tr_out")
-        conf.setExperimentName("xray_mr_tr")
-        conf.dump("xray_mr_tr.json")
-
-        write_log_file_with_cond(log, "data/logs/xray_mra_tra.xes", lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x, ["apply_cast", "perform_reposition", "prescribe_rehabilitation"], 2))
-        conf.setLogName("xray_mra_tra.xes")
-        conf.setOutputFolder("xray_mra_tra_out")
-        conf.setExperimentName("xray_mra_tra")
-        conf.dump("xray_mra_tra.json")
-
-        write_log_file_with_cond(log, "data/logs/xray_payload.xes", lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.logRandomTagger(x, 0, 1, 0.1))
-        conf.setLogName("xray_payload.xes")
-        conf.setOutputFolder("xray_payload_out")
-        conf.setExperimentName("xray_payload")
-        conf.dump("xray_payload.json")
+    # assert os.path.isfile("data/logs/merged_xray.xes_unique.xes")
+    # assert os.path.isfile("synth_xray.json")
+    # if ((not os.path.isfile("data/logs/xray_proc.xes")) or (not os.path.isfile("data/logs/xray_decl.xes")) or (not os.path.isfile("data/logs/xray_mr_tr.xes")) or (not os.path.isfile("data/logs/xray_mra_tra.xes"))):
+    #     log = read_XES_log("data/logs/merged_xray.xes_unique.xes")
+    #     conf = jsonpickle.decode(open("synth_xray.json").read())
+    #     assert(isinstance(conf, ConfigurationFile))
+    #
+    #     write_log_file_with_cond(log, "data/logs/xray_proc.xes", lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactSubsequence(x, ["check_X_ray_risk", "examine_patient", "perform_surgery"]))
+    #     conf.setLogName("xray_proc.xes")
+    #     conf.setOutputFolder("xray_proc_out")
+    #     conf.setExperimentName("xray_proc")
+    #     conf.dump("xray_proc.json")
+    #
+    #     write_log_file_with_cond(log, "data/logs/xray_decl.xes", lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAnyProp(x, [(template_init, ["check_X_ray_risk"])], SatCases.NotVacuitySat))
+    #     conf.setLogName("xray_decl.xes")
+    #     conf.setOutputFolder("xray_decl_out")
+    #     conf.setExperimentName("xray_decl")
+    #     conf.dump("xray_decl.json")
+    #
+    #     write_log_file_with_cond(log, "data/logs/xray_mr_tr.xes", lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactOccurrence(x, ["apply_cast", "perform_reposition", "prescribe_rehabilitation"], 1))
+    #     conf.setLogName("xray_mr_tr.xes")
+    #     conf.setOutputFolder("xray_mr_tr_out")
+    #     conf.setExperimentName("xray_mr_tr")
+    #     conf.dump("xray_mr_tr.json")
+    #
+    #     write_log_file_with_cond(log, "data/logs/xray_mra_tra.xes", lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x, ["apply_cast", "perform_reposition", "prescribe_rehabilitation"], 2))
+    #     conf.setLogName("xray_mra_tra.xes")
+    #     conf.setOutputFolder("xray_mra_tra_out")
+    #     conf.setExperimentName("xray_mra_tra")
+    #     conf.dump("xray_mra_tra.json")
+    #
+    #     write_log_file_with_cond(log, "data/logs/xray_payload.xes", lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.logRandomTagger(x, 0, 1, 0.1))
+    #     conf.setLogName("xray_payload.xes")
+    #     conf.setOutputFolder("xray_payload_out")
+    #     conf.setExperimentName("xray_payload")
+    #     conf.dump("xray_payload.json")
 
 # def test(x):
 #         from pathlib import Path
@@ -239,10 +239,10 @@ if __name__ == '__main__':
     printWithColor("Generates the jsons configurations")
     #generateTagging()
 
-    LS = [ "sepsis_proc.json", "sepsis_decl.json", "sepsis_mr_tr.json", "sepsis_mra_tra.json", "sepsis_payload.json", "xray_proc.json"]
-    for conf_file in ["sepsis_mr_tr.json"]:
+    LS = [ "sepsis_proc.json",  "sepsis_decl.json", "sepsis_mr_tr.json", "sepsis_mra_tra.json", "sepsis_payload.json"]
+    for conf_file in LS:
         printWithColor("Now running: "+conf_file)
-        run_complete_configuration_and_run(conf_file, doNr0 = False, ranges=[5], max_splits=3)
+        run_complete_configuration_and_run(conf_file, doNr0 = True, max_splits=4)
     # pool = Pool()
     # folders_to_merge = pool.map(test, LS)
     # pool.close()
