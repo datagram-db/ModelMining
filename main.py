@@ -84,22 +84,22 @@ def run_sepsis(pipeline):
     cf.setPayloadSettings("sepsis_settings.cfg")
     cf.dump("sepsis_er.json")
     sepsis_map = {
-        "sepsis_payload": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverIthEventAttn(x,
+        "sepsis_payload2": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverIthEventAttn(x,
                                                                                                                      "DisfuncOrg",
                                                                                                                      True,
                                                                                                                      0),
-        "sepsis_mra_tra": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x, ["IV Liquid",
-                                                                                                            "LacticAcid",
-                                                                                                            "Leucocytes"],
-                                                                                                        2),
-        "sepsis_mr_tr": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactOccurrence(x, [
-            "Admission NC", "CRP"], 1),
-        "sepsis_proc": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactSubsequence(x, [
-            "Admission NC", "Leucocytes", "CRP"]),
-        "sepsis_decl": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
-            (template_response, ["IV Antibiotics", "Leucocytes"]),
-            (template_response, ["LacticAcid", "IV Antibiotics"]),
-            (template_response, ["ER Triage", "CRP"])], SatCases.NotVacuitySat)
+         "sepsis_mra_tra": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x, ["IV Liquid",
+                                                                                                             "LacticAcid",
+                                                                                                             "Leucocytes"],
+                                                                                                         2),
+         "sepsis_mr_tr": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactOccurrence(x, [
+             "Admission NC", "CRP"], 1),
+         "sepsis_proc": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactSubsequence(x, [
+             "Admission NC", "Leucocytes", "CRP"]),
+         "sepsis_decl": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
+             (template_response, ["IV Antibiotics", "Leucocytes"]),
+             (template_response, ["LacticAcid", "IV Antibiotics"]),
+             (template_response, ["ER Triage", "CRP"])], SatCases.NotVacuitySat)
     }
     runWholeConfiguration(pipeline, "sepsis.xes", cf, sepsis_map)
 
@@ -120,26 +120,26 @@ def run_bpm11(pipeline):
     cf.setPayloadSettings("bpi2011_settings.cfg")
     cf.dump("bpi11.json")
     bpm11_map = {
-        "bpi11_payload_dCC": lambda
-            x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x, "Diagnosis",
-                                                                                                "maligniteit cervix"),
-        "bpi11_payload_T101": lambda
-            x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x, "Treatment code",
-                                                                                                101),
-        "bpi11_payload_M13": lambda
-            x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x, "Diagnosis code",
-                                                                                                "M13"),
-        "bpi11_payload_M16": lambda
-            x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x, "Diagnosis code",
-                                                                                                "M16"),
-        "bpi11_mra_tra": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x, [
-            "assumption laboratory", "Milk acid dehydrogenase LDH kinetic"], 2),
-        "bpi11_mr_tr": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactOccurrence(x, [
-            "assumption laboratory", "Milk acid dehydrogenase LDH kinetic"], 1),
-        "bpi11_proc": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactSubsequence(x, [
-            "unconjugated bilirubin", "bilirubin - total", "glucose"]),
-        "bpi11_decl": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
-            (template_init, ["outpatient follow-up consultation"])
+         "bpi11_payload_dCC": lambda
+             x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x, "Diagnosis",
+                                                                                                 "maligniteit cervix"),
+         "bpi11_payload_T101": lambda
+             x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x, "Treatment code",
+                                                                                                 101),
+         "bpi11_payload_M13": lambda
+             x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x, "Diagnosis code",
+                                                                                                 "M13"),
+         "bpi11_payload_M16": lambda
+             x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x, "Diagnosis code",
+                                                                                                 "M16"),
+         "bpi11_mra_tra": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x, [
+             "assumption laboratory", "Milk acid dehydrogenase LDH kinetic"], 2),
+         "bpi11_mr_tr": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactOccurrence(x, [
+             "assumption laboratory", "Milk acid dehydrogenase LDH kinetic"], 1),
+         "bpi11_proc": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactSubsequence(x, [
+             "unconjugated bilirubin", "bilirubin - total", "glucose"]),
+         "bpi11_decl": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
+             (template_init, ["outpatient follow-up consultation"])
         ], SatCases.NotVacuitySat)
     }
     runWholeConfiguration(pipeline, "EnglishBPIChallenge2011.xes", cf, bpm11_map)
@@ -150,7 +150,7 @@ if __name__ == '__main__':
     pipeline = RunWholeStrategy(os.path.join("data", "logs"),
                                 os.path.join("data", "experiments"),
                                 True,
-                                [5, 10, 15, 20, 25, 30],
+                                [5, 10, 15, 20, 25, 30, 60, 80],
                                 5)
-    run_sepsis(pipeline)
+    #run_sepsis(pipeline)
     run_bpm11(pipeline)

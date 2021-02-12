@@ -1,9 +1,12 @@
 import os
+
+import fastcsv
+import numpy
 import pandas as pd
 
 from . import PandaExpress
 from .FileNameUtils import path_generic_log
-from .PandaExpress import ensureDataFrameQuality, dataframe_join_withChecks, ensureLoadedDataQuality
+from .PandaExpress import ensureDataFrameQuality, dataframe_join_withChecks, fast_csv_parse
 from scipy.io import arff
 
 def read_single_arff_dump(arff_file, csv_file, doQualityCheck = True):
@@ -39,6 +42,24 @@ def read_arff_embedding_dump(complete_path,  training_ids, testing_ids, doQualit
         assert ((len(train_df.index)+len(test_df.index))==len(full_df.index))
     return train_df, test_df
 
+
+
+
+def read_all_numeric_columns_except_one(complete_path):
+    print("Reading: "+ complete_path)
+    return fast_csv_parse(complete_path)
+    #
+    # print("Parsing the colnames...")
+    # columns = set(pd.read_csv(complete_path, sep=",", na_filter=False, index_col=0, nrows=0).columns.tolist())
+    # hasCaseId = "Case_ID" in columns
+    # d = dict.fromkeys(columns, numpy.float64)
+    # if hasCaseId:
+    #     d["Case_ID"] = str
+    # print("Reading: "+ complete_path)
+    # return ensureLoadedDataQuality(pd.read_csv(complete_path, sep=",", index_col="Case_ID", na_filter=False, dtype=d))
+
+
+
 def read_generic_embedding_dump(results_folder, split_nr, encoding, dictionary):
     """
     This method reads the log, that has been already serialized for a vectorial representation
@@ -54,9 +75,18 @@ def read_generic_embedding_dump(results_folder, split_nr, encoding, dictionary):
     test_path = os.path.join(file_loc, encoding+"_test.csv")
     dictionary["train"] = os.path.abspath(train_path)
     dictionary["test"] = os.path.abspath(test_path)
-    train_df = ensureLoadedDataQuality(pd.read_csv(train_path, sep=",", index_col="Case_ID", na_filter=False))
-    test_df = ensureLoadedDataQuality(pd.read_csv(test_path, sep=",", index_col="Case_ID", na_filter=False))
+    train_df = read_all_numeric_columns_except_one(train_path)
+    test_df = read_all_numeric_columns_except_one(test_path)
     return train_df, test_df
+
+
+def check_dump_exists(results_folder, split_nr, encoding):
+    split = "split" + str(split_nr)
+    file_loc = os.path.join(results_folder, split, encoding)
+    train_path = os.path.join(file_loc, encoding+"_train.csv")
+    test_path = os.path.join(file_loc, encoding+"_test.csv")
+    return (os.path.isfile(train_path) and os.path.isfile(test_path))
+
 
 def dump_extended_dataframes(train_df, test_df, results_folder, split_nr, encoding):
     train_path, test_path = path_generic_log(results_folder, split_nr, encoding)

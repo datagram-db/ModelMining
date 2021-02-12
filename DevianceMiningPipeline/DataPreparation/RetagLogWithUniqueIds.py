@@ -3,6 +3,8 @@ Changing the dataset that were produced by ensuring unique ids to each trace
 
 @author Giacomo Bergami
 """
+import os
+
 from opyenxes.data_in.XUniversalParser import XUniversalParser
 from opyenxes.model import XAttributeBoolean, XAttributeLiteral, XAttributeTimestamp, XAttributeDiscrete, XAttributeContinuous
 from opyenxes.factory.XFactory import XFactory
@@ -22,13 +24,18 @@ def generateStringFromNumber(n):
     return "".join(map(lambda x: defaults[x], numberToBase(n, len(defaults))))
 
 def changeLog(logFileName, doQualityCheck = True):
+    final_file_name = logFileName+"_unique.xes"
+    if (os.path.isfile(final_file_name)):
+        with open(final_file_name) as file:
+            log = XUniversalParser().parse(file)[0]
+            return final_file_name, log
     with open(logFileName) as file:
         log = XUniversalParser().parse(file)[0]
         i = 0
         for trace in log:
             trace.get_attributes()["concept:name"] = XFactory.create_attribute_literal("concept:name", generateStringFromNumber(i))
             i = i+1
-        final_file_name = logFileName+"_unique.xes"
+
         with open(final_file_name, "w") as file2:
             XesXmlSerializer().serialize(log, file2)
             file2.close()
