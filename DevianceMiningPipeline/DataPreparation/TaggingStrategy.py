@@ -6,7 +6,7 @@ of the dataset with a given function
 """
 import os
 from opyenxes.data_out.XesXmlSerializer import XesXmlSerializer
-from DevianceMiningPipeline import ConfigurationFile
+#from DevianceMiningPipeline import ConfigurationFile
 
 def write_log_file(log, filen):
     with open(filen, "w") as file:
@@ -29,7 +29,7 @@ class TaggingStrategy:
         self.fun = fun
 
     def __call__(self, basepath, conf, log):
-        assert(isinstance(conf, ConfigurationFile))
+        #assert(isinstance(conf, ConfigurationFile))
         write_log_file_with_cond(log, os.path.join(basepath, self.logname), self.fun)
         conf.setLogName(self.logname)
         conf.setOutputFolder(self.outputfolder)

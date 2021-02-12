@@ -699,34 +699,32 @@ template_sizes = {"init": 1,
                   "precedence": 2
                   }
 
-
+template_map = {
+    "init": template_init,
+    "exist": template_exist,
+    "absence1": template_absence1,
+    "absence2": template_absence2,
+    "absence3": template_absence3,
+    "choice": template_choice,
+    "coexistence": template_coexistence,
+    "exactly1": template_exactly1,
+    "exactly2": template_exactly2,
+    "exactly3": template_exactly3,
+    "alternate_precedence": template_alternate_precedence,
+    "alternate_succession": template_alternate_succession,
+    "alternate_response": template_alternate_response,
+    "chain_precedence": template_chain_precedence,
+    "chain_response": template_chain_response,
+    "chain_succession": template_chain_succession,
+    "not_chain_succession": template_not_chain_succession,
+    "not_coexistence": template_not_coexistence,
+    "not_succession": template_not_succession,
+    "responded_existence": template_responded_existence,
+    "response": template_response,
+    "succession": template_succession,
+    "precedence": template_precedence
+}
 def apply_template(template_str, trace, event_set):
-    template_map = {
-        "init": template_init,
-        "exist": template_exist,
-        "absence1": template_absence1,
-        "absence2": template_absence2,
-        "absence3": template_absence3,
-        "choice": template_choice,
-        "coexistence": template_coexistence,
-        "exactly1": template_exactly1,
-        "exactly2": template_exactly2,
-        "exactly3": template_exactly3,
-        "alternate_precedence": template_alternate_precedence,
-        "alternate_succession": template_alternate_succession,
-        "alternate_response": template_alternate_response,
-        "chain_precedence": template_chain_precedence,
-        "chain_response": template_chain_response,
-        "chain_succession": template_chain_succession,
-        "not_chain_succession": template_not_chain_succession,
-        "not_coexistence": template_not_coexistence,
-        "not_succession": template_not_succession,
-        "responded_existence": template_responded_existence,
-        "response": template_response,
-        "succession": template_succession,
-        "precedence": template_precedence
-    }
-
     lower = template_str.lower()
 
     if lower in template_map:

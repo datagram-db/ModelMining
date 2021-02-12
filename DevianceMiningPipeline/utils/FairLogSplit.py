@@ -43,26 +43,38 @@ def abstractFairSplit(sequence, labelPredicate, getId, training_test_split):
 
     trueLen = float(len(trueTraceOffset))
     falseLen = float(len(falseTraceOffset))
-    assert (int(training_test_split * trueLen) > 0)
-    assert (int((1.0 - training_test_split) * trueLen) > 0)
-    assert (int(training_test_split * falseLen) > 0)
-    assert (int((1.0 - training_test_split) * falseLen) > 0)
+    if not (int(training_test_split * trueLen) > 0):
+        raise Exception("Error: the potitive elements in the training dataset for each split should "
+                        "contain at least one trace: please re-formulate the tagging!")
+    if not (int((1.0 - training_test_split) * trueLen) > 0):
+        raise Exception("Error: the potitive elements in the testing dataset for each split should "
+                        "contain at least one trace: please re-formulate the tagging!")
+    if not (int(training_test_split * falseLen) > 0):
+        raise Exception("Error: the negative elements in the training dataset for each split should "
+                        "contain at least one trace: please re-formulate the tagging!")
+    if not (int((1.0 - training_test_split) * falseLen) > 0):
+        raise Exception("Error: the negative elements in the testing dataset for each split should "
+                        "contain at least one trace: please re-formulate the tagging!")
 
     TrainingTest = set()
     TestSet = set()
 
     # Splitting each class in half, and checking whether the list is not empty
     TTr, TTt = joonas_split_log_train_test(trueTraceOffset, training_test_split)
-    assert (len(TTr) > 0)
-    assert (len(TTt) > 0)
+    if not (len(TTr) > 0):
+        raise Exception("Error: the true traces in the training set are empty")
+    if not (len(TTt) > 0):
+        raise Exception("Error: the true traces in the testing set are empty")
     for id in TTr:
         TrainingTest.add(getId(l[id]))
     for id in TTt:
         TestSet.add(getId(l[id]))
 
     TTr, TTt = joonas_split_log_train_test(falseTraceOffset, training_test_split)
-    assert (len(TTr) > 0)
-    assert (len(TTt) > 0)
+    if not (len(TTr) > 0):
+        raise Exception("Error: the false traces in the training set are empty")
+    if not (len(TTt) > 0):
+        raise Exception("Error: the false traces in the testing set are empty")
     for id in TTr:
         TrainingTest.add(getId(l[id]))
     for id in TTt:
@@ -114,10 +126,18 @@ def generateFairLogSplit(inp_path, log, log_name, output_folder, slices, trainin
     for trueSplit, falseSplit in zip(numpy.array_split(trueTraceOffset,slices), numpy.array_split(falseTraceOffset,slices)):
         trueLen = float(len(trueSplit))
         falseLen = float(len(falseSplit))
-        assert (int(training_test_split * trueLen) > 0)
-        assert (int((1.0-training_test_split) * trueLen) > 0)
-        assert (int(training_test_split * falseLen) > 0)
-        assert (int((1.0-training_test_split) * falseLen) > 0)
+        if not (int(training_test_split * trueLen) > 0):
+            raise Exception("Error: the potitive elements in the training dataset for each split should "
+                            "contain at least one trace: please re-formulate the tagging!")
+        if not (int((1.0-training_test_split) * trueLen) > 0):
+            raise Exception("Error: the potitive elements in the testing dataset for each split should "
+                            "contain at least one trace: please re-formulate the tagging!")
+        if not (int(training_test_split * falseLen) > 0):
+            raise Exception("Error: the negative elements in the training dataset for each split should "
+                            "contain at least one trace: please re-formulate the tagging!")
+        if not (int((1.0-training_test_split) * falseLen) > 0):
+            raise Exception("Error: the negative elements in the testing dataset for each split should "
+                            "contain at least one trace: please re-formulate the tagging!")
         # After checking that we obtained a good split, dump the datasets
 
         new_log = XFactory.create_log(log.get_attributes().clone())
