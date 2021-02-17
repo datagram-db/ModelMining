@@ -55,7 +55,11 @@ public class CrawlBenchmarkDataset {
     }
 
     public static void main(String args[]) throws InterruptedException {
-        runFilteredSequential(args[0], args[1]);
+        if ((args.length>2) && args[2].toLowerCase().equals("parall")) {
+            runFilteredParallel(args[0], args[1]);
+        } else {
+            runFilteredSequential(args[0], args[1]);
+        }
     }
 
 }

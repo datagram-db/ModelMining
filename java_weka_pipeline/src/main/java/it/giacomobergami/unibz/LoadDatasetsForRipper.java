@@ -13,12 +13,32 @@ import weka.filters.unsupervised.attribute.NumericToNominal;
 import weka.filters.unsupervised.attribute.Remove;
 
 import java.io.*;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 
-public class LoadDatasetsForRipper {
+public class LoadDatasetsForRipper implements AutoCloseable {
 
+    CSVLoader training;
+    ArffLoader training2;
 
-    public static boolean dumpFile(String folder_name, String train, String test, String exp_setting_embedding, String sep, PrintWriter csvFile, PrintWriter ruleFile, int max_iteration) throws Exception {
+    public LoadDatasetsForRipper() {
+        training = new CSVLoader();
+        training2 = new ArffLoader();
+    }
+
+    @Override
+    public void close() throws Exception {
+        // Forcing the deletion, forsooth!
+        // We need to save disk space as much as we can on Big Data!
+        Field m_dataDumper = training.getClass().getDeclaredField("m_dataDumper");
+        m_dataDumper.setAccessible(true);
+        ((PrintWriter)m_dataDumper.get(training)).close();
+        Field m_tempFile = training.getClass().getDeclaredField("m_tempFile");
+        m_tempFile.setAccessible(true);
+        ((File)m_tempFile.get(training)).delete();
+    }
+
+    public boolean dumpFile(String folder_name, String train, String test, String exp_setting_embedding, String sep, PrintWriter csvFile, PrintWriter ruleFile, int max_iteration) throws Exception {
         String lerner = "RipperK";
         String conftype = "iteration";
         NumericToNominal nominal = new NumericToNominal();
@@ -26,7 +46,7 @@ public class LoadDatasetsForRipper {
         boolean hasError = false;
         for (int i = 0; i< max_iteration; i++) {
             int optimization_i = i * 2;
-            //System.out.println("\t - optimization: "+optimization_i);
+            System.out.println("\t - optimization: "+optimization_i);
             JRip ripperk = new JRip();
             Instances trainingSet = extracted(train, "Label", nominal, sep);
             Instances testingSet = extracted(test,  "Label", nominal, sep);;
@@ -138,18 +158,16 @@ public class LoadDatasetsForRipper {
      * @return              Converted and loaded dataset
      * @throws Exception
      */
-    private static Instances extracted(String filename, String label, NumericToNominal nominal, String separator) throws Exception {
+    private Instances extracted(String filename, String label, NumericToNominal nominal, String separator) throws Exception {
 
         Instances data = null;
         if (filename.endsWith(".csv")) {
-            CSVLoader training = new CSVLoader();
             training.setFieldSeparator(separator);
             training.setSource(new File(filename));
             data = training.getDataSet();
         } else if (filename.endsWith(".arff")) {
-            ArffLoader training = new ArffLoader();
-            training.setSource(new File(filename));
-            data = training.getDataSet();
+            training2.setSource(new File(filename));
+            data = training2.getDataSet();
             label = "label";
         }
 
@@ -160,5 +178,6 @@ public class LoadDatasetsForRipper {
         data.setClass(data.attribute(label));
         return data;
     }
+
 
 }

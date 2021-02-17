@@ -75,8 +75,8 @@ public class CrawlResultsFolder implements AutoCloseable {
                 String testing_csv = tt.test;
                 boolean hasError = false;
                 String strError = "[generic]";
-                try {
-                    hasError = LoadDatasetsForRipper.dumpFile(folderName, training_csv, testing_csv, dump_conf, ",", csvFile, ruleFile, 10);
+                try (LoadDatasetsForRipper instance = new LoadDatasetsForRipper()) {
+                    hasError = instance.dumpFile(folderName, training_csv, testing_csv, dump_conf, ",", csvFile, ruleFile, 3);
                 } catch (Exception e) {
                     strError = ": " + e.toString();
                     hasError = true;
