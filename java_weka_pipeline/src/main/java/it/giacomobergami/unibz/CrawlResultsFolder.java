@@ -3,11 +3,16 @@ package it.giacomobergami.unibz;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.opencsv.CSVReader;
+import weka.core.Attribute;
+import weka.core.DenseInstance;
+import weka.core.Instances;
+import weka.core.SparseInstance;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.jar.Attributes;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -76,8 +81,9 @@ public class CrawlResultsFolder implements AutoCloseable {
                 boolean hasError = false;
                 String strError = "[generic]";
                 try (LoadDatasetsForRipper instance = new LoadDatasetsForRipper()) {
-                    hasError = instance.dumpFile(folderName, training_csv, testing_csv, dump_conf, ",", csvFile, ruleFile, 3);
+                    hasError = instance.dumpFile(folderName, training_csv, testing_csv, dump_conf, ",", csvFile, ruleFile, 10);
                 } catch (Exception e) {
+                    e.printStackTrace();
                     strError = ": " + e.toString();
                     hasError = true;
                     // REDO!
@@ -95,10 +101,10 @@ public class CrawlResultsFolder implements AutoCloseable {
     }
 
     public static void main(String args[]) throws IOException {
-        try (CrawlResultsFolder folder = new CrawlResultsFolder("/media/giacomo/BigData/output_pipeline/sepsis_mra_tra_results")) {
-            folder.dump();
-        } catch (Exception e) {
-            e.printStackTrace();
+        try (CrawlResultsFolder f = new CrawlResultsFolder("/media/giacomo/BigData/output_pipeline/bpi11_mr_tr_results")) {
+            f.dump();
+        }catch (Exception e) {
+e.printStackTrace();
         }
     }
 
@@ -106,5 +112,6 @@ public class CrawlResultsFolder implements AutoCloseable {
     public void close() throws Exception {
         ruleFile.close();
         csvFile.close();
-    }
 }
+
+    }
