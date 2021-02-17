@@ -6,8 +6,6 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -55,14 +53,6 @@ public class CrawlResultsFolder implements AutoCloseable {
                 {"hybrid_dwd_payload", "Hybrid+Payload+Declare Data Aware"}
         }).collect(Collectors.toMap(data ->  data[0], data ->  data[1]));
 
-        /*for (String key : map.keySet())
-            if (!yaml.containsKey(key))
-                throw new RuntimeException(key);
-
-        for (String key: yaml.keySet())
-            if (! map.containsKey(key))
-                throw new RuntimeException(key);*/
-
         File csv_file = Files.list(folder.toPath()).filter(x -> x.toString().endsWith(".csv")).findAny().get().toFile();
         File rule_file = Files.list(folder.toPath()).filter(x -> x.toString().endsWith(".txt")).findAny().get().toFile();
 
@@ -90,6 +80,7 @@ public class CrawlResultsFolder implements AutoCloseable {
                 } catch (Exception e) {
                     strError = ": " + e.toString();
                     hasError = true;
+                    // REDO!
                 }
                 if (hasError) {
                     System.err.println("The dataset raised a Weka error " + strError);
@@ -104,7 +95,7 @@ public class CrawlResultsFolder implements AutoCloseable {
     }
 
     public static void main(String args[]) throws IOException {
-        try (CrawlResultsFolder folder = new CrawlResultsFolder("/home/giacomo/PycharmProjects/dmm2/data/experiments/xray_payload_results")) {
+        try (CrawlResultsFolder folder = new CrawlResultsFolder("/media/giacomo/BigData/output_pipeline/sepsis_mra_tra_results")) {
             folder.dump();
         } catch (Exception e) {
             e.printStackTrace();
