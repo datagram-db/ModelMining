@@ -648,9 +648,9 @@ class ExperimentRunner:
         from DevianceMiningPipeline.declaredevmining import declare_deviance_mining
         yamlFile = {}
         print("\x1b[6;30;42m Baseline generation:\x1b[0m")
-        yamlFile["baseline"] = baseline(d, logFilePath, 1.0)
+        yamlFile["baseline"] = baseline(d, logFilePath, 0.7)
         print("\x1b[6;30;42m Declare generation:\x1b[0m")
-        yamlFile["declare"] = declare_deviance_mining(d, log, split_size=1.0,
+        yamlFile["declare"] = declare_deviance_mining(d, log, split_size=0.7,
                                                       reencode=self.reencode)  # run_deviance_new
         print("\x1b[6;30;42m Generate Sequences generation:\x1b[0m")
         yamlFile.update(generateSequences(self.inp_path, logFilePath, d))
@@ -659,7 +659,7 @@ class ExperimentRunner:
             yamlFile["payload"] = payload_extractor2(d, logFilePath, self.payload_settings)
         if not (self.payload_dwd_settings is None):
             print("\x1b[6;30;42m DWD Sequences generation:\x1b[0m")
-            yamlFile["dwd"] = data_declare_main(d, logFilePath, self.payload_dwd_settings["ignored"], split=1.0)
+            yamlFile["dwd"] = data_declare_main(d, logFilePath, self.payload_dwd_settings["ignored"], split=0.7)
         with open(os.path.abspath(os.path.join(d, "../" + self.log_name + ".yaml")), 'w') as file:
             yaml.dump(yamlFile, file)
 
