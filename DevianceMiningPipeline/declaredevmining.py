@@ -203,13 +203,10 @@ def count_classes(log):
 
 
 
-def declare_deviance_mining(output_path, log, templates=None, to_shuffle=False, filter_t=True, reencode=False, split_size = .8):
+def declare_deviance_mining(output_path, log, templates=None, to_shuffle=False, filter_t=True, reencode=False, split_size = .8, constraint_threshold = 0.1, candidate_threshold = 0.1):
     print("Filter_t", filter_t)
     if not templates:
         templates = template_sizes.keys()
-
-    constraint_threshold = 0.1
-    candidate_threshold = 0.1
 
     # Read into suitable data structure
     transformed_log = xes_to_positional(log)

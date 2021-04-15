@@ -5,6 +5,7 @@ Author: Joonas Puura
 """
 
 import os
+import gc
 
 import pandas as pd
 import numpy as np
@@ -204,6 +205,9 @@ class ExperimentRunner:
 
         # 2. Shuffling & Split into 5 parts for cross validation
         FairLogSplit.generateFairLogSplit(inp_path, log, log_name, output_folder, max_splits, training_test_split)
+
+        del log
+        gc.collect()
 
     @staticmethod
     def correct_read_sequence_log(results_folder, encoding, split_nr, training_ids, testing_ids):  # split_perc = 0.8
@@ -637,33 +641,34 @@ class ExperimentRunner:
         self.cross_validation_pipeline(self.inp_path, self.log_name, self.output_folder, max_splits,
                                        training_test_split)
 
-    def serialize_complete_dataset(self, isCompleteEmbedding):
-        logFilePath = os.path.join(self.inp_path, self.log_name)
-        log = read_XES_log(logFilePath)
-        d = logFilePath
-        if isCompleteEmbedding:
-            d = os.path.join("./complete_embeddings/", logFilePath)
-        os.makedirs(d, exist_ok=True)
-        from DevianceMiningPipeline.baseline_runner import baseline
-        from DevianceMiningPipeline.declaredevmining import declare_deviance_mining
-        yamlFile = {}
-        print("\x1b[6;30;42m Baseline generation:\x1b[0m")
-        yamlFile["baseline"] = baseline(d, logFilePath, 0.7)
-        print("\x1b[6;30;42m Declare generation:\x1b[0m")
-        yamlFile["declare"] = declare_deviance_mining(d, log, split_size=0.7,
-                                                      reencode=self.reencode)  # run_deviance_new
-        print("\x1b[6;30;42m Generate Sequences generation:\x1b[0m")
-        yamlFile.update(generateSequences(self.inp_path, logFilePath, d))
-        if not (self.payload_settings is None):
-            print("\x1b[6;30;42m Payload generation:\x1b[0m")
-            yamlFile["payload"] = payload_extractor2(d, logFilePath, self.payload_settings)
-        if not (self.payload_dwd_settings is None):
-            print("\x1b[6;30;42m DWD Sequences generation:\x1b[0m")
-            yamlFile["dwd"] = data_declare_main(d, logFilePath, self.payload_dwd_settings["ignored"], split=0.7)
-        with open(os.path.abspath(os.path.join(d, "../" + self.log_name + ".yaml")), 'w') as file:
-            yaml.dump(yamlFile, file)
+    # def serialize_complete_dataset(self, isCompleteEmbedding):
+    #     logFilePath = os.path.join(self.inp_path, self.log_name)
+    #     log = read_XES_log(logFilePath)
+    #     d = logFilePath
+    #     if isCompleteEmbedding:
+    #         d = os.path.join("./complete_embeddings/", logFilePath)
+    #     os.makedirs(d, exist_ok=True)
+    #     from DevianceMiningPipeline.baseline_runner import baseline
+    #     from DevianceMiningPipeline.declaredevmining import declare_deviance_mining
+    #     yamlFile = {}
+    #     if not (self.payload_settings is None):
+    #         print("\x1b[6;30;42m Payload generation:\x1b[0m")
+    #         yamlFile["payload"] = payload_extractor2(d, logFilePath, self.payload_settings)
+    #     if not (self.payload_dwd_settings is None):
+    #         print("\x1b[6;30;42m DWD Sequences generation:\x1b[0m")
+    #         yamlFile["dwd"] = data_declare_main(d, logFilePath, self.payload_dwd_settings["ignored"], split=0.7)
+    #     print("\x1b[6;30;42m Generate Sequences generation:\x1b[0m")
+    #     yamlFile.update(generateSequences(self.inp_path, logFilePath, d))
+    #     print("\x1b[6;30;42m Baseline generation:\x1b[0m")
+    #     yamlFile["baseline"] = baseline(d, logFilePath, 0.7)
+    #     print("\x1b[6;30;42m Declare generation:\x1b[0m")
+    #     yamlFile["declare"] = declare_deviance_mining(d, log, split_size=0.7,
+    #                                                   reencode=self.reencode)  # run_deviance_new
+    #     with open(os.path.abspath(os.path.join(d, "../" + self.log_name + ".yaml")), 'w') as file:
+    #         yaml.dump(yamlFile, file)
 
-    def prepare_data(self, max_splits, training_test_split, doForce=False):
+
+    def prepare_data(self, max_splits, training_test_split, doForce=False, threshold_split = 0.1):
         self.create_folder_structure(self.results_folder, max_splits, payload=self.payload,
                                      payload_type=self.payload_type)
         ignored = []
@@ -706,7 +711,8 @@ class ExperimentRunner:
 
             print("\t - writing declare split")
             STr, STt = declaredevmining.declare_embedding(declare__path, propositionalTraining, propositionalTesting,
-                                                          reencode=self.reencode)
+                                                          reencode=self.reencode, candidate_threshold=threshold_split,
+                                                          constraint_threshold=threshold_split)
             assert (STr == TrainingId)
             assert (STt == TestingId)
 
@@ -719,9 +725,17 @@ class ExperimentRunner:
                 if self.payload_type == "dwd" or self.payload_type == "both":
                     print("\t - writing declare with data embedding")
                     STr, STt = declare_data_aware_embedding(ignored, declared_path, dataPropositionalTraining,
-                                                            dataPropositionalTesting)
+                                                            dataPropositionalTesting, candidate_threshold=threshold_split,
+                                                          constraint_threshold=threshold_split)
                     assert (STr == TrainingId)
                     assert (STt == TestingId)
+            del STr
+            del STt
+            del TrainingId
+            del TestingId
+            del logTraining
+            del logTesting
+            gc.collect()
 
         print("\t - writing bs_data")
         self.multijoined_dump("bs_data", ["baseline", "payload"], max_splits)
@@ -758,6 +772,10 @@ class ExperimentRunner:
             allTr = dataframe_multiway_equijoin(allTr)
             allTe = dataframe_multiway_equijoin(allTe)
             genericDump(hybrid___path, allTr, allTe, "combined_for_hybrid_train.csv", "combined_for_hybrid_test.csv")
+
+            del allTr
+            del allTe
+            gc.collect()
 
         for strategy in strategies:
             print("\t - writing " + strategy + "_data")

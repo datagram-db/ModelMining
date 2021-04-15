@@ -78,31 +78,31 @@ class ConfigurationFile(object):
         f.write(jsonpickle.encode(self))
         f.close()
 
-    def complete_embedding_generation(self, INP_PATH, DATA_EXP):
-        from DevianceMiningPipeline.ExperimentRunner import ExperimentRunner
-        from pathlib import Path
-        import os
-        ex = ExperimentRunner(experiment_name=self.experiment_name,
-                              output_file=self.results_file,
-                              results_folder=os.path.join(DATA_EXP, self.results_folder),
-                              inp_path=INP_PATH,
-                              log_name=self.log_name,
-                              output_folder=os.path.join(DATA_EXP, self.output_folder),
-                              log_template=self.log_path_seq,
-                              dt_max_depth=self.dt_max_depth,
-                              dt_min_leaf=self.dt_min_leaf,
-                              selection_method="coverage",
-                              coverage_threshold=5,
-                              sequence_threshold=self.sequence_threshold,
-                              payload=not (self.payload_type is None),
-                                  payload_type=None if self.payload_type is None else self.payload_type.name)
-        if not self.auto_ignored is None:
-            ex.payload_dwd_settings = {"ignored": self.auto_ignored}
-        if not self.payload_settings is None:
-            ex.payload_settings = self.payload_settings
-        ex.serialize_complete_dataset(True)
+    # def complete_embedding_generation(self, INP_PATH, DATA_EXP):
+    #     from DevianceMiningPipeline.ExperimentRunner import ExperimentRunner
+    #     from pathlib import Path
+    #     import os
+    #     ex = ExperimentRunner(experiment_name=self.experiment_name,
+    #                           output_file=self.results_file,
+    #                           results_folder=os.path.join(DATA_EXP, self.results_folder),
+    #                           inp_path=INP_PATH,
+    #                           log_name=self.log_name,
+    #                           output_folder=os.path.join(DATA_EXP, self.output_folder),
+    #                           log_template=self.log_path_seq,
+    #                           dt_max_depth=self.dt_max_depth,
+    #                           dt_min_leaf=self.dt_min_leaf,
+    #                           selection_method="coverage",
+    #                           coverage_threshold=5,
+    #                           sequence_threshold=self.sequence_threshold,
+    #                           payload=not (self.payload_type is None),
+    #                               payload_type=None if self.payload_type is None else self.payload_type.name)
+    #     if not self.auto_ignored is None:
+    #         ex.payload_dwd_settings = {"ignored": self.auto_ignored}
+    #     if not self.payload_settings is None:
+    #         ex.payload_settings = self.payload_settings
+    #     ex.serialize_complete_dataset(True)
 
-    def run(self, INP_PATH, DATA_EXP, coverage_thresholds, doNr0 = True, max_splits = 5, training_test_split = 0.7):
+    def run(self, INP_PATH, DATA_EXP, coverage_thresholds, doNr0 = True, max_splits = 5, training_test_split = 0.7, threshold_split = 0.1):
         from pathlib import Path
         import os
         Path(os.path.join(DATA_EXP, self.results_folder)).mkdir(parents=True, exist_ok=True)
@@ -134,5 +134,5 @@ class ConfigurationFile(object):
             if (nr == 0) and doNr0:
                 # Performs a fair split into distinct classes
                 ex.prepare_cross_validation(max_splits, training_test_split)
-                ex.prepare_data(max_splits, training_test_split, doForce=self.forceTime)
+                ex.prepare_data(max_splits, training_test_split, doForce=self.forceTime, threshold_split=threshold_split)
             ex.train_and_eval_benchmark(max_splits)

@@ -66,11 +66,22 @@ def hasIthEventAttributeWithValue(trace, attribute, value, ith):
     else:
         return False
 
+def hasEventAttributeWithValue(trace, attribute, value):
+    for event in trace:
+        if attribute in event.get_attributes():
+            if event.get_attributes()[attribute].get_value() == value:
+                return True
+    return False
+
+
 def compileTraceAttributeWithValue(attribute, value):
     return lambda x: hasTraceAttributeWithValue(x, attribute, value)
 
 def compileIthEventAttributeWithValue(attribute, value, ith):
     return lambda x: hasIthEventAttributeWithValue(x, attribute, value, ith)
+
+def compileEventAttributeWithValue(attribute, value):
+    return lambda x: hasEventAttributeWithValue(x, attribute, value)
 
 def extractAttributeValues(x, attribute):
     if attribute in x.get_attributes():
@@ -191,6 +202,9 @@ def logRandomTagger(log, min = 0, max = 1, maxThreshold = 0.1):
 def tagLogWithValueEqOverTraceAttn(log, attn, val):
     logTagger(log, compileTraceAttributeWithValue(attn, val))
 
+def tagLogWithValueEqOverEventAttn(log, attn, val):
+    logTagger(log, compileEventAttributeWithValue(attn, val))
+
 def tagLogWithValueEqOverIthEventAttn(log, attn, val, ith):
     logTagger(log, compileIthEventAttributeWithValue(attn, val, ith))
 
@@ -208,3 +222,6 @@ def tagLogWithSatAllProp(log, functionEventNamesList, SatCheck):
 
 def tagLogWithSatAnyProp(log, functionEventNamesList, SatCheck):
     logTagger(log, SatAnyProp([SatProp(x,y, SatCheck) for (x,y) in functionEventNamesList]), True)
+
+def ignoreTagging():
+    pass

@@ -28,6 +28,9 @@ class TaggingStrategy:
         self.json = experiment_name + ".json"
         self.fun = fun
 
+    def will_dump_log(self, basepath):
+        return not os.path.isfile(os.path.join(basepath, self.logname))
+
     def __call__(self, basepath, conf, log):
         #assert(isinstance(conf, ConfigurationFile))
         write_log_file_with_cond(log, os.path.join(basepath, self.logname), self.fun)

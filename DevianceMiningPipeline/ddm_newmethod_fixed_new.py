@@ -249,7 +249,7 @@ class DRC:
         return features_data
 
 
-    def create_data_aware_features(self, train_log, test_log, ignored):
+    def create_data_aware_features(self, train_log, test_log, ignored, constraint_threshold = 0.1, candidate_threshold = 0.1):
         # given log
         # 0.0. Extract events
 
@@ -303,11 +303,6 @@ class DRC:
         inp_templates = templates + not_templates
 
         # play around with thresholds
-
-        constraint_threshold = 0.1
-        candidate_threshold = 0.1
-
-
         # Extract unique activities from log
         events_set = extract_unique_events_transformed(train_log)
 
@@ -456,46 +451,42 @@ class DRC:
             ignored_features = set(ignored) # set([('Diagnose', 'literal')])
 
             collected_features = set()
-            # Get all possible features for
+            #Optimizing the code, so that scanning and filtering is performed only once
             for pos_act, _, __ in train_positive_samples:
                 for key2, val in pos_act.items():
-                    collected_features.add(key2)
+                    if (key2[1] in {"boolean", "continuous", "discrete", "literal"}) and (key2[0] not in ignored_features):
+                        collected_features.add(key2)
 
             for neg_act, _, __ in train_negative_samples:
                 for key2, val in neg_act.items():
-                    collected_features.add(key2)
+                    if (key2[1] in {"boolean", "continuous", "discrete", "literal"}) and (key2[0] not in ignored_features):
+                        collected_features.add(key2)
 
 
             features = list(collected_features)
 
             # Keep only features of boolean, literal, continuous and discrete
-            features = [feature for feature in features if feature[1] in set(["boolean", "continuous", "discrete", "literal"])]
-            features = [feature for feature in features if feature[0] not in ignored_features]
+            #features = [feature for feature in features if feature[1] in {"boolean", "continuous", "discrete",
+            #                                                              "literal"}]
+            #features = [feature for feature in features if feature[0] not in ignored_features]
 
             # collect positive and negative samples for finding data condition:
-            positive_samples = [(sample[2], sample[0]) for sample in train_positive_samples if sample[1] == 1]
-            negative_samples = [(sample[2], sample[0]) for sample in train_positive_samples if sample[1] == 0]
+            positive_samples = map(lambda sample: (sample[2], sample[0]) , filter(lambda sample : sample[1] == 1, train_positive_samples))#[(sample[2], sample[0]) for sample in train_positive_samples if sample[1] == 1]
+            negative_samples = map(lambda sample: (sample[2], sample[0]) , filter(lambda sample : sample[1] == 0, train_positive_samples))#[(sample[2], sample[0]) for sample in train_positive_samples if sample[1] == 0]
 
-            pos_activations = [(sample[2], sample[0]) for sample in train_positive_samples]
-            neg_activations = [(sample[2], sample[0]) for sample in train_negative_samples]
+            pos_activations = map(lambda sample: (sample[2], sample[0]), train_positive_samples)
+            neg_activations = map(lambda sample: (sample[2], sample[0]), train_negative_samples)
 
             feature_train_samples = self.create_sample(pos_activations, features, 1) + self.create_sample(neg_activations, features, 0)
-            # Crete pos and neg samples
-            pos_samples = self.create_sample(positive_samples, features, 1)
-            neg_samples = self.create_sample(negative_samples, features, 0)
-            features_data = pos_samples + neg_samples
+            features_data = self.create_sample(positive_samples, features, 1) + self.create_sample(negative_samples, features, 0)
             features_label = ["id"] + features + ["Label"]
             # one-hot encode literal features
-            literal_features = [feature for feature in features if feature[1] == "literal"]
 
             # Extract positive test samples, where fulfillments where fulfilled
             train_df = pd.DataFrame(features_data, columns=features_label)
-            test_pos_smpl = [(sample[2], sample[0]) for sample in test_positive_samples] # if sample[1] == 1]
-            test_neg_smpl = [(sample[2], sample[0]) for sample in test_negative_samples] # if sample[1] == 0]
-
-            pos_test_samples = self.create_sample(test_pos_smpl, features, 1)
-            neg_test_samples = self.create_sample(test_neg_smpl, features, 0)
-            test_features_data = pos_test_samples + neg_test_samples
+            test_pos_smpl = map(lambda sample: (sample[2], sample[0]), test_positive_samples) # if sample[1] == 1]
+            test_neg_smpl = map(lambda sample: (sample[2], sample[0]), test_positive_samples) # if sample[1] == 0]
+            test_features_data = self.create_sample(test_pos_smpl, features, 1) + self.create_sample(test_neg_smpl, features, 0)
 
             feature_train_df = pd.DataFrame(feature_train_samples, columns=features_label)
             test_df = pd.DataFrame(test_features_data, columns=features_label)
@@ -505,9 +496,8 @@ class DRC:
 
 
             # Possible values for each literal value is those in train_df or missing
-
-            if (len(literal_features) > 0):# and (len(test_df.index) > 0):
-                for selection in literal_features:
+            if True:
+                for selection in filter(lambda feature: feature[1]=="literal", features):
                     train_df[selection] = pd.Categorical(train_df[selection])
                     test_df[selection] = pd.Categorical(test_df[selection])
                     feature_train_df[selection] = pd.Categorical(feature_train_df[selection])
@@ -660,7 +650,7 @@ def data_declare_main(inp_folder, log_name, ignored, split = 0.8, forceSomeEleme
     return declare_data_aware_embedding(ignored, inp_folder, train_log, test_log)
 
 
-def declare_data_aware_embedding(ignored, inp_folder, train_log, test_log):
+def declare_data_aware_embedding(ignored, inp_folder, train_log, test_log, constraint_threshold = 0.1, candidate_threshold = 0.1):
     drc = DRC()
     doStoreSecondFile = not (len(test_log) == 0)
     if not doStoreSecondFile:
@@ -668,8 +658,7 @@ def declare_data_aware_embedding(ignored, inp_folder, train_log, test_log):
     # print(train_log[0])
     train_case_ids = [tr["name"] for tr in train_log]
     test_case_ids = [tr["name"] for tr in test_log]
-    train_names, train_features, test_names, test_features = drc.create_data_aware_features(train_log, test_log,
-                                                                                            ignored)
+    train_names, train_features, test_names, test_features = drc.create_data_aware_features(train_log, test_log, ignored, constraint_threshold=constraint_threshold, candidate_threshold=candidate_threshold)
     train_dict = {}
     test_dict = {}
     for i, tf in enumerate(train_features):
