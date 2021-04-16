@@ -1065,6 +1065,30 @@ def apply_data_template(template_str, trace, event_set):
         raise Exception("Template not found")
 
 
+def apply_data_template2(template_str, trace, event_set):
+    template_map = {
+        "alternate_precedence": template_alternate_precedence_data,
+        "alternate_response": template_alternate_response_data,
+        "chain_precedence": template_chain_precedence_data,
+        "chain_response": template_chain_response_data,
+        "responded_existence": template_responded_existence_data,
+        "response": template_response_data,
+        "precedence": template_precedence_data,
+        "not_responded_existence": template_not_responded_existence_data,
+        "not_precedence": template_not_precedence_data,
+        "not_response": template_not_response_data,
+        "not_chain_response": template_not_chain_response_data,
+        "not_chain_precedence": template_not_chain_precedence_data
+    }
+
+    lower = template_str.lower()
+
+    if lower in template_map:
+        result, vacuity, fulfillments, violations = template_map[lower](trace["events"], event_set)
+        return result, fulfillments, violations
+    else:
+        raise Exception("Template not found")
+
 def apply_template(template_str, trace, event_set):
     template_map = {
         "alternate_precedence": template_alternate_precedence,

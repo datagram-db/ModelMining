@@ -97,6 +97,11 @@ def generateFairLogSplit(inp_path, log, log_name, output_folder, slices, trainin
                                     slice will guarantee a good splitting
     :return:
     """
+
+    # Skipping the splitting process if all the files have been already serialized!
+    if all(map(lambda log_nr:  os.path.isfile(os.path.join(output_folder, log_name[:-4] + "_" + str(log_nr + 1) + ".xes")), range(slices))):
+        return
+
     traceCount = 0
     trueTraceOffset = []
     falseTraceOffset = []

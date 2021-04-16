@@ -126,11 +126,13 @@ def apply_template_to_log(template, candidate, log):
 def apply_data_template_to_log(template, candidate, log):
     results = []
     for trace in log:
-        result, vacuity, fulfillments, violations = apply_data_template(template, trace, candidate)
-        results.append((result, fulfillments, violations))
+        results.append(apply_data_template2(template, trace, candidate))
 
     return results
 
+
+def apply_data_template_to_log2(template, candidate, log):
+    return map(lambda trace: apply_data_template(template, trace, candidate), log)
 
 def generate_train_candidate_constraints(candidates, templates, train_log, constraint_support_norm,
                                          constraint_support_dev, filter_t=True):
@@ -205,48 +207,66 @@ def get_data_snapshots(trace, fulfilled, violated):
 
 class DRC:
 
-    def create_sample(self, samples, features, label):
-        features_data = []
+    def init_d_dictionary(self, d, features, id_label, label_label):
+        d[id_label] = list()
+        d[label_label] = list()
+        for feature in features:
+            d[feature] = list()
+        return d
+
+    def create_sample2(self, d, samples, features, label, id_label, label_label):
+        #features_data = []
         for smp_id, pos_act in samples:
-            act_features = []
-            act_features.append(smp_id)
+            #act_features = []
+            d[id_label].append(smp_id)
+            d[label_label].append(label)
+            #act_features.append(smp_id)
             for feature in features:
                 ft_type = feature[1]
                 if feature in pos_act:
                     ft_val = pos_act[feature]
                     if ft_type == "boolean":
                         if ft_val == "true":
-                            act_features.append(1)
-                        elif ft_val == "false":
-                            act_features.append(0)
+                            d[feature].append(1)
                         else:
-                            act_features.append(0)
+                            d[feature].append(0)
                     elif ft_type == "literal":
-                        act_features.append(ft_val)
+                        d[feature].append(ft_val)
                     elif ft_type == "continuous":
-                        act_features.append(float(ft_val))
+                        d[feature].append(float(ft_val))
                     elif ft_type == "discrete":
-                        act_features.append(int(ft_val))
+                        d[feature].append(int(ft_val))
                     else:
                         print("SHOULDNT BE HERE!")
                         raise Exception("Incorrect feature type in creation of samples")
-
                 else:
                     if ft_type == "boolean":
-                        act_features.append(0)
+                        d[feature].append(0)
                     elif ft_type == "literal":
-                        act_features.append("Missing")
+                        d[feature].append("Missing")
                     elif ft_type == "continuous":
-                        act_features.append(0)
+                        d[feature].append(0.0)
                     elif ft_type == "discrete":
-                        act_features.append(0)
+                        d[feature].append(0)
                     else:
                         print("SHOULDNT BE HERE!")
                         raise Exception("Incorrect feature type in creation of samples")
-            act_features.append(label)
-            features_data.append(act_features)
+            #act_features.append(label)
+            #features_data.append(act_features)
+        return d
 
-        return features_data
+    def finalize_map(self, d, features):
+        for feature in features:
+            ft_type = feature[1]
+            if ft_type == "boolean":
+                d[feature] = pd.array(d[feature], dtype=pd.SparseDtype("int", 0))
+            elif ft_type == "literal":
+                d[feature] = pd.array(d[feature], dtype=pd.SparseDtype("str", "Missing"))
+            elif ft_type == "continuous":
+                d[feature] = pd.array(d[feature], dtype=pd.SparseDtype("float", 0))
+            elif ft_type == "discrete":
+                d[feature] = pd.array(d[feature], dtype=pd.SparseDtype("int", 0))
+        return d
 
 
     def create_data_aware_features(self, train_log, test_log, ignored, constraint_threshold = 0.1, candidate_threshold = 0.1):
@@ -340,18 +360,17 @@ class DRC:
 
 
         # Turn to pandas df
-        train_df = pd.DataFrame(X_train, columns=feature_names, index=train_trace_names)
+        train_df_orig = pd.DataFrame(X_train, columns=feature_names, index=train_trace_names)
 
-        train_df = train_df.transpose().drop_duplicates().transpose()
+        train_df_orig = train_df_orig.transpose().drop_duplicates().transpose()
 
         # remove no-variance, constants
-        train_df = train_df.loc[:, (train_df != train_df.iloc[0]).any()]
+        train_df_orig = train_df_orig.loc[:, (train_df_orig != train_df_orig.iloc[0]).any()]
 
-        X_train = train_df.values
 
         # Perform selection by Fisher
 
-        scores = fisher_calculation(X_train, y_train)
+        scores = fisher_calculation(train_df_orig, y_train)
         selected_ranks = fisher_score.feature_ranking(scores)
 
         threshold = 15
@@ -360,7 +379,7 @@ class DRC:
         real_selected_ranks = []
         # Start selecting from selected_ranks until every trace is covered N times
         trace_remaining = dict()
-        for i, trace_name in enumerate(train_df.index.values):
+        for i, trace_name in enumerate(train_df_orig.index.values):
             trace_remaining[i] = threshold
 
         chosen = 0
@@ -373,7 +392,7 @@ class DRC:
             marked_for_deletion = set()
             added = False
             for k in trace_remaining.keys():
-                if train_df.iloc[k, rank] > 0:
+                if train_df_orig.iloc[k, rank] > 0:
                     if not added:
                         added = True
                         real_selected_ranks.append(rank)
@@ -387,10 +406,10 @@ class DRC:
 
         print("Constraints chosen {}".format(len(real_selected_ranks)))
 
-        feature_names = train_df.columns[real_selected_ranks]
+        feature_names = train_df_orig.columns[real_selected_ranks]
 
         print("Considered template count:", len(feature_names))
-        train_df = train_df[feature_names]
+        train_df = train_df_orig[feature_names]
 
         new_train_feature_names = []
         new_train_features = []
@@ -401,9 +420,8 @@ class DRC:
         count=0
 
         for (template, candidate) in train_df.columns:
-
             count += 1
-            #print(key)
+            print("Testing now: "+str(template)+" && "+str(candidate))
             # Go over all and find with data
             #template = key[0]
             #candidate = key[1]
@@ -456,44 +474,46 @@ class DRC:
                 for key2, val in pos_act.items():
                     if (key2[1] in {"boolean", "continuous", "discrete", "literal"}) and (key2[0] not in ignored_features):
                         collected_features.add(key2)
-
             for neg_act, _, __ in train_negative_samples:
                 for key2, val in neg_act.items():
                     if (key2[1] in {"boolean", "continuous", "discrete", "literal"}) and (key2[0] not in ignored_features):
                         collected_features.add(key2)
-
-
             features = list(collected_features)
+            del collected_features
 
-            # Keep only features of boolean, literal, continuous and discrete
-            #features = [feature for feature in features if feature[1] in {"boolean", "continuous", "discrete",
-            #                                                              "literal"}]
-            #features = [feature for feature in features if feature[0] not in ignored_features]
-
-            # collect positive and negative samples for finding data condition:
-            positive_samples = map(lambda sample: (sample[2], sample[0]) , filter(lambda sample : sample[1] == 1, train_positive_samples))#[(sample[2], sample[0]) for sample in train_positive_samples if sample[1] == 1]
-            negative_samples = map(lambda sample: (sample[2], sample[0]) , filter(lambda sample : sample[1] == 0, train_positive_samples))#[(sample[2], sample[0]) for sample in train_positive_samples if sample[1] == 0]
-
-            pos_activations = map(lambda sample: (sample[2], sample[0]), train_positive_samples)
-            neg_activations = map(lambda sample: (sample[2], sample[0]), train_negative_samples)
-
-            feature_train_samples = self.create_sample(pos_activations, features, 1) + self.create_sample(neg_activations, features, 0)
-            features_data = self.create_sample(positive_samples, features, 1) + self.create_sample(negative_samples, features, 0)
             features_label = ["id"] + features + ["Label"]
-            # one-hot encode literal features
 
-            # Extract positive test samples, where fulfillments where fulfilled
-            train_df = pd.DataFrame(features_data, columns=features_label)
-            test_pos_smpl = map(lambda sample: (sample[2], sample[0]), test_positive_samples) # if sample[1] == 1]
-            test_neg_smpl = map(lambda sample: (sample[2], sample[0]), test_positive_samples) # if sample[1] == 0]
-            test_features_data = self.create_sample(test_pos_smpl, features, 1) + self.create_sample(test_neg_smpl, features, 0)
-
-            feature_train_df = pd.DataFrame(feature_train_samples, columns=features_label)
-            test_df = pd.DataFrame(test_features_data, columns=features_label)
-            train_df.pop("id")
+            feature_train_df = None
+            if True:
+                d = dict()
+                d = self.init_d_dictionary(d, features, "id", "Label")
+                d = self.create_sample2(d, map(lambda sample: (sample[2], sample[0]), train_positive_samples), features, 1, "id", "Label")
+                d = self.create_sample2(d, map(lambda sample: (sample[2], sample[0]), train_negative_samples), features, 0, "id", "Label")
+                d = self.finalize_map(d, features)
+                feature_train_df = pd.DataFrame(d, columns=features_label)
             train_ids = feature_train_df.pop("id")
-            test_ids = test_df.pop("id")
 
+            train_df  = None
+            if True:
+                d = dict()
+                d = self.init_d_dictionary(d, features, "id", "Label")
+                d = self.create_sample2(d, map(lambda sample: (sample[2], sample[0]) , filter(lambda sample : sample[1] == 1, train_positive_samples)), features, 1, "id", "Label")
+                d = self.create_sample2(d, map(lambda sample: (sample[2], sample[0]) , filter(lambda sample : sample[1] == 0, train_positive_samples)), features, 0, "id", "Label")
+                d = self.finalize_map(d, features)
+                train_df = pd.DataFrame(d, columns=features_label)
+                train_df.pop("id")
+
+            # one-hot encode literal features
+            # Extract positive test samples, where fulfillments where fulfilled
+            test_df = None
+            if True:
+                d = dict()
+                d = self.init_d_dictionary(d, features, "id", "Label")
+                d = self.create_sample2(d, map(lambda sample: (sample[2], sample[0]), test_positive_samples), features, 1, "id", "Label")
+                d = self.create_sample2(d, map(lambda sample: (sample[2], sample[0]), test_negative_samples), features, 0, "id", "Label")
+                d = self.finalize_map(d, features)
+                test_df = pd.DataFrame(d, columns=features_label)
+            test_ids = test_df.pop("id")
 
             # Possible values for each literal value is those in train_df or missing
             if True:
@@ -521,36 +541,33 @@ class DRC:
 
                     dfOneHot = pd.DataFrame(train_transformed,
                                             columns=[(selection[0] + "_" + classes[i], selection[1]) for i in
-                                                     range(train_transformed.shape[1])])
+                                                     range(train_transformed.shape[1])], dtype=pd.SparseDtype("int", 0))
                     train_df = pd.concat([train_df, dfOneHot], axis=1)
                     train_df.pop(selection)
                     if (len(test_df.index) > 0):
                         dfOneHot = pd.DataFrame(test_transformed,
                                             columns=[(selection[0] + "_" + classes[i], selection[1]) for i in
-                                                     range(train_transformed.shape[1])])
+                                                     range(train_transformed.shape[1])], dtype=pd.SparseDtype("int", 0))
                         test_df = pd.concat([test_df, dfOneHot], axis=1)
                         test_df.pop(selection)
 
                     dfOneHot = pd.DataFrame(feature_train_transformed,
                                             columns=[(selection[0] + "_" + classes[i], selection[1]) for i in
-                                                     range(train_transformed.shape[1])])
+                                                     range(train_transformed.shape[1])], dtype=pd.SparseDtype("int", 0))
                     feature_train_df = pd.concat([feature_train_df, dfOneHot], axis=1)
                     feature_train_df.pop(selection)
 
             data_dt = DecisionTreeClassifier(max_depth=3)
             y_train = train_df.pop("Label")
-            train_data = train_df.values
 
             y_test = test_df.pop("Label")
-            data_dt.fit(train_data, y_train)
+            data_dt.fit(train_df, y_train)
 
             y_train_new = feature_train_df.pop("Label")
-            feature_train_data = feature_train_df.values
 
-            train_predictions = data_dt.predict(feature_train_data)
-            test_predictions = data_dt.predict(test_df.values)
+            train_predictions = data_dt.predict(feature_train_df)
+            test_predictions = data_dt.predict(test_df)
 
-            train_fts = feature_train_df.columns
             # Go through all traces again
             # Save decision trees here. For later interpretation
             feature_train_df["id"] = train_ids
@@ -564,6 +581,7 @@ class DRC:
             feature_train_df["Label"] = y_train_new
             test_df["Label"] = y_test
 
+            count_fulfilled_train = False
             new_train_feature = []
             for i, trace in enumerate(outp_train):
                 # Get from train_df by number
@@ -578,63 +596,49 @@ class DRC:
                 else:
                     # Previous violation case
                     # Find samples related to trace
-                    samples = feature_train_df[feature_train_df.id == trace_id]
-                    # Find samples related for which data condition holds
-                    samples = samples[samples.prediction == 1]
-                    # Count number of positive and negative labels
-                    positive = samples[samples.Label == 1].shape[0]
-                    negative = samples[samples.Label == 0].shape[0]
-
+                    samples = feature_train_df.loc[(feature_train_df.id == trace_id) & (feature_train_df.prediction == 1), "Label"].values
+                    positive = samples.sum()
+                    negative = samples.size - positive
                     if negative > 0:
                         new_train_feature.append(-1)
                     else:
+                        count_fulfilled_train = True
                         new_train_feature.append(positive)
+            del outp_train
+            new_train_feature = pd.array(new_train_feature, dtype=pd.SparseDtype("int", 0))
 
+            count_fulfilled_test = False
             new_test_feature = []
-
             for i, trace in enumerate(outp_test):
                 # Get from train_df by number
                 trace_id = i
                 freq = trace[0]
-
                 # Find all related to the id
-
                 if freq == 0:
                     # vacuous case, no activations, will be same here.
                     new_test_feature.append(0)
                 else:
                     # Previous violation case
                     # Find samples related to trace
-                    samples = test_df[test_df.id == trace_id]
-                    # Find samples related for which data condition holds
-                    samples = samples[samples.prediction == 1]
-                    # Count number of positive and negative activations
-                    positive = samples[samples.Label == 1].shape[0]
-                    negative = samples[samples.Label == 0].shape[0]
-
+                    samples = test_df.loc[(test_df.id == trace_id) & (test_df.prediction == 1), "Label"].values
+                    positive = samples.sum()
+                    negative = samples.size - positive
                     if negative > 0:
                         new_test_feature.append(-1)
                     else:
+                        count_fulfilled_test = True
                         new_test_feature.append(positive)
+            del outp_test
+            new_test_feature = pd.array(new_test_feature, dtype=pd.SparseDtype("int", 0))
+            # Find all activations
 
-            # Find all activatio
-
-            count_fulfilled_train = sum(1 for i in new_train_feature if i > 0)
-            count_fulfilled_test = sum(1 for i in new_test_feature if i > 0)
-
-            if count_fulfilled_train > 0 and count_fulfilled_test > 0:
+            if count_fulfilled_train and count_fulfilled_test:
                 # only then add new feature..
                 new_train_features.append(new_train_feature)
                 new_train_feature_names.append(template + ":({},{}):Data".format(candidate[0], candidate[1]))
 
                 new_test_features.append(new_test_feature)
                 new_test_feature_names.append(template + ":({},{}):Data".format(candidate[0], candidate[1]))
-                #
-                # # Save decision tree
-                # save_dt = False
-                # if save_dt:
-                #     export_graphviz(data_dt, out_file="sample_dwd_trees/outputfile_{}.dot".format(str(key)),
-                #                     feature_names=list(map(str, train_fts)))
 
         return new_train_feature_names, new_train_features, new_test_feature_names, new_test_features
 

@@ -200,14 +200,19 @@ class ExperimentRunner:
 
     @staticmethod
     def cross_validation_pipeline(inp_path, log_name, output_folder, max_splits, training_test_split):  # max_splits = 5
-        # 1. Load file
-        log = read_XES_log(os.path.join(inp_path, log_name))
+        # Skipping the splitting process if all the files have been already serialized!
+        if all(map(lambda log_nr: os.path.isfile(
+                os.path.join(output_folder, log_name[:-4] + "_" + str(log_nr + 1) + ".xes")), range(max_splits))):
+            return
+        else:
+            # 1. Load file
+            log = read_XES_log(os.path.join(inp_path, log_name))
 
-        # 2. Shuffling & Split into 5 parts for cross validation
-        FairLogSplit.generateFairLogSplit(inp_path, log, log_name, output_folder, max_splits, training_test_split)
+            # 2. Shuffling & Split into 5 parts for cross validation
+            FairLogSplit.generateFairLogSplit(inp_path, log, log_name, output_folder, max_splits, training_test_split)
 
-        del log
-        gc.collect()
+            del log
+            gc.collect()
 
     @staticmethod
     def correct_read_sequence_log(results_folder, encoding, split_nr, training_ids, testing_ids):  # split_perc = 0.8
