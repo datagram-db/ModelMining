@@ -160,7 +160,7 @@ def generateFairLogSplit(inp_path, log, log_name, output_folder, slices, trainin
         with open(os.path.join(output_folder, log_name[:-4] + "_" + str(log_nr + 1) + ".xes"), "w") as file:
             XesXmlSerializer().serialize(new_log, file)
 
-        #with open(os.path.join(inp_path, log_name[:-4] + "_" + str(log_nr + 1) + ".xes"), "w") as file:
-        #    XesXmlSerializer().serialize(new_log, file)
+        with open(os.path.join(inp_path, log_name[:-4] + "_" + str(log_nr + 1) + ".xes"), "w") as file:
+            XesXmlSerializer().serialize(new_log, file)
 
         log_nr = log_nr+1

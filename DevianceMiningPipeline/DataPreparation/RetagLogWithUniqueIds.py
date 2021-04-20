@@ -34,6 +34,9 @@ def changeLog(logFileName, doQualityCheck = True):
         i = 0
         for trace in log:
             trace.get_attributes()["concept:name"] = XFactory.create_attribute_literal("concept:name", generateStringFromNumber(i))
+            for event in trace:
+                if not ("lifecycle:transition" in event.get_attributes()):
+                    event.get_attributes()["lifecycle:transition"] = XFactory.create_attribute_literal("lifecycle:transition", "COMPLETE")
             i = i+1
 
         with open(final_file_name, "w") as file2:
