@@ -162,7 +162,7 @@ class SatAnyProp:
     def __call__(self, trace):
         return any(x(trace) for x in self.props)
 
-def logTagger(log, predicate, doPropositional = False):
+def logTagger(log, predicate, doPropositional = False, doTests = True):
     """
     Tags the log using the predicate's satisfiability
     :param log:         Log to be tagget at each trace
@@ -186,8 +186,9 @@ def logTagger(log, predicate, doPropositional = False):
         if test:
             nPred = nPred + 1
         trace.get_attributes()["Label"] = XFactory.create_attribute_literal("Label","1" if test else "0")
-    assert (nPred < nTot)
-    assert (nPred > 0)
+    if doTests:
+        assert (nPred < nTot)
+        assert (nPred > 0)
 
 def logRandomTagger(log, min = 0, max = 1, maxThreshold = 0.1):
     """

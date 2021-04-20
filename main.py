@@ -115,22 +115,30 @@ def run_bank(pipeline):
     cf = ConfigurationFile()
     cf.setExperimentName("bank")
     cf.setLogName("bank.xes")
-    cf.setOutputFolder("bpm21")
+    cf.setOutputFolder("bank")
     cf.setMaxDepth(10)
     cf.setMinLeaf(10)
     cf.setSequenceThreshold(5)
     cf.setPayloadType(PayloadType.both)
-    cf.setAutoIgnore(["concept: name", "Label", "lifecycle: transition"])
-    cf.doForceTime()
-    cf.setPayloadSettings("xray_settings.cfg")
+    cf.setAutoIgnore(
+        ["time:timestamp", "concept: name", "Label", "Start date", "End date", "Diagnosis", "Diagnosis code",
+         "Diagnosis Treatment", "Combination ID", "Treatment code", "Activity code"])
+    cf.setPayloadSettings("bpi2017_settings.cfg")
     cf.dump("bank.json")
     xray_map = {
-        "bank_decl": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAnyProp(x, [
-            (template_chain_response, ["activity 1", "activity 2"])], SatCases.NotVacuitySat),
-        "bank_mr_tr": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x, ["LogInBankAccount"],
-                                                                                                      3),
+       # "bank_decl_tagging": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.ignoreTagging(),
+        "bank_invalid_pin": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverEventAttn(x, "ValidPin", "false"),
+        "bank_no_money_move": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverEventAttn(x, "Money", 0.0),
+        "bank_decl1": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAnyProp(x, [
+            (template_init, ["PinInsert"])], SatCases.NotVacuitySat),
+        "bank_decl2": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAnyProp(x, [
+            (template_chain_response, ["PinInsert", "LogInBankAccount"])], SatCases.NotVacuitySat),
+        "bank_decl3": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAnyProp(x, [
+            (template_init, ["LogInBankAccount"])], SatCases.NotVacuitySat),
+        "bank_mra_tra": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x, ["PinInsert", "AddMoney"], 2),
+        "bank_mr_tr": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactOccurrence(x, ["PinInsert"], 3),
         "bank_proc": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactSubsequence(x, [
-            "activity 14", "activity 12"])
+            "LogOff", "AddMoney", "WidthdrawMoney"])
     }
     runWholeConfiguration(pipeline, "bank.xes", cf, xray_map)
 
@@ -219,6 +227,31 @@ def run_bpm12(pipeline):
     }
     runWholeConfiguration(pipeline, "bpi12.xes", cf, bpm12_map)
 
+def run_bpm12(pipeline):
+    assert isinstance(pipeline, RunWholeStrategy)
+    cf = ConfigurationFile()
+    cf.setExperimentName("bpi12oc")
+    cf.setLogName("bpi12_oc.xes")
+    cf.setOutputFolder("BPI12oc")
+    cf.setMaxDepth(5)
+    cf.setMinLeaf(5)
+    cf.setSequenceThreshold(5)
+    cf.setPayloadType(PayloadType.both)
+    cf.setAutoIgnore(
+        ["time:timestamp", "concept: name", "Label", "Start date", "End date", "Diagnosis", "Diagnosis code",
+         "Diagnosis Treatment", "Combination ID", "Treatment code", "Activity code"])
+    cf.setPayloadSettings("bpi2012_settings.cfg")
+    cf.dump("bpi12oc.json")
+    bpm12_map = {
+        "bpi12oc_mra_tra": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x, ["W_Afhandelen leads","W_Completeren aanvraag"], 3),
+        "bpi12oc_payload_6500": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x, "AMOUNT_REQ", "6500"),
+        "bpi12oc_payload_45000": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x, "AMOUNT_REQ", "45000"),
+        "bpi12oc_mr_tr": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x, ["O_SENT", "W_Completeren aanvraag", "W_Nabellen incomplete dossiers"], 1),
+        "bpi12oc_proc": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactSubsequence(x, ["W_Completeren aanvraag", "W_Afhandelen leads"]),
+        "bpi12oc_decl1": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [(template_absence1, ["A_DECLINED"])], SatCases.NotVacuitySat),
+        "bpi12oc_decl2": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [(template_precedence, ["O_ACCEPTED", "A_APPROVED"])], SatCases.NotVacuitySat)
+    }
+    runWholeConfiguration(pipeline, "bpi12_oc.xes", cf, bpm12_map)
 
 def run_bpm17(pipeline):
     assert isinstance(pipeline, RunWholeStrategy)
@@ -365,9 +398,9 @@ def oldPipeline():
      #run_sepsis(pipeline)
      #run_bpm11(pipeline)
      #run_xray(pipeline)
-     #run_bpm12(pipeline)
+     run_bpm12(pipeline)
      #run_synth(pipeline)
-     run_bpm21(pipeline)
+     #run_bank(pipeline)
 
      pipeline2 = RunWholeStrategy(os.path.join("data", "logs"),
                                  os.path.join("data", "experiments"),

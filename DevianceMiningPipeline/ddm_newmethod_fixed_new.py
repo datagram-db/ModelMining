@@ -260,8 +260,8 @@ class DRC:
             ft_type = feature[1]
             if ft_type == "boolean":
                 d[feature] = pd.array(d[feature], dtype=pd.SparseDtype("int", 0))
-            elif ft_type == "literal":
-                d[feature] = pd.array(d[feature], dtype=pd.SparseDtype("str", "Missing"))
+            #elif ft_type == "literal":
+            #    d[feature] = pd.array(d[feature], dtype=pd.SparseDtype("str", "Missing"))
             elif ft_type == "continuous":
                 d[feature] = pd.array(d[feature], dtype=pd.SparseDtype("float", 0))
             elif ft_type == "discrete":

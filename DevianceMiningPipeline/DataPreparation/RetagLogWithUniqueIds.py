@@ -23,7 +23,7 @@ def numberToBase(n, b):
 def generateStringFromNumber(n):
     return "".join(map(lambda x: defaults[x], numberToBase(n, len(defaults))))
 
-def changeLog(logFileName, doQualityCheck = True):
+def changeLog(logFileName, doQualityCheck = True, i = 0):
     final_file_name = logFileName+"_unique.xes"
     if (os.path.isfile(final_file_name)):
         with open(final_file_name) as file:
@@ -31,7 +31,6 @@ def changeLog(logFileName, doQualityCheck = True):
             return final_file_name, log
     with open(logFileName) as file:
         log = XUniversalParser().parse(file)[0]
-        i = 0
         for trace in log:
             trace.get_attributes()["concept:name"] = XFactory.create_attribute_literal("concept:name", generateStringFromNumber(i))
             for event in trace:
