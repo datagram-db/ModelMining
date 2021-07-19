@@ -34,6 +34,10 @@ def runWholeConfiguration(pipeline_conf, original_log_path, conf, map_as_strateg
                 printWithColor("Dumping Log configuration: " + key)
                 dictJson[key](logs_folder, conf, log)
             del log
+        else:
+            for key, value in map_as_strategy.items():
+                printWithColor("Dumping Log configuration: " + key)
+                dictJson[key].dump(conf)
 
     for key in dictJson:
         gc.collect()

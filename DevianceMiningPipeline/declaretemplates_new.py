@@ -724,9 +724,9 @@ template_map = {
     "succession": template_succession,
     "precedence": template_precedence
 }
+
 def apply_template(template_str, trace, event_set):
     lower = template_str.lower()
-
     if lower in template_map:
         return template_map[lower](trace["events"], event_set)
     else:

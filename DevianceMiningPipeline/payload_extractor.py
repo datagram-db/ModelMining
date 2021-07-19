@@ -15,7 +15,7 @@ from .utils import PandaExpress
 
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 
-from .utils.DumpUtils import genericDump
+from .utils.DumpUtils import genericDump, dump_in_primary_memory_as_table_csv
 from .utils.PandaExpress import extendDataFrameWithLabels
 from .utils.TraceUtils import trace_to_label_map
 
@@ -801,18 +801,21 @@ def build_dataframes(train_data, test_data, settings):
 
             if (k[1], k[3]) in settings["one_hot_encode"]:
                 selected_one_hot.add(name)
+    assert(len(all_keys) == len(names))
 
     # Given keys, go through all data and create dataframes!
     for trace_data in train_data:
         trace_df_data = []
         for k in all_keys:
             handle_data(k, trace_data, trace_df_data, settings)
+        assert (len(trace_df_data) == len(all_keys))
         train_df_data.append(trace_df_data)
 
     for trace_data in test_data:
         trace_df_data = []
         for k in all_keys:
             handle_data(k, trace_data, trace_df_data, settings)
+        assert (len(trace_df_data) == len(all_keys))
         test_df_data.append(trace_df_data)
 
     train_df = pd.DataFrame(train_df_data, columns=names)
@@ -877,7 +880,7 @@ def build_dataframes(train_data, test_data, settings):
     return train_df, test_df
 
 
-def payload_embedding(inp_folder, settings_file, train, test):
+def payload_embedding(inp_folder, settings_file, train, test, self = None):
     doSaveFile = len(test) > 0
     print("Lengths of logs train: {}, test: {}".format(len(train), len(test)))
     pex = PayloadExtractor()
@@ -894,11 +897,10 @@ def payload_embedding(inp_folder, settings_file, train, test):
     train_df = extendDataFrameWithLabels(train_df, trace_to_label_map(train))
     test_df = extendDataFrameWithLabels(test_df, trace_to_label_map(test))
 
-    return genericDump(inp_folder, train_df, test_df, "payload_train.csv", "payload_test.csv")
-    # PandaExpress.serialize(train_df, os.path.join(inp_folder, "payload_train.csv"))
-    # if doSaveFile:
-    #     PandaExpress.serialize(test_df, os.path.join(inp_folder, "payload_test.csv"))
-    # return PandaExpress.ExportDFRowNamesAsSets(test_df, train_df)
+    j = genericDump(inp_folder, train_df, test_df, "payload_train.csv", "payload_test.csv")
+    if self is not None:
+        dump_in_primary_memory_as_table_csv(self, "payload_for_training", train_df, test_df)
+    return j
 
 
 def payload_extractor2(inp_folder, log_name, settings_file, split=1.0):

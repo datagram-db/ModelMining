@@ -102,7 +102,7 @@ class ConfigurationFile(object):
     #         ex.payload_settings = self.payload_settings
     #     ex.serialize_complete_dataset(True)
 
-    def run(self, INP_PATH, DATA_EXP, coverage_thresholds, doNr0 = True, max_splits = 5, training_test_split = 0.7, threshold_split = 0.1):
+    def run(self, INP_PATH, DATA_EXP, coverage_thresholds, missing_literal, doNr0 = True, max_splits = 5, training_test_split = 0.7, threshold_split = 0.1):
         from pathlib import Path
         import os
         Path(os.path.join(DATA_EXP, self.results_folder)).mkdir(parents=True, exist_ok=True)
@@ -134,5 +134,5 @@ class ConfigurationFile(object):
             if (nr == 0) and doNr0:
                 # Performs a fair split into distinct classes
                 ex.prepare_cross_validation(max_splits, training_test_split)
-                ex.prepare_data(max_splits, training_test_split, doForce=self.forceTime, threshold_split=threshold_split)
+                ex.prepare_data(max_splits, training_test_split, missing_literal, doForce=self.forceTime, threshold_split=threshold_split)
             ex.train_and_eval_benchmark(max_splits)

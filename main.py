@@ -4,7 +4,8 @@ from DevianceMiningPipeline.DataPreparation.RunWholeStrategy import RunWholeStra
 import DevianceMiningPipeline.LogTaggingViaPredicates
 from DevianceMiningPipeline.DataPreparation.TaggingStrategy import TaggingStrategy
 from DevianceMiningPipeline.declaretemplates_new import template_response, template_init, template_absence1, \
-    template_precedence, template_responded_existence, template_exist, template_absence2, template_chain_response
+    template_precedence, template_responded_existence, template_exist, template_absence2, template_chain_response, \
+    template_coexistence, template_exactly2
 from DevianceMiningPipeline.LogTaggingViaPredicates import SatCases
 from DevianceMiningPipeline import ConfigurationFile, PayloadType
 from DevianceMiningPipeline.DataPreparation.RetagLogWithUniqueIds import changeLog
@@ -227,7 +228,7 @@ def run_bpm12(pipeline):
     }
     runWholeConfiguration(pipeline, "bpi12.xes", cf, bpm12_map)
 
-def run_bpm12(pipeline):
+def run_bpm12oc(pipeline):
     assert isinstance(pipeline, RunWholeStrategy)
     cf = ConfigurationFile()
     cf.setExperimentName("bpi12oc")
@@ -243,11 +244,11 @@ def run_bpm12(pipeline):
     cf.setPayloadSettings("bpi2012_settings.cfg")
     cf.dump("bpi12oc.json")
     bpm12_map = {
+        "bpi12oc_AR_5000": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x, "AMOUNT_REQ", 5000),
+        "bpi12oc_AR_15000": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x, "AMOUNT_REQ", 15000),
         "bpi12oc_mra_tra": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x, ["W_Afhandelen leads","W_Completeren aanvraag"], 3),
-        "bpi12oc_payload_6500": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x, "AMOUNT_REQ", "6500"),
-        "bpi12oc_payload_45000": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x, "AMOUNT_REQ", "45000"),
         "bpi12oc_mr_tr": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x, ["O_SENT", "W_Completeren aanvraag", "W_Nabellen incomplete dossiers"], 1),
-        "bpi12oc_proc": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactSubsequence(x, ["W_Completeren aanvraag", "W_Afhandelen leads"]),
+        "bpi12oc_proc": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactSubsequence(x, ["W_Completeren aanvraag", "W_Nabellen offertes"]),
         "bpi12oc_decl1": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [(template_absence1, ["A_DECLINED"])], SatCases.NotVacuitySat),
         "bpi12oc_decl2": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [(template_precedence, ["O_ACCEPTED", "A_APPROVED"])], SatCases.NotVacuitySat)
     }
@@ -285,7 +286,7 @@ def run_bpm19(pipeline):
     assert isinstance(pipeline, RunWholeStrategy)
     cf = ConfigurationFile()
     cf.setExperimentName("bpi19")
-    cf.setLogName("bpi19.xes")
+    cf.setLogName("bpi19_gut.xes")
     cf.setOutputFolder("BPI19")
     cf.setMaxDepth(5)
     cf.setMinLeaf(5)
@@ -310,7 +311,7 @@ def run_bpm19(pipeline):
              (template_response, ["Record Invoice Receipt", "Remove Payment Block"])], SatCases.NotVacuitySat)
 
     }
-    runWholeConfiguration(pipeline, "bpi19.xes", cf, bpm17_map)
+    runWholeConfiguration(pipeline, "bpi19_gut.xes", cf, bpm17_map)
 
 
 
@@ -388,19 +389,406 @@ def run_bpm11(pipeline):
      runWholeConfiguration(pipeline, "EnglishBPIChallenge2011.xes", cf, bpm11_map)
 
 
+##################################################################
+##################################################################
+##################################################################
+##################################################################
+def run_bpi15A(pipeline):
+    assert isinstance(pipeline, RunWholeStrategy)
+    cf = ConfigurationFile()
+    cf.setExperimentName("bpi15A")
+    cf.setLogName("BPIC15_1.xes")
+    cf.setOutputFolder("bpi15A")
+    cf.setMaxDepth(5)
+    cf.setMinLeaf(5)
+    cf.setSequenceThreshold(5)
+    cf.setPayloadType(PayloadType.both)
+    cf.setAutoIgnore(
+        ["time:timestamp", "concept: name", "Label", "Start date", "End date", "Diagnosis", "Diagnosis code",
+         "Diagnosis Treatment", "Combination ID", "Treatment code", "Activity code", "dateFinished", "panned", "dueDate"])
+    cf.setPayloadSettings("bpi2015_settings.cfg")
+    cf.dump("bpi15A.json")
+    bpm17_map = {
+        "bpi15A_proc": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactSubsequence(x, [
+            "01_HOOFD_010","01_HOOFD_015"]),
+        "bpi15A_payload_560925": lambda
+            x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverEventAttn(x, "monitoringResource", "560925"),
+        "bpi15A_payload_requestComplete": lambda
+           x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x, "requestComplete", "FALSE"),
+        "bpi15A_mra_tra": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x,
+                                                                                                         ["01_HOOFD_030_1","01_HOOFD_510_1"],
+                                                                                                         1),
+        "bpi15A_mr_tr": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x,
+
+                                                                                                       ["08_AWB45_005","01_HOOFD_200"], 1),
+        # # "bpi15A_decl1": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
+        # #     (template_coexistence, ["01_HOOFD_011", "04_BPT_005"]),
+        # #     (template_response, ["04_BPT_005", "02_DRZ_010"])
+        # # ], SatCases.NotVacuitySat),
+        # "bpi15A_decl2": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
+        #     (template_exist, ["01_HOOFD_011"])], SatCases.NotVacuitySat),
+        # "bpi15A_decl3": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
+        #     (template_response, ["01_HOOFD_011", "02_DRZ_010"])], SatCases.NotVacuitySat)
+    }
+    runWholeConfiguration(pipeline, "BPIC15_1.xes", cf, bpm17_map)
+
+
+def run_bpi15B(pipeline):
+    assert isinstance(pipeline, RunWholeStrategy)
+    cf = ConfigurationFile()
+    cf.setExperimentName("bpi15B")
+    cf.setLogName("BPIC15_2.xes")
+    cf.setOutputFolder("bpi15B")
+    cf.setMaxDepth(5)
+    cf.setMinLeaf(5)
+    cf.setSequenceThreshold(5)
+    cf.setPayloadType(PayloadType.both)
+    cf.setAutoIgnore(
+        ["time:timestamp", "concept: name", "Label", "Start date", "End date", "Diagnosis", "Diagnosis code",
+         "Diagnosis Treatment", "Combination ID", "Treatment code", "Activity code", "dateFinished", "panned", "dueDate"])
+    cf.setPayloadSettings("bpi2015_settings.cfg")
+    cf.dump("bpi15B.json")
+    bpm17_map = {
+         "bpi15B_proc": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactSubsequence(x, [
+             "01_HOOFD_010","01_HOOFD_015"]),
+         "bpi15B_payload_560925": lambda
+            x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverEventAttn(x, "monitoringResource", "4634935"),
+        "bpi15B_payload_requestComplete": lambda
+            x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x, "requestComplete", "FALSE"),
+         "bpi15B_mra_tra": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x,
+                                                                                                          ["01_HOOFD_030_1","01_HOOFD_510_1"],
+                                                                                                          1),
+         "bpi15B_mr_tr": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x,
+                                                                                                       ["08_AWB45_005","01_HOOFD_200"], 1),
+
+
+         "bpi15B_decl2": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
+             (template_exist, ["01_HOOFD_011"])], SatCases.NotVacuitySat),
+         "bpi15B_decl3": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
+             (template_response, ["01_HOOFD_011", "02_DRZ_010"])], SatCases.NotVacuitySat)
+    }
+    runWholeConfiguration(pipeline, "BPIC15_2.xes", cf, bpm17_map)
+
+def run_bpi15C(pipeline):
+    assert isinstance(pipeline, RunWholeStrategy)
+    cf = ConfigurationFile()
+    cf.setExperimentName("bpi15C")
+    cf.setLogName("BPIC15_3.xes")
+    cf.setOutputFolder("bpi15C")
+    cf.setMaxDepth(5)
+    cf.setMinLeaf(5)
+    cf.setSequenceThreshold(5)
+    cf.setPayloadType(PayloadType.both)
+    cf.setAutoIgnore(
+        ["time:timestamp", "concept: name", "Label", "Start date", "End date", "Diagnosis", "Diagnosis code",
+         "Diagnosis Treatment", "Combination ID", "Treatment code", "Activity code", "dateFinished", "panned", "dueDate"])
+    cf.setPayloadSettings("bpi2015_settings.cfg")
+    cf.dump("bpi15B.json")
+    bpm17_map = {
+         "bpi15C_proc": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactSubsequence(x, [
+             "01_HOOFD_010","01_HOOFD_015"]),
+         "bpi15C_payload_560925": lambda
+            x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverEventAttn(x, "monitoringResource", "3442724"),
+        "bpi15C_payload_requestComplete": lambda
+            x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x, "requestComplete", "FALSE"),
+         "bpi15C_mra_tra": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x,
+                                                                                                          ["01_HOOFD_030_1","01_HOOFD_510_1"],
+                                                                                                          1),
+         "bpi15C_mr_tr": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x,
+                                                                                                       ["08_AWB45_005","01_HOOFD_200"], 1),
+
+        "bpi15C_decl2": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
+            (template_exist, ["01_HOOFD_011"])], SatCases.NotVacuitySat),
+        "bpi15C_decl3": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
+            (template_response, ["01_HOOFD_011", "02_DRZ_010"])], SatCases.NotVacuitySat)
+    }
+    runWholeConfiguration(pipeline, "BPIC15_3.xes", cf, bpm17_map)
+
+def run_bpi15D(pipeline):
+    assert isinstance(pipeline, RunWholeStrategy)
+    cf = ConfigurationFile()
+    cf.setExperimentName("bpi15D")
+    cf.setLogName("BPIC15_4.xes")
+    cf.setOutputFolder("bpi15D")
+    cf.setMaxDepth(5)
+    cf.setMinLeaf(5)
+    cf.setSequenceThreshold(5)
+    cf.setPayloadType(PayloadType.both)
+    cf.setAutoIgnore(
+        ["time:timestamp", "concept: name", "Label", "Start date", "End date", "Diagnosis", "Diagnosis code",
+         "Diagnosis Treatment", "Combination ID", "Treatment code", "Activity code", "dateFinished", "panned", "dueDate"])
+    cf.setPayloadSettings("bpi2015_settings.cfg")
+    cf.dump("bpi15B.json")
+    bpm17_map = {
+         "bpi15D_proc": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactSubsequence(x, [
+             "01_HOOFD_010","01_HOOFD_015"]),
+         "bpi15D_payload_560925": lambda
+            x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverEventAttn(x, "monitoringResource", "560812"),
+        "bpi15D_payload_requestComplete": lambda
+            x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x, "requestComplete", "FALSE"),
+         "bpi15D_mra_tra": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x,
+                                                                                                          ["01_HOOFD_030_1","01_HOOFD_510_1"],
+                                                                                                          1),
+         "bpi15D_mr_tr": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x,
+                                                                                                       ["08_AWB45_005","01_HOOFD_200"], 1),
+
+        "bpi15D_decl2": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
+            (template_exist, ["01_HOOFD_011"])], SatCases.NotVacuitySat),
+        "bpi15D_decl3": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
+            (template_response, ["01_HOOFD_011", "02_DRZ_010"])], SatCases.NotVacuitySat)
+    }
+    runWholeConfiguration(pipeline, "BPIC15_4.xes", cf, bpm17_map)
+
+def run_bpi15E(pipeline):
+    assert isinstance(pipeline, RunWholeStrategy)
+    cf = ConfigurationFile()
+    cf.setExperimentName("bpi15E")
+    cf.setLogName("BPIC15_5.xes")
+    cf.setOutputFolder("bpi15E")
+    cf.setMaxDepth(5)
+    cf.setMinLeaf(5)
+    cf.setSequenceThreshold(5)
+    cf.setPayloadType(PayloadType.both)
+    cf.setAutoIgnore(
+        ["time:timestamp", "concept: name", "Label", "Start date", "End date", "Diagnosis", "Diagnosis code",
+         "Diagnosis Treatment", "Combination ID", "Treatment code", "Activity code", "dateFinished", "panned", "dueDate"])
+    cf.setPayloadSettings("bpi2015_settings.cfg")
+    cf.dump("bpi15B.json")
+    bpm17_map = {
+         # "bpi15E_proc": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactSubsequence(x, [
+         #     "01_HOOFD_010","01_HOOFD_015"]),
+         # "bpi15E_payload_560925": lambda
+         #    x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverEventAttn(x, "monitoringResource", "560608"),
+        "bpi15E_payload_requestComplete": lambda
+            x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x, "requestComplete", "FALSE"),
+         "bpi15E_mra_tra": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x,
+                                                                                                          ["01_HOOFD_030_1","01_HOOFD_510_1"],
+                                                                                                          1),
+         "bpi15E_mr_tr": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x,
+                                                                                                       ["08_AWB45_005","01_HOOFD_200"], 1),
+
+        "bpi15E_decl2": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
+            (template_exist, ["01_HOOFD_011"])], SatCases.NotVacuitySat),
+        "bpi15E_decl3": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
+            (template_response, ["01_HOOFD_011", "02_DRZ_010"])], SatCases.NotVacuitySat)
+    }
+    runWholeConfiguration(pipeline, "BPIC15_5.xes", cf, bpm17_map)
+##################################################################
+##################################################################
+##################################################################
+##################################################################
+
+
+##################################################################
+##################################################################
+##################################################################
+##################################################################
+def run_bpi20A(pipeline):
+    #Declaration REJECTED by SUPERVISOR
+    assert isinstance(pipeline, RunWholeStrategy)
+    cf = ConfigurationFile()
+    cf.setExperimentName("bpi20_home")
+    cf.setLogName("bpi20_home.xes")
+    cf.setOutputFolder("bpi20_A_home")
+    cf.setMaxDepth(5)
+    cf.setMinLeaf(5)
+    cf.setSequenceThreshold(5)
+    cf.setPayloadType(PayloadType.both)
+    cf.setAutoIgnore(
+        ["time:timestamp", "concept: name", "Label", "Start date", "End date", "Diagnosis", "Diagnosis code",
+         "Diagnosis Treatment", "Combination ID", "Treatment code", "Activity code", "dateFinished", "panned", "dueDate"])
+    cf.setPayloadSettings("bpi2015_settings.cfg")
+    cf.dump("bpi20A.json")
+    bpm17_map = {
+        "bpi20A_proc": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactSubsequence(x, [
+            "Declaration REJECTED by SUPERVISOR","Declaration REJECTED by EMPLOYEE"]),
+        "bpi20A_mr_tr": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x,
+                                                                                                         ["Declaration SUBMITTED by EMPLOYEE","Declaration REJECTED by SUPERVISOR"],
+                                                                                                         1),
+
+        "bpi20A_dno": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x, "DeclarationNumber", "UNKNOWN"),
+        "bpi20A_decl1": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
+            (template_response, ["Declaration SUBMITTED by EMPLOYEE", "Declaration REJECTED by SUPERVISOR"])],
+                                                                                                      SatCases.NotVacuitySat),
+        "bpi20A_decl3": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
+            (template_absence1, ["Declaration REJECTED by SUPERVISOR"])], SatCases.NotVacuitySat),
+    }
+    runWholeConfiguration(pipeline, "bpi20_home.xes", cf, bpm17_map)
+
+
+def run_bpi20B(pipeline):
+    assert isinstance(pipeline, RunWholeStrategy)
+    cf = ConfigurationFile()
+    cf.setExperimentName("bpi20_intl")
+    cf.setLogName("bpi20_intl.xes")
+    cf.setOutputFolder("bpi20_B_intl")
+    cf.setMaxDepth(5)
+    cf.setMinLeaf(5)
+    cf.setSequenceThreshold(5)
+    cf.setPayloadType(PayloadType.both)
+    cf.setAutoIgnore(
+        ["time:timestamp", "concept: name", "Label", "Start date", "End date", "Diagnosis", "Diagnosis code",
+         "Diagnosis Treatment", "Combination ID", "Treatment code", "Activity code", "dateFinished", "panned", "dueDate"])
+    cf.setPayloadSettings("bpi2015_settings.cfg")
+    cf.dump("bpi20A.json")
+    bpm17_map = {
+        "bpi20B_proc": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactSubsequence(x, [
+            "Declaration REJECTED by SUPERVISOR","Declaration REJECTED by EMPLOYEE"]),
+        "bpi20B_tno": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x,
+                                                                                                              "Permit TaskNumber",
+                                                                                                              "UNKNOWN"),
+        "bpi20B_dno": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x,
+                                                                                                              "DeclarationNumber",
+                                                                                                              "UNKNOWN"),
+        "bpi20B_mr_tr": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x,
+                                                                                                        [
+                                                                                                            "Permit SUBMITTED by EMPLOYEE",
+                                                                                                            "Declaration REJECTED by SUPERVISOR"],
+                                                                                                        1),
+
+        "bpi20B_decl1": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
+            (template_response, ["Permit SUBMITTED by EMPLOYEE", "Declaration REJECTED by SUPERVISOR"])], SatCases.NotVacuitySat),
+        "bpi20B_decl3": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
+            (template_absence1, ["Declaration REJECTED by SUPERVISOR"])], SatCases.NotVacuitySat),
+    }
+    runWholeConfiguration(pipeline, "bpi20_intl.xes", cf, bpm17_map)
+
+#
+def run_bpi20C(pipeline):
+    assert isinstance(pipeline, RunWholeStrategy)
+    cf = ConfigurationFile()
+    cf.setExperimentName("bpi20_perm")
+    cf.setLogName("bpi20_perm.xes")
+    cf.setOutputFolder("bpi20_C_perm")
+    cf.setMaxDepth(5)
+    cf.setMinLeaf(5)
+    cf.setSequenceThreshold(5)
+    cf.setPayloadType(PayloadType.both)
+    cf.setAutoIgnore(
+        ["time:timestamp", "concept: name", "Label", "Start date", "End date", "Diagnosis", "Diagnosis code",
+         "Diagnosis Treatment", "Combination ID", "Treatment code", "Activity code", "dateFinished", "panned", "dueDate"])
+    cf.setPayloadSettings("bpi2015_settings.cfg")
+    cf.dump("bpi20C.json")
+    bpm17_map = {
+        # "bpi20C_proc": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactSubsequence(x, [
+        #     "Declaration REJECTED by SUPERVISOR","Declaration REJECTED by EMPLOYEE"]),
+        #
+        # "bpi20C_tno": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x,
+        #                                                                                                       "TaskNumber",
+        #                                                                                                       "UNKNOWN"),
+        # "bpi20C_dno": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x,
+        #                                                                                                       "DeclarationNumber_0",
+        #                                                                                                       "UNKNOWN"),
+        # "bpi20C_mr_tr": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x,
+        #                                                                                               [
+        #                                                                                                   "Permit SUBMITTED by EMPLOYEE",
+        #                                                                                                   "Declaration REJECTED by SUPERVISOR"],
+        #                                                                                               1),
+        #
+        # "bpi20C_decl2": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
+        #     (template_absence1, ["Request For Payment REJECTED by EMPLOYEE"])], SatCases.NotVacuitySat),
+
+        "bpi20C_decl3": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
+            (template_absence1, ["Declaration REJECTED by SUPERVISOR"])], SatCases.NotVacuitySat),
+    }
+    runWholeConfiguration(pipeline, "bpi20_perm.xes", cf, bpm17_map)
+
+def run_bpi20D(pipeline):
+    assert isinstance(pipeline, RunWholeStrategy)
+    cf = ConfigurationFile()
+    cf.setExperimentName("bpi20_perp")
+    cf.setLogName("bpi20_perp.xes")
+    cf.setOutputFolder("bpi20_D_prep")
+    cf.setMaxDepth(5)
+    cf.setMinLeaf(5)
+    cf.setSequenceThreshold(5)
+    cf.setPayloadType(PayloadType.both)
+    cf.setAutoIgnore(
+        ["time:timestamp", "concept: name", "Label", "Start date", "End date", "Diagnosis", "Diagnosis code",
+         "Diagnosis Treatment", "Combination ID", "Treatment code", "Activity code", "dateFinished", "panned", "dueDate"])
+    cf.setPayloadSettings("bpi2015_settings.cfg")
+    cf.dump("bpi20D.json")
+    bpm17_map = {
+        "bpi20D_proc": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactSubsequence(x, [
+            "Request For Payment REJECTED by ADMINISTRATION","Request For Payment REJECTED by EMPLOYEE"]),
+        "bpi20D_tno": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x,
+                                                                                                              "Task",
+                                                                                                              "UNKNOWN"),
+
+        "bpi20D_mr_tr": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x,
+                                                                                                      [
+                                                                                                          "Request For Payment SUBMITTED by EMPLOYEE",
+                                                                                                          "Request For Payment REJECTED by EMPLOYEE"],
+                                                                                                      1),
+        "bpi20D_decl4": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
+            (template_response,
+             ["Request For Payment SUBMITTED by EMPLOYEE", "Request For Payment REJECTED by EMPLOYEE"])],
+                                                                                                      SatCases.NotVacuitySat),
+        "bpi20D_decl2": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
+            (template_absence1, ["Request For Payment REJECTED by EMPLOYEE"])], SatCases.NotVacuitySat),
+    }
+    runWholeConfiguration(pipeline, "bpi20_prep.xes", cf, bpm17_map)
+
+def run_bpi20E(pipeline):
+    assert isinstance(pipeline, RunWholeStrategy)
+    cf = ConfigurationFile()
+    cf.setExperimentName("bpi20_req")
+    cf.setLogName("bpi20_req.xes")
+    cf.setOutputFolder("bpi20_D_req")
+    cf.setMaxDepth(5)
+    cf.setMinLeaf(5)
+    cf.setSequenceThreshold(5)
+    cf.setPayloadType(PayloadType.both)
+    cf.setAutoIgnore(
+        ["time:timestamp", "concept: name", "Label", "Start date", "End date", "Diagnosis", "Diagnosis code",
+         "Diagnosis Treatment", "Combination ID", "Treatment code", "Activity code", "dateFinished", "panned", "dueDate"])
+    cf.setPayloadSettings("bpi2015_settings.cfg")
+    cf.dump("bpi20E.json")
+    bpm17_map = {
+        "bpi20E_proc": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithExactSubsequence(x, [
+            "Request For Payment REJECTED by ADMINISTRATION", "Request For Payment REJECTED by EMPLOYEE"]),
+
+        "bpi20E_tno": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverTraceAttn(x,
+                                                                                                              "Task",
+                                                                                                              "UNKNOWN"),
+        "bpi20E_mr_tr": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithOccurrence(x,
+                                                                                                       ["Request For Payment SUBMITTED by EMPLOYEE","Request For Payment REJECTED by EMPLOYEE"], 1),
+
+        "bpi20E_decl4": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
+            (template_response, ["Request For Payment SUBMITTED by EMPLOYEE","Request For Payment REJECTED by EMPLOYEE"])],
+                                                                                                      SatCases.NotVacuitySat),
+        "bpi20E_decl2": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithSatAllProp(x, [
+            (template_absence1, ["Request For Payment REJECTED by EMPLOYEE"])], SatCases.NotVacuitySat),
+    }
+    runWholeConfiguration(pipeline, "bpi20_req.xes", cf, bpm17_map)
+##################################################################
+##################################################################
+##################################################################
+##################################################################
+
+
 def oldPipeline():
      split_no = 2
      pipeline = RunWholeStrategy(os.path.join("data", "logs"),
                                  os.path.join("data", "experiments"),
+                                 None,
                                  True,
-                                 [5,10,15,20,25,30,35,40,60,80],
+                                 [5,10,15,20,25,30],
                                  split_no)
+     pipeline6 = RunWholeStrategy(os.path.join("data", "logs"),
+                                 os.path.join("data", "experiments"),
+                                 "UNKNOWN",
+                                 True,
+                                 [5, 10, 15, 20, 25, 30],
+                                 3)
      #run_sepsis(pipeline)
      #run_bpm11(pipeline)
-     #run_xray(pipeline)
-     run_bpm12(pipeline)
+     run_xray(pipeline)
+     #run_bpm12oc(pipeline)
      #run_synth(pipeline)
      #run_bank(pipeline)
+     #run_bpi15B(pipeline6)
+
 
      pipeline2 = RunWholeStrategy(os.path.join("data", "logs"),
                                  os.path.join("data", "experiments"),
@@ -410,9 +798,22 @@ def oldPipeline():
                                   0.3)
      #run_bpm17(pipeline2)
      #run_traffic2(pipeline2)
+     #run_bpi15A(pipeline6)
+     #run_bpi15B(pipeline6)
+     #run_bpi15C(pipeline6)
+     #run_bpi15D(pipeline6)
+     #run_bpi15E(pipeline6)
+
+
+     #run_bpi20A(pipeline6)
+     #run_bpi20B(pipeline6)
+     #run_bpi20C(pipeline6)
+     #run_bpi20D(pipeline6)
+     #run_bpi20E(pipeline6)
 
      pipeline3 = RunWholeStrategy(os.path.join("data", "logs"),
                                   os.path.join("data", "experiments"),
+                                 None,
                                   False,
                                   [5, 10, 15, 20, 25],  #,30,35,40,60,80],
                                   3,

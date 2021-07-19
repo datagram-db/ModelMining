@@ -1,6 +1,7 @@
 """
 Main file for deviance mining
 """
+import itertools
 from random import shuffle
 import numpy as np
 from .declaretemplates_new import *
@@ -10,7 +11,7 @@ import pandas as pd
 from DevianceMiningPipeline.utils.PathUtils import *
 import os
 from .utils import PandaExpress
-from .utils.DumpUtils import genericDump
+from .utils.DumpUtils import genericDump, dump_in_primary_memory_as_table_csv
 
 
 def reencode_map(val):
@@ -65,10 +66,8 @@ def apply_template_to_log(template, candidate, log):
     results = []
     for trace in log:
         result, vacuity = apply_template(template, trace, candidate)
-
         results.append(result)
-
-    return results
+    return pd.array(results, dtype=pd.SparseDtype("int", 0))
 
 
 def generate_candidate_constraints(candidates, templates, train_log, constraint_support=None):
@@ -108,10 +107,27 @@ def find_if_satisfied_by_class(constraint_result, log, support_norm, support_dev
 
     return norm_pass, dev_pass
 
+def templ_cand(tc, train_log, constraint_support_norm, constraint_support_dev, filter_t=True):
+    template = tc[0]
+    candidate = tc[1]
+    candidate_name = template + ":" + str(candidate)
+    constraint_result = apply_template_to_log(template, candidate, train_log)
+    satis_normal, satis_deviant = find_if_satisfied_by_class(constraint_result, train_log,
+                                                             constraint_support_norm,
+                                                             constraint_support_dev)
+    return candidate_name, constraint_result, not filter_t or (satis_normal or satis_deviant)
+
+
 
 def generate_train_candidate_constraints(candidates, templates, train_log, constraint_support_norm,
                                          constraint_support_dev, filter_t=True):
     all_results = {}
+    # F = filter(lambda templ_cand: templ_cand[1] == template_sizes[templ_cand[0]], itertools.product(templates, candidates))
+    # try:
+    #     colnames, results = zip(*map(lambda t: (t[0], t[1]), filter(lambda xyz: xyz[2], map(lambda x : templ_cand(x, train_log, constraint_support_norm, constraint_support_dev, filter_t), F))))
+    # except:
+    #     colnames, results = [], []
+    # #
     for template in templates:
         print("Started working on {}".format(template))
         for candidate in candidates:
@@ -121,15 +137,21 @@ def generate_train_candidate_constraints(candidates, templates, train_log, const
                 satis_normal, satis_deviant = find_if_satisfied_by_class(constraint_result, train_log,
                                                                          constraint_support_norm,
                                                                          constraint_support_dev)
-
                 if not filter_t or (satis_normal or satis_deviant):
                     all_results[candidate_name] = constraint_result
-
-    return all_results
+    all_results["Label"] = [trace["label"] for trace in train_log]
+    all_results["Case_ID"] = [trace["name"] for trace in train_log]
+    return pd.DataFrame(all_results)
 
 
 def generate_test_candidate_constraints(candidates, templates, test_log, train_results):
     all_results = {}
+
+    # F = filter(lambda templ_cand: (templ_cand[1] == template_sizes[templ_cand[0]]) and ((templ_cand[0]+":"+str(templ_cand[1])) in train_results), itertools.product(templates, candidates))
+    # try:
+    #     colnames, results = zip(*map(lambda xyz: (xyz[0], xyz[1]), F))
+    # except:
+    #     colnames, results = [], []
     for template in templates:
         print("Started working on {}".format(template))
         for candidate in candidates:
@@ -140,7 +162,10 @@ def generate_test_candidate_constraints(candidates, templates, test_log, train_r
 
                     all_results[candidate_name] = constraint_result
 
-    return all_results
+    # return all_results
+    all_results["Label"] = [trace["label"] for trace in test_log]
+    all_results["Case_ID"] = [trace["name"] for trace in test_log]
+    return pd.DataFrame(all_results)
 
 
 def transform_results_to_numpy(results, train_log):
@@ -150,19 +175,20 @@ def transform_results_to_numpy(results, train_log):
     :param train_log:
     :return:
     """
-    labels = [trace["label"] for trace in train_log]
-    trace_names = [trace["name"] for trace in train_log]
-    matrix = []
-    featurenames = []
 
-    for feature, result in results.items():
-        matrix.append(result)
-        featurenames.append(feature)
-
-    nparray_data = np.array(matrix).T
-    nparray_labels = np.array(labels)
-    nparray_names = np.array(trace_names)
-    return nparray_data, nparray_labels, featurenames, nparray_names
+    results["Label"] = [trace["label"] for trace in train_log]
+    results["Case_ID"] = [trace["name"] for trace in train_log]
+    # matrix = []
+    # featurenames = []
+    #
+    # for feature, result in results.items():
+    #     matrix.append(result)
+    #     featurenames.append(feature)
+    #
+    # nparray_data = np.array(matrix).T
+    # nparray_labels = np.array(labels)
+    # nparray_names = np.array(trace_names)
+    return pd.DataFrame(results.values(), columns=results.keys())#, nparray_labels, featurenames, nparray_names
 
 
 def filter_candidates_by_support(candidates, log, support_norm, support_dev):
@@ -202,23 +228,23 @@ def count_classes(log):
     return normal, deviant
 
 
+#
+# def declare_deviance_mining(output_path, log, templates=None, to_shuffle=False, filter_t=True, reencode=False, split_size = .8, constraint_threshold = 0.1, candidate_threshold = 0.1):
+#     print("Filter_t", filter_t)
+#     if not templates:
+#         templates = template_sizes.keys()
+#
+#     # Read into suitable data structure
+#     transformed_log = xes_to_positional(log)
+#     if to_shuffle:
+#         shuffle(transformed_log)
+#
+#     train_log, test_log = split_log_train_test(transformed_log, split_size)
+#     return declare_embedding(output_path, train_log, test_log, templates, filter_t, reencode,
+#                              candidate_threshold, constraint_threshold)
 
-def declare_deviance_mining(output_path, log, templates=None, to_shuffle=False, filter_t=True, reencode=False, split_size = .8, constraint_threshold = 0.1, candidate_threshold = 0.1):
-    print("Filter_t", filter_t)
-    if not templates:
-        templates = template_sizes.keys()
 
-    # Read into suitable data structure
-    transformed_log = xes_to_positional(log)
-    if to_shuffle:
-        shuffle(transformed_log)
-
-    train_log, test_log = split_log_train_test(transformed_log, split_size)
-    return declare_embedding(output_path, train_log, test_log, templates, filter_t, reencode,
-                             candidate_threshold, constraint_threshold)
-
-
-def declare_embedding(output_path, train_log, test_log, templates=None, filter_t=True, reencode=False,
+def declare_embedding(output_path, train_log, test_log, self, templates=None, filter_t=True, reencode=False,
                       candidate_threshold=0.1, constraint_threshold=0.1):
     if not templates:
         templates = template_sizes.keys()
@@ -239,27 +265,32 @@ def declare_embedding(output_path, train_log, test_log, templates=None, filter_t
         print("Support filtered candidates:", len(candidates))
     constraint_support_dev = int(deviant_count * constraint_threshold)
     constraint_support_norm = int(normal_count * constraint_threshold)
-    train_results = generate_train_candidate_constraints(candidates, templates, train_log, constraint_support_norm,
+    train_df = generate_train_candidate_constraints(candidates, templates, train_log, constraint_support_norm,
                                                          constraint_support_dev, filter_t=filter_t)
-    test_results = generate_test_candidate_constraints(candidates, templates, test_log, train_results)
+    test_df = generate_test_candidate_constraints(candidates, templates, test_log, train_df.columns[:-2])
     print("Candidate constraints generated")
     # transform to numpy
     # get trace names
-    train_data, train_labels, featurenames, train_names = transform_results_to_numpy(train_results, train_log)
-    test_data, test_labels, _, test_names = transform_results_to_numpy(test_results, test_log)
-    train_df = pd.DataFrame(train_data, columns=featurenames)
-    test_df = pd.DataFrame(test_data, columns=featurenames)
+    # train_data, train_labels, featurenames, train_names = transform_results_to_numpy(train_results, train_log)
+    # test_data, test_labels, _, test_names = transform_results_to_numpy(test_results, test_log)
+    # train_df = pd.DataFrame(train_data, columns=featurenames)
+    # test_df = pd.DataFrame(test_data, columns=featurenames)
+    #train_df = transform_results_to_numpy(train_results, train_log)
+    #test_df= transform_results_to_numpy(test_results, test_log)
     # Reencoding data
     if reencode:
         print("Reencoding data")
         train_df, test_df = reencode_declare_results(train_df, test_df)
-    train_df["Case_ID"] = train_names
-    train_df["Label"] = train_labels.tolist()
-    test_df["Case_ID"] = test_names
-    test_df["Label"] = test_labels.tolist()
+    # train_df["Case_ID"] = train_names
+    # train_df["Label"] = train_labels.tolist()
+    # test_df["Case_ID"] = test_names
+    # test_df["Label"] = test_labels.tolist()
     mkdir_test(output_path)
 
-    return genericDump(output_path, train_df, test_df, "declare_train.csv", "declare_test.csv")
+    j =  genericDump(output_path, train_df, test_df, "declare_train.csv", "declare_test.csv")
+    if self is not None:
+        dump_in_primary_memory_as_table_csv(self, "dc", train_df, test_df)
+    return j
 
 
 

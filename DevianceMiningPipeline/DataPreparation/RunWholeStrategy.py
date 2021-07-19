@@ -10,7 +10,7 @@ from DevianceMiningPipeline.DataPreparation.ConfigurationFile import Configurati
 from DevianceMiningPipeline.DataPreparation.TaggingStrategy import TaggingStrategy
 
 class RunWholeStrategy:
-    def __init__(self, LOGS_FOLDER, DATA_EXP, doNr0 = True, ranges = None, max_splits = 5, threshold_split = 0.1):
+    def __init__(self, LOGS_FOLDER, DATA_EXP, missing_literal = None, doNr0 = True, ranges = None, max_splits = 5, threshold_split = 0.1):
         self.doNr0 = doNr0
         self.ranges = ranges
         if ranges is None:
@@ -19,6 +19,7 @@ class RunWholeStrategy:
         self.LOGS_FOLDER = LOGS_FOLDER
         self.DATA_EXP = DATA_EXP
         self.c = threshold_split
+        self.missing_literal = missing_literal
 
     def __call__(self, obj):
         assert (isinstance(obj, TaggingStrategy))

@@ -16,6 +16,8 @@ from DevianceMiningPipeline.utils.FileNameUtils import path_generic_log
 def ensureDataFrameQuality(df):
     assert ('Case_ID' in df.columns)
     assert ('Label' in df.columns)
+    df['Label'] = df['Label'].astype(int)  #Ensuring that the labels are in the numeric format, and not as characters!
+    #also, this type cannot be sparse
     return df.sort_index()
     # rownames = df["Case_ID"]
     # df.index = rownames
@@ -114,7 +116,7 @@ def dataframe_join_withChecks(left, right):
     idTest = ('Case_ID' in left.columns) and ('Case_ID' in right.columns)
     j = left.join(right, lsuffix='_left', rsuffix='_right')
     if idTest:
-        assert ((list(map(lambda x: str(x), j["Case_ID_right"].to_list())) == list(map(lambda x: str(x), j["Case_ID_left"].to_list()))))
+        assert ((list(map(lambda x: str(x), j["Case_ID_right"].to_list())) == list(map(lambda x: str(x), j["Case_ID_left"].to_list())))) #
         assert ((list(map(lambda x: str(x), j["Case_ID_right"].to_list())) == list(map(lambda x: str(x), j.index))))
     assert ((list(map(lambda x: int(x), j["Label_right"].to_list())) == list(map(lambda x: int(x), j["Label_left"].to_list()))))
     assert ('Label_left' in j)

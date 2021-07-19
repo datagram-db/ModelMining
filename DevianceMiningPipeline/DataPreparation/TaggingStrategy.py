@@ -40,5 +40,12 @@ class TaggingStrategy:
         conf.dump(self.json)
         return self
 
+    def dump(self, conf):
+        conf.setLogName(self.logname)
+        conf.setOutputFolder(self.outputfolder)
+        conf.setExperimentName(self.experiment_name)
+        conf.dump(self.json)
+        return self
+
     def getConfFile(self):
         return self.json

@@ -19,7 +19,7 @@ import pandas as pd
 
 import os
 from .utils import PandaExpress
-from .utils.DumpUtils import genericDump
+from .utils.DumpUtils import genericDump, dump_in_primary_memory_as_table_csv
 from .utils.PandaExpress import extendDataFrameWithLabels
 from .utils.TraceUtils import trace_to_label_map, propositionalized_trace_to_label_map
 
@@ -117,9 +117,7 @@ def apply_template_to_log(template, candidate, log):
     results = []
     for trace in log:
         result, vacuity = apply_template(template, trace, candidate)
-
         results.append(result)
-
     return results
 
 
@@ -127,7 +125,6 @@ def apply_data_template_to_log(template, candidate, log):
     results = []
     for trace in log:
         results.append(apply_data_template2(template, trace, candidate))
-
     return results
 
 
@@ -145,11 +142,8 @@ def generate_train_candidate_constraints(candidates, templates, train_log, const
                 satis_normal, satis_deviant = find_if_satisfied_by_class(constraint_result, train_log,
                                                                          constraint_support_norm,
                                                                          constraint_support_dev)
-
                 if not filter_t or (satis_normal or satis_deviant):
                     all_results[(template, candidate)] = constraint_result
-
-
     return all_results
 
 
@@ -161,9 +155,7 @@ def generate_test_candidate_constraints(candidates, templates, test_log, train_r
             if len(candidate) == template_sizes[template]:
                 if (template, candidate) in train_results:
                     constraint_result = apply_template_to_log(template, candidate, test_log)
-
                     all_results[(template, candidate)] = constraint_result
-
     return all_results
 
 
@@ -176,7 +168,6 @@ def find_fulfillments_violations(candidate, template, log):
     :param log:
     :return:
     """
-
     outp = apply_data_template_to_log(template, candidate, log)
     return outp
 
@@ -255,13 +246,13 @@ class DRC:
             #features_data.append(act_features)
         return d
 
-    def finalize_map(self, d, features):
+    def finalize_map(self, d, features, missing_literal):
         for feature in features:
             ft_type = feature[1]
             if ft_type == "boolean":
                 d[feature] = pd.array(d[feature], dtype=pd.SparseDtype("int", 0))
-            #elif ft_type == "literal":
-            #    d[feature] = pd.array(d[feature], dtype=pd.SparseDtype("str", "Missing"))
+            elif missing_literal is not None and ft_type == "literal":
+                d[feature] = pd.array(d[feature], dtype=pd.SparseDtype("str", missing_literal))
             elif ft_type == "continuous":
                 d[feature] = pd.array(d[feature], dtype=pd.SparseDtype("float", 0))
             elif ft_type == "discrete":
@@ -269,7 +260,7 @@ class DRC:
         return d
 
 
-    def create_data_aware_features(self, train_log, test_log, ignored, constraint_threshold = 0.1, candidate_threshold = 0.1):
+    def create_data_aware_features(self, train_log, test_log, ignored, missing_literal, constraint_threshold = 0.1, candidate_threshold = 0.1):
         # given log
         # 0.0. Extract events
 
@@ -489,7 +480,7 @@ class DRC:
                 d = self.init_d_dictionary(d, features, "id", "Label")
                 d = self.create_sample2(d, map(lambda sample: (sample[2], sample[0]), train_positive_samples), features, 1, "id", "Label")
                 d = self.create_sample2(d, map(lambda sample: (sample[2], sample[0]), train_negative_samples), features, 0, "id", "Label")
-                d = self.finalize_map(d, features)
+                d = self.finalize_map(d, features, missing_literal)
                 feature_train_df = pd.DataFrame(d, columns=features_label)
             train_ids = feature_train_df.pop("id")
 
@@ -499,7 +490,7 @@ class DRC:
                 d = self.init_d_dictionary(d, features, "id", "Label")
                 d = self.create_sample2(d, map(lambda sample: (sample[2], sample[0]) , filter(lambda sample : sample[1] == 1, train_positive_samples)), features, 1, "id", "Label")
                 d = self.create_sample2(d, map(lambda sample: (sample[2], sample[0]) , filter(lambda sample : sample[1] == 0, train_positive_samples)), features, 0, "id", "Label")
-                d = self.finalize_map(d, features)
+                d = self.finalize_map(d, features, missing_literal)
                 train_df = pd.DataFrame(d, columns=features_label)
                 train_df.pop("id")
 
@@ -511,7 +502,7 @@ class DRC:
                 d = self.init_d_dictionary(d, features, "id", "Label")
                 d = self.create_sample2(d, map(lambda sample: (sample[2], sample[0]), test_positive_samples), features, 1, "id", "Label")
                 d = self.create_sample2(d, map(lambda sample: (sample[2], sample[0]), test_negative_samples), features, 0, "id", "Label")
-                d = self.finalize_map(d, features)
+                d = self.finalize_map(d, features, missing_literal)
                 test_df = pd.DataFrame(d, columns=features_label)
             test_ids = test_df.pop("id")
 
@@ -644,17 +635,8 @@ class DRC:
 
 
 
-def data_declare_main(inp_folder, log_name, ignored, split = 0.8, forceSomeElements = False):
-    log = read_XES_log(log_name)
 
-    # Transform log into suitable data structures
-    transformed_log = xes_to_data_positional(log, forceSomeElements=forceSomeElements)
-
-    train_log, test_log = split_log_train_test(transformed_log, split)
-    return declare_data_aware_embedding(ignored, inp_folder, train_log, test_log)
-
-
-def declare_data_aware_embedding(ignored, inp_folder, train_log, test_log, constraint_threshold = 0.1, candidate_threshold = 0.1):
+def declare_data_aware_embedding(ignored, inp_folder, train_log, test_log, missing_literal, self, constraint_threshold = 0.1, candidate_threshold = 0.1):
     drc = DRC()
     doStoreSecondFile = not (len(test_log) == 0)
     if not doStoreSecondFile:
@@ -662,7 +644,7 @@ def declare_data_aware_embedding(ignored, inp_folder, train_log, test_log, const
     # print(train_log[0])
     train_case_ids = [tr["name"] for tr in train_log]
     test_case_ids = [tr["name"] for tr in test_log]
-    train_names, train_features, test_names, test_features = drc.create_data_aware_features(train_log, test_log, ignored, constraint_threshold=constraint_threshold, candidate_threshold=candidate_threshold)
+    train_names, train_features, test_names, test_features = drc.create_data_aware_features(train_log, test_log, ignored, missing_literal, constraint_threshold=constraint_threshold, candidate_threshold=candidate_threshold)
     train_dict = {}
     test_dict = {}
     for i, tf in enumerate(train_features):
@@ -673,6 +655,8 @@ def declare_data_aware_embedding(ignored, inp_folder, train_log, test_log, const
     train_df = pd.DataFrame.from_dict(train_dict)
     if doStoreSecondFile:
         test_df = pd.DataFrame.from_dict(test_dict)
+    else:
+        test_df = pd.DataFrame()
 
     train_df["Case_ID"] = train_case_ids
     if doStoreSecondFile:
@@ -680,7 +664,10 @@ def declare_data_aware_embedding(ignored, inp_folder, train_log, test_log, const
         test_df = extendDataFrameWithLabels(test_df, propositionalized_trace_to_label_map(test_log))
 
     train_df = extendDataFrameWithLabels(train_df, propositionalized_trace_to_label_map(train_log))
-    return genericDump(inp_folder, train_df, test_df, "dwd_train.csv", "dwd_test.csv")
+
+    j =  genericDump(inp_folder, train_df, test_df, "dwd_train.csv", "dwd_test.csv")
+    dump_in_primary_memory_as_table_csv(self, "dwd", train_df, test_df)
+    return j
     # PandaExpress.serialize(train_df, os.path.join(inp_folder, "dwd_train.csv"))
     # if doStoreSecondFile:
     #     PandaExpress.serialize(test_df, os.path.join(inp_folder, "dwd_test.csv"))

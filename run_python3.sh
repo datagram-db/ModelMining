@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-source ./venv/bin/activate && python3
+source /media/giacomo/BigData/environment/venv/bin/activate && python3

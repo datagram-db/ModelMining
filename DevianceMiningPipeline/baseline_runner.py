@@ -8,7 +8,7 @@ from .declaredevmining import split_log_train_test
 import pandas as pd
 from DevianceMiningPipeline.utils.PathUtils import *
 from .utils import PandaExpress
-from .utils.DumpUtils import genericDump
+from .utils.DumpUtils import genericDump, dump_in_primary_memory_as_table_csv
 
 
 def transform_log(train_log, activity_set):
@@ -38,16 +38,16 @@ def transform_log(train_log, activity_set):
     train_df.set_index("Case_ID")
     return train_df
 
+#
+# def baseline(inp_folder, logPath, splitSize, self):
+#     log = read_XES_log(logPath)
+#     transformed_log = xes_to_positional(log)
+#     train_log, test_log = split_log_train_test(transformed_log, splitSize)
+#
+#     # Collect all different IA's
+#     return baseline_embedding(inp_folder, train_log, test_log, self)
 
-def baseline(inp_folder, logPath, splitSize):
-    log = read_XES_log(logPath)
-    transformed_log = xes_to_positional(log)
-    train_log, test_log = split_log_train_test(transformed_log, splitSize)
-
-    # Collect all different IA's
-    return baseline_embedding(inp_folder, train_log, test_log)
-
-def baseline_embedding(inp_folder, train_log, test_log):
+def baseline_embedding(inp_folder, train_log, test_log, self = None):
     activitySet = list(extract_unique_events_transformed(train_log))
     # Transform to matrix
     # train data
@@ -65,7 +65,11 @@ def baseline_embedding(inp_folder, train_log, test_log):
     mkdir_test(inp_folder)
 
     ## Sorting the dataframes by rowname, so to guarantee that the dataframes match by row id!
-    return genericDump(inp_folder, train_df, test_df, "baseline_train.csv", "baseline_test.csv")
+
+    j= genericDump(inp_folder, train_df, test_df, "baseline_train.csv", "baseline_test.csv")
+    if self is not None:
+        dump_in_primary_memory_as_table_csv(self, "bs", train_df, test_df)
+    return j
 
 
 
