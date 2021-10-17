@@ -1,2 +1,0 @@
-#!/bin/bash
-GIT_SSH_COMMAND='ssh -i /home/giacomo/github_sshs/jackbergus/id_ed25519' git $@
