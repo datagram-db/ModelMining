@@ -81,6 +81,8 @@ def read_generic_embedding_dump(results_folder, split_nr, encoding, dictionary):
     train_path, test_path = load_yaml_file(results_folder, split_nr, encoding, dictionary)
     train_df = read_all_numeric_columns_except_one(train_path)
     test_df = read_all_numeric_columns_except_one(test_path)
+    train_df = train_df.drop(['index'], axis=1, errors='ignore')
+    test_df = test_df.drop(['index'], axis=1, errors='ignore')
     return train_df, test_df
 
 

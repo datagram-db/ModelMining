@@ -227,23 +227,6 @@ def count_classes(log):
 
     return normal, deviant
 
-
-#
-# def declare_deviance_mining(output_path, log, templates=None, to_shuffle=False, filter_t=True, reencode=False, split_size = .8, constraint_threshold = 0.1, candidate_threshold = 0.1):
-#     print("Filter_t", filter_t)
-#     if not templates:
-#         templates = template_sizes.keys()
-#
-#     # Read into suitable data structure
-#     transformed_log = xes_to_positional(log)
-#     if to_shuffle:
-#         shuffle(transformed_log)
-#
-#     train_log, test_log = split_log_train_test(transformed_log, split_size)
-#     return declare_embedding(output_path, train_log, test_log, templates, filter_t, reencode,
-#                              candidate_threshold, constraint_threshold)
-
-
 def declare_embedding(output_path, train_log, test_log, self, templates=None, filter_t=True, reencode=False,
                       candidate_threshold=0.1, constraint_threshold=0.1):
     if not templates:
@@ -269,22 +252,10 @@ def declare_embedding(output_path, train_log, test_log, self, templates=None, fi
                                                          constraint_support_dev, filter_t=filter_t)
     test_df = generate_test_candidate_constraints(candidates, templates, test_log, train_df.columns[:-2])
     print("Candidate constraints generated")
-    # transform to numpy
-    # get trace names
-    # train_data, train_labels, featurenames, train_names = transform_results_to_numpy(train_results, train_log)
-    # test_data, test_labels, _, test_names = transform_results_to_numpy(test_results, test_log)
-    # train_df = pd.DataFrame(train_data, columns=featurenames)
-    # test_df = pd.DataFrame(test_data, columns=featurenames)
-    #train_df = transform_results_to_numpy(train_results, train_log)
-    #test_df= transform_results_to_numpy(test_results, test_log)
     # Reencoding data
     if reencode:
         print("Reencoding data")
         train_df, test_df = reencode_declare_results(train_df, test_df)
-    # train_df["Case_ID"] = train_names
-    # train_df["Label"] = train_labels.tolist()
-    # test_df["Case_ID"] = test_names
-    # test_df["Label"] = test_labels.tolist()
     mkdir_test(output_path)
 
     j =  genericDump(output_path, train_df, test_df, "declare_train.csv", "declare_test.csv")

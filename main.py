@@ -170,9 +170,9 @@ def run_synth(pipeline):
 def run_sepsis(pipeline):
      assert isinstance(pipeline, RunWholeStrategy)
      cf = ConfigurationFile()
-     cf.setExperimentName("sepsis_er")
+     cf.setExperimentName("sepsis2")
      cf.setLogName("sepsis.xes")
-     cf.setOutputFolder("SepsisDWD")
+     cf.setOutputFolder("Sepsis2")
      cf.setMaxDepth(5)
      cf.setMinLeaf(5)
      cf.setSequenceThreshold(5)
@@ -180,7 +180,7 @@ def run_sepsis(pipeline):
      cf.setAutoIgnore(
          ["Diagnosis", "Diagnose", "time:timestamp", "concept: name", "Label", "lifecycle: transition"])
      cf.setPayloadSettings("sepsis_settings.cfg")
-     cf.dump("sepsis_er.json")
+     cf.dump("sepsis2.json")
      sepsis_map = {
           "sepsis_payload2": lambda x: DevianceMiningPipeline.LogTaggingViaPredicates.tagLogWithValueEqOverIthEventAttn(x,
                                                                                                                        "DisfuncOrg",
@@ -773,7 +773,7 @@ def oldPipeline():
                                  os.path.join("data", "experiments"),
                                  None,
                                  True,
-                                 [5,10,15,20,25,30],
+                                 [5,10,15,20,25,30,35,40,60,80],
                                  split_no)
      pipeline6 = RunWholeStrategy(os.path.join("data", "logs"),
                                  os.path.join("data", "experiments"),
@@ -781,9 +781,9 @@ def oldPipeline():
                                  True,
                                  [5, 10, 15, 20, 25, 30],
                                  3)
-     #run_sepsis(pipeline)
+     run_sepsis(pipeline)
      #run_bpm11(pipeline)
-     run_xray(pipeline)
+     #run_xray(pipeline)
      #run_bpm12oc(pipeline)
      #run_synth(pipeline)
      #run_bank(pipeline)

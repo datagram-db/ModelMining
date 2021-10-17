@@ -335,9 +335,9 @@ class ExperimentRunner:
         self.counter += 1
         # Pwoblem (sic!): sometimes, it happens that the Case_Id column is used for training.
         train_df = train_df.drop(['Case_Id'], axis=1, errors='ignore')
+        train_df = train_df.drop(['index'], axis=1, errors='ignore')
         test_df = test_df.drop(['Case_Id'], axis=1, errors='ignore')
-        train_df = train_df.drop(['Case_ID'], axis=1, errors='ignore')
-        test_df = test_df.drop(['Case_ID'], axis=1, errors='ignore')
+        test_df = test_df.drop(['index'], axis=1, errors='ignore')
 
         y_train = train_df.pop('Label').values  # pop: removing the column from the table, while preserving the values
         y_test = test_df.pop('Label').values
@@ -553,84 +553,84 @@ class ExperimentRunner:
 
     def train_and_eval_benchmark(self, max_splits):
         all_results = {}
-
-        print("Started working on baseline.")
-        baseline_results = self.baseline_train(max_splits)
-        all_results["bs"] = self.interpret_results(baseline_results, "baseline")
+        #
+        # print("Started working on baseline.")
+        # baseline_results = self.baseline_train(max_splits)
+        # all_results["bs"] = self.interpret_results(baseline_results, "baseline")
 
         print("Started working on declare.")
         declare_results = self.declare_train(max_splits)
         all_results["dc"] = self.interpret_results(declare_results, "declare")
 
-        print("Started working on sequenceMR.")
-        sequence_results = self.abstract_train2("mr", "mr", max_splits)
-        all_results["mr"] = self.interpret_results(sequence_results, "sequence", "mr")
-
-        print("Started working on sequenceTR.")
-        sequence_results = self.abstract_train2("tr", "tr", max_splits)
-        all_results["tr"] = self.interpret_results(sequence_results, "sequence", "tr")
-
-        print("Started working on sequenceTRA.")
-        sequence_results = self.abstract_train2("tra", "tra", max_splits)
-        all_results["tra"] = self.interpret_results(sequence_results, "sequence", "tra")
-
-        print("Started working on sequenceMRA.")
-        sequence_results = self.abstract_train2("mra", "mra",  max_splits)
-        all_results["mra"] = self.interpret_results(sequence_results, "sequence", "mra")
-
-        print("Started working on hybrid.")
-        hybrid_results = self.hybrid_train(max_splits)
-        all_results["hybrid"] = self.interpret_results(hybrid_results, "hybrid")
-
-        if self.payload:
-            print("Started working on payload train.")
-            payload_results = self.payload_train(max_splits)  # self.payload_train("bs", yaml_file)
-            all_results["payload"] = self.interpret_results(payload_results, "payload")
-
-            print("Started working on baseline with data.")
-            baseline_results = self.baseline_train_with_data(max_splits)
-            all_results["bs_data"] = self.interpret_results(baseline_results, "baseline")
-
-            print("Started working on declare with data.")
-            declare_results = self.declare_train_with_data(max_splits)
-            all_results["dc_data"] = self.interpret_results(declare_results, "declare")
-
-            print("Started working on sequenceMR with data.")
-            sequence_results = self.sequence_train_with_data("mr", max_splits)
-            all_results["mr_data"] = self.interpret_results(sequence_results, "sequence", "mr")
-
-            print("Started working on sequenceTR with data.")
-            sequence_results = self.sequence_train_with_data("tr", max_splits)
-            all_results["tr_data"] = self.interpret_results(sequence_results, "sequence", "tr")
-
-            print("Started working on sequenceTRA with data.")
-            sequence_results = self.sequence_train_with_data("tra", max_splits)
-            all_results["tra_data"] = self.interpret_results(sequence_results, "sequence", "tra")
-
-            print("Started working on sequenceMRA with data.")
-            sequence_results = self.sequence_train_with_data("mra", max_splits)
-            all_results["mra_data"] = self.interpret_results(sequence_results, "sequence", "mra")
-
-            print("Started working on hybrid with data.")
-            payload_results = self.hybrid_with_data(max_splits)
-            all_results["hybrid_data"] = self.interpret_results(payload_results, "hybrid_data")
-
-            if self.payload_type == "both":
-                print("Started working on declare with dwd.")
-                declare_results = self.declare_train_with_dwd(max_splits)
-                all_results["dc_dwd"] = self.interpret_results(declare_results, "declare_dwd")
-
-                print("Started working on declare with dwd and payload.")
-                declare_results = self.declare_train_with_dwd_data(max_splits)
-                all_results["dc_dwd_payload"] = self.interpret_results(declare_results, "declare_payload_dwd")
-
-                print("Started working on hybrid with dwd.")
-                payload_results = self.hybrid_with_dwd(max_splits)
-                all_results["hybrid_dwd"] = self.interpret_results(payload_results, "hybrid_dwd")
-
-                print("Started working on hybrid with dwd and usual payload.")
-                payload_results = self.hybrid_with_dwd_and_payload(max_splits)
-                all_results["hybrid_dwd_payload"] = self.interpret_results(payload_results, "hybrid_data_dwd")
+        # print("Started working on sequenceMR.")
+        # sequence_results = self.abstract_train2("mr", "mr", max_splits)
+        # all_results["mr"] = self.interpret_results(sequence_results, "sequence", "mr")
+        #
+        # print("Started working on sequenceTR.")
+        # sequence_results = self.abstract_train2("tr", "tr", max_splits)
+        # all_results["tr"] = self.interpret_results(sequence_results, "sequence", "tr")
+        #
+        # print("Started working on sequenceTRA.")
+        # sequence_results = self.abstract_train2("tra", "tra", max_splits)
+        # all_results["tra"] = self.interpret_results(sequence_results, "sequence", "tra")
+        #
+        # print("Started working on sequenceMRA.")
+        # sequence_results = self.abstract_train2("mra", "mra",  max_splits)
+        # all_results["mra"] = self.interpret_results(sequence_results, "sequence", "mra")
+        #
+        # print("Started working on hybrid.")
+        # hybrid_results = self.hybrid_train(max_splits)
+        # all_results["hybrid"] = self.interpret_results(hybrid_results, "hybrid")
+        #
+        # if self.payload:
+        #     print("Started working on payload train.")
+        #     payload_results = self.payload_train(max_splits)  # self.payload_train("bs", yaml_file)
+        #     all_results["payload"] = self.interpret_results(payload_results, "payload")
+        #
+        #     print("Started working on baseline with data.")
+        #     baseline_results = self.baseline_train_with_data(max_splits)
+        #     all_results["bs_data"] = self.interpret_results(baseline_results, "baseline")
+        #
+        #     print("Started working on declare with data.")
+        #     declare_results = self.declare_train_with_data(max_splits)
+        #     all_results["dc_data"] = self.interpret_results(declare_results, "declare")
+        #
+        #     print("Started working on sequenceMR with data.")
+        #     sequence_results = self.sequence_train_with_data("mr", max_splits)
+        #     all_results["mr_data"] = self.interpret_results(sequence_results, "sequence", "mr")
+        #
+        #     print("Started working on sequenceTR with data.")
+        #     sequence_results = self.sequence_train_with_data("tr", max_splits)
+        #     all_results["tr_data"] = self.interpret_results(sequence_results, "sequence", "tr")
+        #
+        #     print("Started working on sequenceTRA with data.")
+        #     sequence_results = self.sequence_train_with_data("tra", max_splits)
+        #     all_results["tra_data"] = self.interpret_results(sequence_results, "sequence", "tra")
+        #
+        #     print("Started working on sequenceMRA with data.")
+        #     sequence_results = self.sequence_train_with_data("mra", max_splits)
+        #     all_results["mra_data"] = self.interpret_results(sequence_results, "sequence", "mra")
+        #
+        #     print("Started working on hybrid with data.")
+        #     payload_results = self.hybrid_with_data(max_splits)
+        #     all_results["hybrid_data"] = self.interpret_results(payload_results, "hybrid_data")
+        #
+        #     if self.payload_type == "both":
+        #         print("Started working on declare with dwd.")
+        #         declare_results = self.declare_train_with_dwd(max_splits)
+        #         all_results["dc_dwd"] = self.interpret_results(declare_results, "declare_dwd")
+        #
+        #         print("Started working on declare with dwd and payload.")
+        #         declare_results = self.declare_train_with_dwd_data(max_splits)
+        #         all_results["dc_dwd_payload"] = self.interpret_results(declare_results, "declare_payload_dwd")
+        #
+        #         print("Started working on hybrid with dwd.")
+        #         payload_results = self.hybrid_with_dwd(max_splits)
+        #         all_results["hybrid_dwd"] = self.interpret_results(payload_results, "hybrid_dwd")
+        #
+        #         print("Started working on hybrid with dwd and usual payload.")
+        #         payload_results = self.hybrid_with_dwd_and_payload(max_splits)
+        #         all_results["hybrid_dwd_payload"] = self.interpret_results(payload_results, "hybrid_data_dwd")
 
         weka_yaml_file = os.path.join(self.results_folder, "for_weka_experiments.yaml")
         if not (os.path.exists(weka_yaml_file)):
@@ -644,31 +644,6 @@ class ExperimentRunner:
         self.cross_validation_pipeline(self.inp_path, self.log_name, self.output_folder, max_splits,
                                        training_test_split)
 
-    # def serialize_complete_dataset(self, isCompleteEmbedding):
-    #     logFilePath = os.path.join(self.inp_path, self.log_name)
-    #     log = read_XES_log(logFilePath)
-    #     d = logFilePath
-    #     if isCompleteEmbedding:
-    #         d = os.path.join("./complete_embeddings/", logFilePath)
-    #     os.makedirs(d, exist_ok=True)
-    #     from DevianceMiningPipeline.baseline_runner import baseline
-    #     from DevianceMiningPipeline.declaredevmining import declare_deviance_mining
-    #     yamlFile = {}
-    #     if not (self.payload_settings is None):
-    #         print("\x1b[6;30;42m Payload generation:\x1b[0m")
-    #         yamlFile["payload"] = payload_extractor2(d, logFilePath, self.payload_settings)
-    #     if not (self.payload_dwd_settings is None):
-    #         print("\x1b[6;30;42m DWD Sequences generation:\x1b[0m")
-    #         yamlFile["dwd"] = data_declare_main(d, logFilePath, self.payload_dwd_settings["ignored"], split=0.7)
-    #     print("\x1b[6;30;42m Generate Sequences generation:\x1b[0m")
-    #     yamlFile.update(generateSequences(self.inp_path, logFilePath, d))
-    #     print("\x1b[6;30;42m Baseline generation:\x1b[0m")
-    #     yamlFile["baseline"] = baseline(d, logFilePath, 0.7)
-    #     print("\x1b[6;30;42m Declare generation:\x1b[0m")
-    #     yamlFile["declare"] = declare_deviance_mining(d, log, split_size=0.7,
-    #                                                   reencode=self.reencode)  # run_deviance_new
-    #     with open(os.path.abspath(os.path.join(d, "../" + self.log_name + ".yaml")), 'w') as file:
-    #         yaml.dump(yamlFile, file)
 
 
     def prepare_data(self, max_splits, training_test_split, missing_literal, doForce=False, threshold_split = 0.1):
@@ -683,10 +658,10 @@ class ExperimentRunner:
         print("New code by Giacomo Bergami, for evenly splitting and storing the database")
         for i in range(max_splits):
             print("Current run: " + str(i))
-            baseline_path = FileNameUtils.baseline_path(i, self.results_folder)
+            #baseline_path = FileNameUtils.baseline_path(i, self.results_folder)
             declare__path = FileNameUtils.declare_path(i, self.results_folder)
-            payload__path = FileNameUtils.payload_path(i, self.results_folder)
-            declared_path = FileNameUtils.declare_data_aware_path(i, self.results_folder)
+            #payload__path = FileNameUtils.payload_path(i, self.results_folder)
+            #declared_path = FileNameUtils.declare_data_aware_path(i, self.results_folder)
 
             print("\t - reading the log")
             log = read_XES_log(FileNameUtils.getXesName(self.log_path, i))
@@ -696,113 +671,113 @@ class ExperimentRunner:
                                                                    training_test_split)
             TrL_TeL_pair_list.append([list(TrainingId), list(TestingId)])
 
-            print("\t * obtaining the canonical XES representation")
-            logTraining, logTesting = \
-                LogUtils.xes_to_tracelist_split(log, TrainingId, TestingId)
+            # print("\t * obtaining the canonical XES representation")
+            # logTraining, logTesting = \
+            #     LogUtils.xes_to_tracelist_split(log, TrainingId, TestingId)
 
             print("\t * obtaining the splitted propositional representation")
             propositionalTraining, propositionalTesting = \
                 LogUtils.xes_to_propositional_split(log, TrainingId, TestingId)
 
-            print("\t * obtaining the data propositional representation")
-            dataPropositionalTraining, dataPropositionalTesting = \
-                LogUtils.xes_to_data_propositional_split(log, TrainingId, TestingId, doForce)
+            # print("\t * obtaining the data propositional representation")
+            # dataPropositionalTraining, dataPropositionalTesting = \
+            #     LogUtils.xes_to_data_propositional_split(log, TrainingId, TestingId, doForce)
 
-            print("\t - writing baseline split")
-            STr, STt = baseline_runner.baseline_embedding(baseline_path, propositionalTraining, propositionalTesting, None)
-            assert (STr == TrainingId)
-            assert (STt == TestingId)
+            # print("\t - writing baseline split")
+            # STr, STt = baseline_runner.baseline_embedding(baseline_path, propositionalTraining, propositionalTesting, None)
+            # assert (STr == TrainingId)
+            # assert (STt == TestingId)
 
             print("\t - writing declare split")
             STr, STt = declaredevmining.declare_embedding(declare__path, propositionalTraining, propositionalTesting, self,
                                                           reencode=self.reencode, candidate_threshold=threshold_split,
                                                           constraint_threshold=threshold_split)
-            assert (STr == TrainingId)
-            assert (STt == TestingId)
-
-            if self.payload:
-                if self.payload_type == "normal" or self.payload_type == "both":
-                    print("\t - writing payload embedding")
-                    STr, STt = payload_embedding(payload__path, self.payload_settings, logTraining, logTesting, None)
-                    assert (STr == TrainingId)
-                    assert (STt == TestingId)
-                if self.payload_type == "dwd" or self.payload_type == "both":
-                    print("\t - writing declare with data embedding")
-                    STr, STt = declare_data_aware_embedding(ignored, declared_path, dataPropositionalTraining,
-                                                            dataPropositionalTesting, missing_literal, self, candidate_threshold=threshold_split,
-                                                          constraint_threshold=threshold_split)
-                    assert (STr == TrainingId)
-                    assert (STt == TestingId)
+            # assert (STr == TrainingId)
+            # assert (STt == TestingId)
+            #
+            # if self.payload:
+            #     if self.payload_type == "normal" or self.payload_type == "both":
+            #         print("\t - writing payload embedding")
+            #         STr, STt = payload_embedding(payload__path, self.payload_settings, logTraining, logTesting, None)
+            #         assert (STr == TrainingId)
+            #         assert (STt == TestingId)
+            #     if self.payload_type == "dwd" or self.payload_type == "both":
+            #         print("\t - writing declare with data embedding")
+            #         STr, STt = declare_data_aware_embedding(ignored, declared_path, dataPropositionalTraining,
+            #                                                 dataPropositionalTesting, missing_literal, self, candidate_threshold=threshold_split,
+            #                                               constraint_threshold=threshold_split)
+            #         assert (STr == TrainingId)
+            #         assert (STt == TestingId)
             del STr
             del STt
             del TrainingId
             del TestingId
-            del logTraining
-            del logTesting
+            #del logTraining
+            #del logTesting
             gc.collect()
 
 
 
-        print("~~ Run sequence miner for all the params")
-        strategies = run_sequences(self.inp_path, self.log_path_seq, self.results_folder, self.err_logger, max_splits,
-                                   sequence_threshold=self.sequence_threshold)
-        print("~~ Providing the correct CSV dump for the sequence miner")
-
-        for i in range(max_splits):
-            hybrid___path = FileNameUtils.hybrid_path(i, self.results_folder)
-            allTr = []
-            allTe = []
-            TrainingId, TestingId = TrL_TeL_pair_list[i]
-            for strategy in strategies:
-                training_df, testing_df = ExperimentRunner.correct_read_sequence_log(self.results_folder, strategy, i,
-                                                                                     TrainingId, TestingId)
-                allTr.append(training_df)
-                allTe.append(testing_df)
-                d = csv_trace_encodings(self.results_folder, strategy, i + 1)
-                dump_custom_dataframes(training_df, testing_df, d["train"], d["test"])
-
-                #dump_in_primary_memory_as_table_csv(self, strategy, training_df, testing_df, False)
-
-            allTr = dataframe_multiway_equijoin(allTr)
-            allTe = dataframe_multiway_equijoin(allTe)
-
-            #dump_in_primary_memory_as_table_csv(self, "combined_for_hybrid", allTr, allTe, False)
-            genericDump(hybrid___path, allTr, allTe, "combined_for_hybrid_train.csv", "combined_for_hybrid_test.csv")
-
-            del allTr
-            del allTe
-            gc.collect()
-
-        print("\t - writing bs_data")
-        self.multijoined_dump("bs_data", ["baseline", "payload"], max_splits)
-
-        print("\t - writing baseline_dwd")
-        self.multijoined_dump("baseline_dwd", ["baseline", "dwd"], max_splits, isTrue)
-
-        print("\t - writing dc_data")
-        self.multijoined_dump("dc_data", ["declare", "payload"], max_splits, isTrue)
-
-        print("\t - writing dc_dwd")
-        self.multijoined_dump("dc_dwd", ["declare", "dwd"], max_splits, isTrue)
-
-        print("\t - writing dc_dwd_payload")
-        self.multijoined_dump("dc_dwd_payload", ["declare", "payload", "dwd"], max_splits, isTrue)
-
-        for strategy in strategies:
-            print("\t - writing " + strategy + "_data")
-            self.multijoined_dump(strategy + "_data", [strategy, "payload"], max_splits)
-
-        print("\t - writing hybrid")
-        self.multijoined_dump("hybrid", ["declare", "combined_for_hybrid"], max_splits, isTrue)
-
-        print("\t - writing hybrid_data")
-        self.multijoined_dump("hybrid_data", ["declare", "payload", "combined_for_hybrid"], max_splits, isTrue)
-
-        print("\t - writing hybrid_dwd")
-        self.multijoined_dump("hybrid_dwd", ["declare", "dwd", "combined_for_hybrid"], max_splits, isTrue)
-
-        print("\t - writing hybrid_dwd_payload")
-        self.multijoined_dump("hybrid_dwd_payload", ["declare", "dwd", "payload", "combined_for_hybrid"], max_splits, isTrue)
+        # print("~~ Run sequence miner for all the params")
+        # strategies = run_sequences(self.inp_path, self.log_path_seq, self.results_folder, self.err_logger, max_splits,
+        #                            sequence_threshold=self.sequence_threshold)
+        # print("~~ Providing the correct CSV dump for the sequence miner")
+        #
+        # for i in range(max_splits):
+        #     hybrid___path = FileNameUtils.hybrid_path(i, self.results_folder)
+        #     allTr = []
+        #     allTe = []
+        #     TrainingId, TestingId = TrL_TeL_pair_list[i]
+        #     for strategy in strategies:
+        #         training_df, testing_df = ExperimentRunner.correct_read_sequence_log(self.results_folder, strategy, i,
+        #                                                                              TrainingId, TestingId)
+        #         allTr.append(training_df)
+        #         allTe.append(testing_df)
+        #         d = csv_trace_encodings(self.results_folder, strategy, i + 1)
+        #         dump_custom_dataframes(training_df, testing_df, d["train"], d["test"])
+        #
+        #         #dump_in_primary_memory_as_table_csv(self, strategy, training_df, testing_df, False)
+        #
+        #     allTr = dataframe_multiway_equijoin(allTr)
+        #     allTe = dataframe_multiway_equijoin(allTe)
+        #
+        #     #dump_in_primary_memory_as_table_csv(self, "combined_for_hybrid", allTr, allTe, False)
+        #     genericDump(hybrid___path, allTr, allTe, "combined_for_hybrid_train.csv", "combined_for_hybrid_test.csv")
+        #
+        #     del allTr
+        #     del allTe
+        #     gc.collect()
+        #
+        # print("\t - writing bs_data")
+        # self.multijoined_dump("bs_data", ["baseline", "payload"], max_splits)
+        #
+        # print("\t - writing baseline_dwd")
+        # self.multijoined_dump("baseline_dwd", ["baseline", "dwd"], max_splits, isTrue)
+        #
+        # print("\t - writing dc_data")
+        # self.multijoined_dump("dc_data", ["declare", "payload"], max_splits, isTrue)
+        #
+        # print("\t - writing dc_dwd")
+        # self.multijoined_dump("dc_dwd", ["declare", "dwd"], max_splits, isTrue)
+        #
+        # print("\t - writing dc_dwd_payload")
+        # self.multijoined_dump("dc_dwd_payload", ["declare", "payload", "dwd"], max_splits, isTrue)
+        #
+        # for strategy in strategies:
+        #     print("\t - writing " + strategy + "_data")
+        #     self.multijoined_dump(strategy + "_data", [strategy, "payload"], max_splits)
+        #
+        # print("\t - writing hybrid")
+        # self.multijoined_dump("hybrid", ["declare", "combined_for_hybrid"], max_splits, isTrue)
+        #
+        # print("\t - writing hybrid_data")
+        # self.multijoined_dump("hybrid_data", ["declare", "payload", "combined_for_hybrid"], max_splits, isTrue)
+        #
+        # print("\t - writing hybrid_dwd")
+        # self.multijoined_dump("hybrid_dwd", ["declare", "dwd", "combined_for_hybrid"], max_splits, isTrue)
+        #
+        # print("\t - writing hybrid_dwd_payload")
+        # self.multijoined_dump("hybrid_dwd_payload", ["declare", "dwd", "payload", "combined_for_hybrid"], max_splits, isTrue)
 
     def clean_data(self):
         shutil.rmtree(self.results_folder)
