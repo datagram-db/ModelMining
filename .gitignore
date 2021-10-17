@@ -62,3 +62,8 @@ EnglishBPIChallenge2011.xes_unique.xes
 RulesExtraction/__pycache__/__init__.cpython-38.pyc
 RulesExtraction/__pycache__/rules_statistics.cpython-38.pyc
 RulesExtraction/__pycache__/*
+.idea/
+.idea/*
+target/
+target/*
+*.iml
