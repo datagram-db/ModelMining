@@ -1,3 +1,5 @@
+import numpy as np
+import pandas as pd
 from opyenxes.data_in.XUniversalParser import XUniversalParser
 from opyenxes.model import XAttributeBoolean, XAttributeLiteral, XAttributeTimestamp, XAttributeDiscrete, XAttributeContinuous
 import dateparser
@@ -79,21 +81,47 @@ class TracePositional:
             self.positional_events[label] = list()
         self.positional_events[label].append(pos)
 
+    def eventCount(self, label):
+        if label not in self.positional_events:
+            return 0
+        else:
+            return len(self.positional_events[label])
+
 class Log:
     def __init__(self, path, id=0, withData=False):
         self.path = path
-        self.log = None
+        log = None
         self.traces = []
         with open(self.path) as log_file:
-            self.log= XUniversalParser().parse(log_file)[id]
+            log= XUniversalParser().parse(log_file)[id]
         self.unique_events = set()
-        for trace in self.log:
-            self.traces.append(TracePositional(trace))
+        for trace in log:
+            self.traces.append(TracePositional(trace, withData=withData))
             for event in trace:
                     self.unique_events.add(extract_attributes(event)["concept:name"])
     def getEventSet(self):
         return self.unique_events
     def getTraces(self):
         return self.traces
+    def getNTraces(self):
+        return len(self.traces)
+    def getIthTrace(self, i):
+        return self.traces[i]
+    def IA_baseline_embedding(self, shared_activities=None, label=0):
+        if shared_activities is None:
+            shared_activities = self.unique_events
+        train_data = list()
+        clazz = list()
+        for i in range(self.getNTraces()):
+            trace = self.getIthTrace(i)
+            clazz.append(label)
+            train_data.append(list(map(lambda x : trace.eventCount(x), shared_activities)))
+        np_train_data = np.array(train_data)
+        train_df = pd.DataFrame(np_train_data)
+        train_df.columns = shared_activities
+        train_df["Class"] = clazz
+        train_df.set_index("Case_ID")
+        return train_df
+
 
 
