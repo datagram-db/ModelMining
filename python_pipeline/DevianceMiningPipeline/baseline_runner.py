@@ -13,7 +13,6 @@ from .utils.DumpUtils import genericDump, dump_in_primary_memory_as_table_csv
 
 def transform_log(train_log, activity_set):
     train_names = []
-
     train_labels = []
     train_data = []
     for trace in train_log:

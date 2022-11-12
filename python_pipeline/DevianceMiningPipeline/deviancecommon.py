@@ -1,6 +1,8 @@
 import datetime
 from collections import defaultdict
 from time import time
+
+import dateparser
 from opyenxes.data_in.XUniversalParser import XUniversalParser
 
 from opyenxes.model import XAttributeBoolean, XAttributeLiteral, XAttributeTimestamp, XAttributeDiscrete, XAttributeContinuous
@@ -28,17 +30,14 @@ def read_XES_log(path, ithLog = 0):
 
 def extract_attributes(event, attribs=None):
     if not attribs:
-        #attribs = ["concept:name", "lifecycle:transition"]
         attribs = ["concept:name"]
-
-
     extracted = {}
     event_attribs = event.get_attributes()
-
     for att in attribs:
         extracted[att] = event_attribs[att].get_value()
-
     return extracted
+
+
 
 
 def xes_to_positional(log, label=True):
@@ -167,7 +166,6 @@ def extract_unique_events(log):
             if "lifecycle:transition" in event_attribs:
                 event_name = event_name + "-" + str(event_attribs["lifecycle:transition"])
             unique_events.add(extract_attributes(event)["concept:name"])
-
     return unique_events
 
 
@@ -176,5 +174,4 @@ def extract_unique_events_transformed(log):
     for trace in log:
         for key in trace["events"].keys():
             unique_events.add(key)
-
     return unique_events

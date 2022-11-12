@@ -671,22 +671,22 @@ class ExperimentRunner:
                                                                    training_test_split)
             TrL_TeL_pair_list.append([list(TrainingId), list(TestingId)])
 
-            # print("\t * obtaining the canonical XES representation")
-            # logTraining, logTesting = \
-            #     LogUtils.xes_to_tracelist_split(log, TrainingId, TestingId)
+            print("\t * obtaining the canonical XES representation")
+            logTraining, logTesting = \
+                LogUtils.xes_to_tracelist_split(log, TrainingId, TestingId)
 
             print("\t * obtaining the splitted propositional representation")
             propositionalTraining, propositionalTesting = \
                 LogUtils.xes_to_propositional_split(log, TrainingId, TestingId)
 
             # print("\t * obtaining the data propositional representation")
-            # dataPropositionalTraining, dataPropositionalTesting = \
-            #     LogUtils.xes_to_data_propositional_split(log, TrainingId, TestingId, doForce)
+            dataPropositionalTraining, dataPropositionalTesting = \
+                LogUtils.xes_to_data_propositional_split(log, TrainingId, TestingId, doForce)
 
             # print("\t - writing baseline split")
-            # STr, STt = baseline_runner.baseline_embedding(baseline_path, propositionalTraining, propositionalTesting, None)
-            # assert (STr == TrainingId)
-            # assert (STt == TestingId)
+            STr, STt = baseline_runner.baseline_embedding(baseline_path, propositionalTraining, propositionalTesting, None)
+            assert (STr == TrainingId)
+            assert (STt == TestingId)
 
             print("\t - writing declare split")
             STr, STt = declaredevmining.declare_embedding(declare__path, propositionalTraining, propositionalTesting, self,
