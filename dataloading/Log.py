@@ -4,6 +4,7 @@ from opyenxes.data_in.XUniversalParser import XUniversalParser
 from opyenxes.model import XAttributeBoolean, XAttributeLiteral, XAttributeTimestamp, XAttributeDiscrete, XAttributeContinuous
 import dateparser
 import datetime
+import itertools
 
 def get_attribute_type(val):
     if isinstance(val, XAttributeLiteral.XAttributeLiteral):
@@ -58,17 +59,26 @@ class TracePositional:
         self.trace_name = trace_attribs["concept:name"].get_value()
         self.positional_events = {}
         self.events = []
+        self.length = 0
         if withData:
             payload = EventPayload(trace_attribs.items())
             event_name = "__trace_payload"
             self.events.append(Event(event_name, payload))
         for pos, event in enumerate(trace):
+            self.length = self.length + 1
             event_attribs = extract_attributes(event)
             event_name = event_attribs["concept:name"]
             self.addEventAtPositionalTrace(event_name, pos)
             if withData:
                 payload = EventPayload(event.get_attributes().items())
                 self.events.append(Event(event_name, payload))
+
+    def getStringTrace(self):
+        l = [None] * self.length
+        for label in self.positional_events:
+            for i in self.positional_events[label]:
+                l[i] = label
+        return l
 
     def getEventsInPositionalTrace(self, label):
         if label not in self.positional_events:
@@ -92,26 +102,34 @@ class Log:
         self.path = path
         log = None
         self.traces = []
+        self.max_length = -1
         with open(self.path) as log_file:
             log= XUniversalParser().parse(log_file)[id]
         self.unique_events = set()
         for trace in log:
-            self.traces.append(TracePositional(trace, withData=withData))
+            tp = TracePositional(trace, withData=withData)
+            self.max_length = max(self.max_length, tp.length)
+            self.traces.append(tp)
             for event in trace:
                     self.unique_events.add(extract_attributes(event)["concept:name"])
+
     def getEventSet(self):
         return self.unique_events
+
     def getTraces(self):
         return self.traces
+
     def getNTraces(self):
         return len(self.traces)
+
     def getIthTrace(self, i):
         return self.traces[i]
+
     def IA_baseline_embedding(self, shared_activities=None, label=0):
         if shared_activities is None:
             shared_activities = self.unique_events
         train_data = list()
-        clazz = list()
+        clazz = [label] * self.getNTraces()
         for i in range(self.getNTraces()):
             trace = self.getIthTrace(i)
             clazz.append(label)
@@ -120,8 +138,58 @@ class Log:
         train_df = pd.DataFrame(np_train_data)
         train_df.columns = shared_activities
         train_df["Class"] = clazz
-        train_df.set_index("Case_ID")
         return train_df
+
+    def DatalessTracewise_embedding(self, maxTraceLength=-1, shared_activities=None, label=0):
+        if shared_activities is None:
+            shared_activities = self.unique_events
+        if maxTraceLength == -1:
+            maxTraceLength = self.max_length
+        beta = dict()
+        train_data = list()
+        clazz = [label] * self.getNTraces()
+        for idx, x in enumerate(shared_activities):
+            beta[x] = idx
+        for i in range(self.getNTraces()):
+            space = [0] * len(maxTraceLength)
+            for idx, x in enumerate(self.getIthTrace(i).getStringTrace()):
+                space[idx] = beta[x]
+            train_data.append(space)
+        np_train_data = np.array(train_data)
+        train_df = pd.DataFrame(np_train_data)
+        train_df.columns = list(map(lambda x: str(x), range(maxTraceLength)))
+        train_df["Class"] = clazz
+        return train_df
+
+    def Correlation_embedding(self, shared_activities=None,  lambda_=0.9,label=0):
+        if shared_activities is None:
+            shared_activities = self.unique_events
+        embedding_space = list(shared_activities) + list(map(lambda x: x[0]+"-"+x[1], itertools.product(shared_activities, shared_activities)))
+        embedding_name_to_offset = dict()
+        train_data = list()
+        clazz = [label] * self.getNTraces()
+        for idx, x in enumerate(embedding_space):
+            embedding_name_to_offset[x] = idx
+        for i in range(self.getNTraces()):
+            space = [0] * len(embedding_space)
+            trace = self.getIthTrace(i).getStringTrace()
+            space[embedding_name_to_offset[trace[0]]] = 1
+            for j, y in enumerate(trace):
+                k = j
+                for z in trace[j:]:
+                    spaceIdx = embedding_name_to_offset[y+"-"+z]
+                    space[spaceIdx] = space[spaceIdx] + pow(lambda_, k-j+1)
+                    k = k+1
+            train_data.append(space)
+        np_train_data = np.array(train_data)
+        train_df = pd.DataFrame(np_train_data)
+        train_df.columns = embedding_space
+        train_df["Class"] = clazz
+        return train_df
+
+
+
+
 
 
 

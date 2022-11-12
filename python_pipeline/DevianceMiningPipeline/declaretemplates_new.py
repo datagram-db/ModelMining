@@ -38,12 +38,9 @@ def template_absence3(trace, event_set):
 def template_init(trace, event_set):
     # If event is in the first position
     assert (len(event_set) == 1)
-
     event = event_set[0]
-
     if event in trace and trace[event][0] == 0:
         return 1, False
-
     return -1, False
 
 
@@ -676,52 +673,52 @@ template_order = {
 
 template_sizes = {"init": 1,
                   "exist": 1,
-                  # "absence1": 1,
-                  # "absence2": 1,
-                  # "absence3": 1,
+                   "absence1": 1,
+                   "absence2": 1,
+                   "absence3": 1,
                   "choice": 2,
-                  #"coexistence": 2,
+                  "coexistence": 2,
                   "exactly1": 1,
-                  # "exactly2": 1,
-                  # "exactly3": 1,
+                   "exactly2": 1,
+                   "exactly3": 1,
                   "alternate_precedence": 2,
-                  #"alternate_succession": 2,
+                  "alternate_succession": 2,
                   "alternate_response": 2,
                   "chain_precedence": 2,
                   "chain_response": 2,
-                  #"chain_succession": 2,
-                  #"not_chain_succession": 2,
-                  #"not_coexistence": 2,
-                  #"not_succession": 2,
+                  "chain_succession": 2,
+                  "not_chain_succession": 2,
+                  "not_coexistence": 2,
+                  "not_succession": 2,
                   "responded_existence": 2,
                   "response": 2,
-                  #"succession": 2,
+                  "succession": 2,
                   "precedence": 2
                   }
 
 template_map = {
     "init": template_init,
     "exist": template_exist,
-    # "absence1": template_absence1,
-    # "absence2": template_absence2,
-    # "absence3": template_absence3,
+     "absence1": template_absence1,
+     "absence2": template_absence2,
+     "absence3": template_absence3,
     "choice": template_choice,
-    #"coexistence": template_coexistence,
+    "coexistence": template_coexistence,
     "exactly1": template_exactly1,
-    # "exactly2": template_exactly2,
-    # "exactly3": template_exactly3,
+     "exactly2": template_exactly2,
+     "exactly3": template_exactly3,
     "alternate_precedence": template_alternate_precedence,
-    #"alternate_succession": template_alternate_succession,
+    "alternate_succession": template_alternate_succession,
     "alternate_response": template_alternate_response,
     "chain_precedence": template_chain_precedence,
     "chain_response": template_chain_response,
-    #"chain_succession": template_chain_succession,
-    #"not_chain_succession": template_not_chain_succession,
-    # "not_coexistence": template_not_coexistence,
-    # "not_succession": template_not_succession,
+    "chain_succession": template_chain_succession,
+    "not_chain_succession": template_not_chain_succession,
+     "not_coexistence": template_not_coexistence,
+     "not_succession": template_not_succession,
     "responded_existence": template_responded_existence,
     "response": template_response,
-    #"succession": template_succession,
+    "succession": template_succession,
     "precedence": template_precedence
 }
 

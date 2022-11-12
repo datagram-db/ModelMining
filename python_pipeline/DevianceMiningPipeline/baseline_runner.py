@@ -38,7 +38,7 @@ def transform_log(train_log, activity_set):
     return train_df
 
 #
-# def baseline(inp_folder, logPath, splitSize, self):
+# def baseline(inp_folder, logPath, spligenerateStructuredEmbeddingtSize, self):
 #     log = read_XES_log(logPath)
 #     transformed_log = xes_to_positional(log)
 #     train_log, test_log = split_log_train_test(transformed_log, splitSize)

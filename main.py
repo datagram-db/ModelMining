@@ -7,7 +7,8 @@ from scikitutils import trainer
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    l = Log.Log("/home/giacomo/Scaricati/bpi12.xes", withData=True)
+    l = Log.Log("/home/giacomo/projects/knobab/data/testing/bpic_2011/data/10/log.xes", withData=True)
+    embedding = l.Correlation_embedding(l.getEventSet(), 1)
     print("OK")
     # t = trainer.trainer("/home/giacomo/Scaricati/titanic/train.csv",",",
     #                     "/home/giacomo/Scaricati/titanic/testing.csv",",",
