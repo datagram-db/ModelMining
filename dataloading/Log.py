@@ -1,5 +1,46 @@
+from datetime import datetime
+from collections import Counter
+import ciso8601 as ciso8601
+import pandas as pd
 from opyenxes.model import XAttributeBoolean, XAttributeLiteral, XAttributeTimestamp, XAttributeDiscrete, XAttributeContinuous
 import dateparser
+
+types = {"literal", "boolean", "discrete", "timestamp", "continuous"}
+TRACE_LENGTH = "@trace_len"
+
+def dict_union(d1 : dict, d2 : dict):
+    K = set.union(set(d1.keys()), set(d2.keys()))
+    result = {k : set() for k in K}
+    for k in K:
+        if k in d1 and k in d2:
+            result[k] = set.union(d1[k], d2[k])
+        elif k in d1:
+            result[k] = d1[k]
+        else:
+            result[k] = d2[k]
+    return result
+
+def typecast(type : str, val):
+    if type == "literal":
+        if val is None:
+            return ""
+        return str(val)
+    elif type == "boolean":
+        if val is None:
+            return False
+        return bool(val)
+    elif type == "discrete":
+        if val is None:
+            return 0
+        return int(val)
+    elif type == "timestamp":
+        if val is None or val =="":
+            return datetime.MINYEAR
+        return ciso8601.parse_datetime(str(val))
+    elif type == "continuous":
+        if val is None:
+            return 0.0
+        return float(val)
 
 def get_attribute_type(val):
     if isinstance(val, XAttributeLiteral.XAttributeLiteral):
@@ -41,24 +82,67 @@ class EventPayload:
                     self.size = self.size + 1
                     self.attribute_type[key] = get_attribute_type(val)
                     self.trace_data[key] = str(val)
+        self.keys = set(self.trace_data.keys())
+
+    def payloadKeySet(self):
+        return self.keys
 
 
 class Event:
-    def __init__(self, activityLabel, eventpayload):
+    def __init__(self, activityLabel : str, eventpayload : EventPayload):
         self.eventpayload = eventpayload
         self.activityLabel = activityLabel
 
+    def payloadKeySet(self):
+        if self.eventpayload is not None:
+            return self.eventpayload.payloadKeySet()
+        else:
+            return set()
+
+    def getActivityLabel(self):
+        return self.activityLabel
+
+    def getValueType(self, key):
+        if self.eventpayload is None:
+            return None
+        elif key in self.eventpayload.trace_data:
+            return self.eventpayload.attribute_type[key]
+        else:
+            return None
+
+    def getValue(self, key):
+        if self.eventpayload is None:
+            return None
+        elif key in self.eventpayload.trace_data:
+            return self.eventpayload.trace_data[key]
+        else:
+            return None
+
+    def hasKey(self, k):
+        if self.eventpayload is None:
+            return False
+        if k not in self.eventpayload.keys:
+            return False
+        return True
+
+
 class TracePositional:
     def __init__(self, trace, withData=False):
+        self.declareTypeOf = {}
         trace_attribs = trace.get_attributes()
         self.trace_name = trace_attribs["concept:name"].get_value()
         self.positional_events = {}
         self.events = []
         self.length = 0
+        self.keyType = dict()
         if withData:
             payload = EventPayload(trace_attribs.items())
             event_name = "__trace_payload"
-            self.events.append(Event(event_name, payload))
+            e = Event(event_name, payload)
+            self.events.append(e)
+            self.keys = e.payloadKeySet()
+        else:
+            self.keys = set()
         for pos, event in enumerate(trace):
             self.length = self.length + 1
             event_attribs = extract_attributes(event)
@@ -66,7 +150,22 @@ class TracePositional:
             self.addEventAtPositionalTrace(event_name, pos)
             if withData:
                 payload = EventPayload(event.get_attributes().items())
-                self.events.append(Event(event_name, payload))
+                e = Event(event_name, payload)
+                self.keys = set.union(self.keys, e.payloadKeySet())
+                self.events.append(e)
+        for k in self.keys:
+            typeInferOf = {type: 0 for type in types}
+            for e in self.events:
+                if e.getValueType(k) is not None:
+                    typeInferOf[e.getValueType(k)] = typeInferOf[e.getValueType(k)] + 1
+            self.keyType[k] =  max(typeInferOf, key=typeInferOf.get)
+
+    def payloadKeySet(self):
+        if self.keys is not None:
+            return self.keys
+        else:
+            return set()
+
 
     def __contains__(self, key):
         return self.hasEvent(key)
@@ -107,6 +206,63 @@ class TracePositional:
         else:
             return len(self.positional_events[label])
 
+    def getValueType(self, k):
+        if k not in self.keyType:
+            return None
+        else:
+            return self.keyType[k]
+
+    def collectDistinctValues(self, withTypeCast : dict[str,str], keys = None):
+        if keys is None:
+            keys = self.keys
+        result = dict()
+        for k in keys:
+            values = set()
+            for idx, e in enumerate(self.events):
+                if e.hasKey(k):
+                    val = typecast(withTypeCast[k], e.getValue(k))
+                    values.add(val)
+            result[k] = values
+        return result
+
+    def collectValuesForPayloadEmbedding(self, withTypeCast : dict[str,str], keys=None, occurrence = None):
+        d = dict()
+        if keys is None:
+            keys = self.keys
+        d[TRACE_LENGTH] = self.length
+        for k in keys:
+            values = list()
+            N = 0
+            if self.events is not None:
+                N = len(self.events)
+            for idx, e in enumerate(self.events):
+                if e.hasKey(k):
+                    val = typecast(withTypeCast[k], e.getValue(k))
+                    d["@"+e.activityLabel+"."+k] = val
+                    if idx == 0:
+                        d["@first("+k+")"] = val
+                    values.append(val)
+                    if idx == N:
+                        d["@last("+k+")"] = val
+            if len(values)>0:
+                d["@min("+k+")"] = min(values)
+                d["@max("+k+")"] = max(values)
+            counter = Counter(values)
+            if occurrence is None or k not in occurrence:
+                for instance in counter:
+                    d["@count("+k+"="+str(instance)+")"] = counter[instance]
+            elif k in occurrence:
+                values = set.union(occurrence[k], set(counter.keys()))
+                for value in values:
+                    if value in occurrence:
+                        d["@count(" + k + "=" + str(value) + ")"] = counter[value]
+                    else:
+                        d["@count(" + k + "=" + str(value) + ")"] = 0
+        return d
+
+
+
+
 class Log:
     def __init__(self, path, id=0, withData=False):
         self.path = path
@@ -116,12 +272,20 @@ class Log:
         with open(self.path) as log_file:
             log= XUniversalParser().parse(log_file)[id]
         self.unique_events = set()
+        self.keys = set()
+        self.keyType = dict()
         for trace in log:
             tp = TracePositional(trace, withData=withData)
+            self.keys = set.union(self.keys, tp.payloadKeySet())
             self.max_length = max(self.max_length, tp.length)
             self.traces.append(tp)
             for event in trace:
                     self.unique_events.add(extract_attributes(event)["concept:name"])
+        for k in self.keys:
+            typeInferOf = {type: 0 for type in types}
+            for e in self.traces:
+                typeInferOf[e.getValueType(k)] = typeInferOf[e.getValueType(k)] + 1
+            self.keyType[k] = max(typeInferOf, key=typeInferOf.get)
 
     def getEventSet(self):
         return self.unique_events
@@ -134,6 +298,39 @@ class Log:
 
     def getIthTrace(self, i):
         return self.traces[i]
+
+    def payloadKeySet(self):
+        return self.keys
+
+    def getValueType(self, k):
+        if k not in self.keyType:
+            return None
+        else:
+            return self.keyType[k]
+
+    def resolvePayload(self, key, value):
+        return typecast(self.getValueType(key), value)
+
+    def resolvePayload(self, key : str,  event : Event):
+        return self.resolvePayload(key, event.getValue(key))
+
+    def collectDistinctValues(self, ignoreKeys = None):
+        if ignoreKeys is None:
+            ignoreKeys = set()
+        d = {k : set() for k in self.keys if k not in ignoreKeys}
+        for trace in self.traces:
+            d = dict_union(d, trace.collectDistinctValues(self.keyType, self.keys))
+        return d
+
+    def collectValuesForPayloadEmbedding(self, distinct_values : dict, ignoreKeys = None):
+        if ignoreKeys is None:
+            ignoreKeys = set()
+        if distinct_values is None or (len(distinct_values) == 0):
+            distinct_values = self.collectDistinctValues(ignoreKeys)
+        keys = self.keys - ignoreKeys
+        df = pd.DataFrame(map(lambda x : x.collectValuesForPayloadEmbedding(self.keyType, keys, distinct_values), self.traces))
+        df = df.fillna(0)
+        return df
 
 
 from opyenxes.data_in.XUniversalParser import XUniversalParser

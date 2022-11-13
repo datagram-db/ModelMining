@@ -34,6 +34,10 @@ if __name__ == '__main__':
     # tr.to_csv("/home/giacomo/PycharmProjects/trace_learning/data/training_e_dDecl.csv", index=False)
     # te.to_csv("/home/giacomo/PycharmProjects/trace_learning/data/testing_e_dDecl.csv", index=False)
 
+    tr,te = e.Payload_embedding()
+    tr.to_csv("/home/giacomo/PycharmProjects/trace_learning/data/training_e_Payload.csv", index=False)
+    te.to_csv("/home/giacomo/PycharmProjects/trace_learning/data/testing_e_Payload.csv", index=False)
+
     #l = Log.Log("/home/giacomo/projects/knobab/data/testing/bpic_2011/data/10/log.xes", withData=True)
     #embedding = l.Correlation_embedding(l.getEventSet(), 1)
     print("OK")

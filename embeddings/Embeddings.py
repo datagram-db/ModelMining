@@ -4,8 +4,6 @@ import numpy as np
 import pandas as pd
 
 from dataloading.Log import Log
-from embeddings.declare.DatalessDeclare import DatalessDeclare
-from embeddings.declare.Utils import DeclareCandidate
 
 
 def IA_baseline_embedding(self, shared_activities=None, label=0):
@@ -126,6 +124,12 @@ class Embedding:
              candidate_threshold=candidate_threshold, constraint_threshold=constraint_threshold)
         testing, _ = obj.run( self.posTe, self.negTe, candidates=candidates, filterCandidates=filterCandidates,
              candidate_threshold=candidate_threshold, constraint_threshold=constraint_threshold)
+        return training, testing
+
+    def Payload_embedding(self, ignoreKeys = None):
+        from embeddings.PayloadEmbedding import extractEmbedding
+        training, candidates = extractEmbedding(self.posTr, self.negTr, ignoreKeys, None)
+        testing, _ = extractEmbedding(self.posTe, self.negTe, ignoreKeys, candidates)
         return training, testing
 
 
