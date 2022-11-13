@@ -65,7 +65,7 @@ def reencode_declare_results(train_df, test_df):
 def apply_template_to_log(template, candidate, log):
     results = []
     for trace in log:
-        result, vacuity = apply_template(template, trace, candidate)
+        result, _ = apply_template(template, trace, candidate)
         results.append(result)
     return pd.array(results, dtype=pd.SparseDtype("int", 0))
 
@@ -159,7 +159,6 @@ def generate_test_candidate_constraints(candidates, templates, test_log, train_r
                 candidate_name = template + ":" + str(candidate)
                 if candidate_name in train_results:
                     constraint_result = apply_template_to_log(template, candidate, test_log)
-
                     all_results[candidate_name] = constraint_result
 
     # return all_results
@@ -191,6 +190,7 @@ def transform_results_to_numpy(results, train_log):
     return pd.DataFrame(results.values(), columns=results.keys())#, nparray_labels, featurenames, nparray_names
 
 
+
 def filter_candidates_by_support(candidates, log, support_norm, support_dev):
     filtered_candidates = []
     for candidate in candidates:
@@ -212,7 +212,6 @@ def filter_candidates_by_support(candidates, log, support_norm, support_dev):
             if count_dev >= support_dev or count_norm >= support_norm:
                 filtered_candidates.append(candidate)
                 break
-
     return filtered_candidates
 
 

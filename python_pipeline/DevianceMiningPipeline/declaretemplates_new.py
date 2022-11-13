@@ -10,9 +10,8 @@ def template_absence1(trace, event_set):
     assert (len(event_set) == 1)
     event = event_set[0]
     if event in trace:
-        return -1, False
-
-    return 1, False
+        return -1
+    return 1
 
 
 def template_absence2(trace, event_set):
@@ -20,9 +19,9 @@ def template_absence2(trace, event_set):
     event = event_set[0]
 
     if event in trace and len(trace[event]) > 1:
-        return -1, False
+        return -1
 
-    return 1, False
+    return 1
 
 
 def template_absence3(trace, event_set):
@@ -30,9 +29,9 @@ def template_absence3(trace, event_set):
     event = event_set[0]
 
     if event in trace and len(trace[event]) > 2:
-        return -1, False
+        return -1
 
-    return 1, False
+    return 1
 
 
 def template_init(trace, event_set):
@@ -40,8 +39,8 @@ def template_init(trace, event_set):
     assert (len(event_set) == 1)
     event = event_set[0]
     if event in trace and trace[event][0] == 0:
-        return 1, False
-    return -1, False
+        return 1
+    return -1
 
 
 def template_exist(trace, event_set):
@@ -50,9 +49,9 @@ def template_exist(trace, event_set):
     event = event_set[0]
 
     if event in trace:
-        return len(trace[event]), False
+        return len(trace[event])
 
-    return -1, False
+    return -1
 
 
 def template_choice(trace, event_set):
@@ -65,11 +64,11 @@ def template_choice(trace, event_set):
 
     if (event_1 in trace) != (event_2 in trace):
         if event_1 in trace:
-            return len(trace[event_1]), False
+            return len(trace[event_1])
         else:
-            return len(trace[event_2]), False
+            return len(trace[event_2])
 
-    return -1, False
+    return -1
 
 
 def template_coexistence(trace, event_set):
@@ -82,13 +81,13 @@ def template_coexistence(trace, event_set):
 
     if event_1 in trace and event_2 in trace:
         # return minimum of both existence count
-        return min(len(trace[event_1]), len(trace[event_2])), False
+        return min(len(trace[event_1]), len(trace[event_2]))
 
     elif event_1 not in trace and event_2 not in trace:
-        return 0, True
+        return 0
 
     # Only one exists, violation
-    return -1, False
+    return -1
 
 
 def template_alternate_precedence(trace, event_set):
@@ -121,7 +120,7 @@ def template_alternate_precedence(trace, event_set):
 
             # There has to be more or same amount of event A's compared to B's
             if event_2_count > event_1_count:
-                return 0, False
+                return 0
 
             event_1_positions = trace[event_1]
             event_2_positions = trace[event_2]
@@ -139,7 +138,7 @@ def template_alternate_precedence(trace, event_set):
                 while True:
                     if event_1_ind >= len(event_1_positions):
                         # out of preceding events, but there are still event 2's remaining.
-                        return -1, False
+                        return -1
 
                     next_event_1_pos = None
 
@@ -155,7 +154,7 @@ def template_alternate_precedence(trace, event_set):
                             break
                         elif event_1_pos > pos2 and next_event_1_pos > pos2:
                             # no event larger
-                            return -1, False
+                            return -1
                         else:
                             event_1_ind += 1
 
@@ -166,17 +165,17 @@ def template_alternate_precedence(trace, event_set):
                             event_1_ind += 1
                             break
                         else:
-                            return -1, False  # since there is no smaller remaining event
+                            return -1  # since there is no smaller remaining event
 
             count = len(event_2_positions)
-            return count, False
+            return count
 
 
         else:
             # impossible because there has to be at least one event1 with event2
-            return -1, False
+            return -1
 
-    return 0, True  # todo: vacuity condition!!
+    return 0  # todo: vacuity condition!!
 
 
 def template_alternate_response(trace, event_set):
@@ -210,14 +209,14 @@ def template_alternate_response(trace, event_set):
                 while True:
                     if event_2_ind >= len(event_2_positions):
                         # out of response events
-                        return -1, False
+                        return -1
 
                     if event_2_positions[event_2_ind] > pos1:
                         # found first greater than event 1 pos
                         # check if it is smaller than next event 1
                         if next_event_1_pos and event_2_positions[event_2_ind] > next_event_1_pos:
                             # next event 2 is after next event 1..
-                            return -1, False
+                            return -1
                         else:
                             # consume event 2 and break out to next event 1
                             event_2_ind += 1
@@ -226,16 +225,16 @@ def template_alternate_response(trace, event_set):
                     event_2_ind += 1
 
             count = len(event_1_positions)
-            return count, False
+            return count
             # every event 2 position has to be after respective event 1 position and before next event 2 position
 
 
 
         else:
-            return -1, False
+            return -1
 
     # Vacuously
-    return 0, True
+    return 0
 
 
 def template_alternate_succession(trace, event_set):
@@ -253,14 +252,14 @@ def template_alternate_succession(trace, event_set):
     event_2 = event_set[1]
 
     if (event_1 in trace) != (event_2 in trace):
-        return -1, False
+        return -1
 
     if event_1 in trace and event_2 in trace:
         event_1_positions = trace[event_1]
         event_2_positions = trace[event_2]
 
         if len(event_1_positions) != len(event_2_positions):
-            return -1, False  # impossible if not same length
+            return -1  # impossible if not same length
 
         pos = -1
         current_ind = 0
@@ -275,15 +274,15 @@ def template_alternate_succession(trace, event_set):
                 next_pos = event_1_positions[current_ind]
 
             if next_pos <= pos:
-                return -1, False  # next one is smaller than current
+                return -1  # next one is smaller than current
 
             pos = next_pos  # go to next one.
             switch = not switch  # swap array
 
         count = len(event_1_positions)
-        return count, False
+        return count
 
-    return 0, True  # vacuity condition
+    return 0  # vacuity condition
 
 
 def template_chain_precedence(trace, event_set):  # exactly 2 event
@@ -299,7 +298,7 @@ def template_chain_precedence(trace, event_set):  # exactly 2 event
             event_2_positions = trace[event_2]
 
             if len(event_1_positions) < len(event_2_positions):
-                return -1, False  # impossible to fulfill
+                return -1  # impossible to fulfill
 
             event_1_ind = 0
 
@@ -307,10 +306,10 @@ def template_chain_precedence(trace, event_set):  # exactly 2 event
                 # find first event 2 which is after each event 1
                 while True:
                     if event_1_ind >= len(event_1_positions):
-                        return -1, False  # not enough response
+                        return -1  # not enough response
 
                     if pos2 < event_1_positions[event_1_ind]:
-                        return -1, False  # passed, no event before pos2
+                        return -1  # passed, no event before pos2
 
                     if pos2 - 1 == event_1_positions[event_1_ind]:
                         event_1_ind += 1
@@ -319,11 +318,11 @@ def template_chain_precedence(trace, event_set):  # exactly 2 event
                     event_1_ind += 1
 
             count = len(event_2_positions)
-            return count, False
+            return count
         else:
-            return -1, False  # no response for event1
+            return -1  # no response for event1
 
-    return 0, True  # todo, vacuity
+    return 0  # todo, vacuity
 
 
 def template_chain_response(trace, event_set):
@@ -340,7 +339,7 @@ def template_chain_response(trace, event_set):
             event_2_positions = trace[event_2]
 
             if len(event_1_positions) > len(event_2_positions):
-                return -1, False  # impossible to fulfill
+                return -1  # impossible to fulfill
 
             event_2_ind = 0
 
@@ -348,23 +347,23 @@ def template_chain_response(trace, event_set):
                 # find first event 2 which is after each event 1
                 while True:
                     if event_2_ind >= len(event_2_positions):
-                        return -1, False  # not enough response
+                        return -1  # not enough response
 
                     if pos1 < event_2_positions[event_2_ind]:
                         if pos1 + 1 != event_2_positions[event_2_ind]:
-                            return -1, False  # next one is not straight after
+                            return -1  # next one is not straight after
                         else:
                             event_2_ind += 1
                             break  # next one is straight after move to next event1
                     event_2_ind += 1
 
-            count = len(event_1_positions), False
+            count = len(event_1_positions)
             return count
 
         else:
-            return -1, False  # no response for event1
+            return -1  # no response for event1
 
-    return 0, True  # todo, vacuity
+    return 0  # todo, vacuity
 
 
 def template_chain_succession(trace, event_set):
@@ -382,7 +381,7 @@ def template_chain_succession(trace, event_set):
     event_2 = event_set[1]
 
     if (event_1 in trace) != (event_2 in trace):
-        return -1, False
+        return -1
 
     if event_1 in trace and event_2 in trace:
         event_1_positions = trace[event_1]
@@ -390,17 +389,17 @@ def template_chain_succession(trace, event_set):
 
         if len(event_1_positions) != len(event_2_positions):
             # has to be same number of events
-            return -1, False
+            return -1
 
         # They have to appear together, with event1 always before event2
         for i in range(len(event_1_positions)):
             if event_1_positions[i] + 1 != event_2_positions[i]:
-                return -1, False
+                return -1
 
         count = len(event_1_positions)
-        return count, False
+        return count
 
-    return 0, True  # todo vacuity
+    return 0  # todo vacuity
 
 
 def template_exactly1(trace, event_set):
@@ -409,9 +408,9 @@ def template_exactly1(trace, event_set):
     event = event_set[0]
 
     if event in trace and len(trace[event]) == 1:
-        return 1, False
+        return 1
 
-    return -1, False
+    return -1
 
 
 def template_exactly2(trace, event_set):
@@ -421,9 +420,9 @@ def template_exactly2(trace, event_set):
     event = event_set[0]
 
     if event in trace and len(trace[event]) == 2:
-        return 1, False
+        return 1
 
-    return -1, False
+    return -1
 
 
 def template_exactly3(trace, event_set):
@@ -433,9 +432,9 @@ def template_exactly3(trace, event_set):
     event = event_set[0]
 
     if event in trace and len(trace[event]) == 3:
-        return 1, False
+        return 1
 
-    return -1, False
+    return -1
 
 
 def template_not_chain_succession(trace, event_set):
@@ -459,7 +458,7 @@ def template_not_chain_succession(trace, event_set):
         e2_ind = 0
         while True:
             if e1_ind >= len(event_1_positions) or e2_ind >= len(event_2_positions):
-                return 1, False  # no more choices
+                return 1  # no more choices
 
             current_e1 = event_1_positions[e1_ind]
             current_e2 = event_2_positions[e2_ind]
@@ -468,11 +467,11 @@ def template_not_chain_succession(trace, event_set):
                 e2_ind += 1
             else:
                 if current_e1 + 1 == current_e2:
-                    return -1, False  # found a place, where they are together
+                    return -1  # found a place, where they are together
                 e1_ind += 1
 
     # How to do vacuity here? 1 by default most likely
-    return 0, True  # TODO, this condition?
+    return 0  # TODO, this condition?
 
 
 def template_not_coexistence(trace, event_set):
@@ -483,12 +482,12 @@ def template_not_coexistence(trace, event_set):
     event_2 = event_set[1]
 
     if event_1 in trace and event_2 in trace:
-        return -1, False  # if both in trace, then they exist together.
+        return -1  # if both in trace, then they exist together.
     elif event_1 in trace or event_2 in trace: # only one exists in trace
-        return 1, False
+        return 1
 
     # if neither in trace, vacuously fulfilled
-    return 0, True
+    return 0
 
 
 def template_not_succession(trace, event_set):
@@ -506,14 +505,14 @@ def template_not_succession(trace, event_set):
             last_event_2 = trace[event_2][-1]
 
             if first_event_1 < last_event_2:
-                return -1, False  # in this case there is an event 2, which appears after first event
+                return -1  # in this case there is an event 2, which appears after first event
             else:
-                return 1, False
+                return 1
         else:
-            return 1, False  # not possible
+            return 1  # not possible
 
     # if not, then impossible and template fulfilled
-    return 0, True  # vacuity
+    return 0  # vacuity
 
 
 def template_precedence(trace, event_set):
@@ -538,17 +537,17 @@ def template_precedence(trace, event_set):
             if first_pos_event_1 < first_pos_event_2:
                 # todo: check frequency condition
                 count = min(len(trace[event_1]), len(trace[event_2]))
-                return count, False
+                return count
             else:
                 # first position of event 2 is before first event 1
-                return -1, False
+                return -1
 
         else:
             # impossible because there has to be at least one event1 with event2
-            return -1, False
+            return -1
 
     # Vacuously fulfilled
-    return 0, True
+    return 0
 
 
 def template_response(trace, event_set):
@@ -572,16 +571,16 @@ def template_response(trace, event_set):
             if last_pos_event_2 > last_pos_event_1:
                 # todo: check frequency counting How to count fulfillments? min of A and B?
                 count = min(len(trace[event_1]), len(trace[event_2]))
-                return count, False
+                return count
 
             else:
                 # last event2 is before event1
-                return -1, False
+                return -1
         else:
             # impossible for event 2 to be after event 1 if there is no event 2
-            return -1, False
+            return -1
 
-    return 0, True  # not vacuity atm..
+    return 0  # not vacuity atm..
 
 
 def template_responded_existence(trace, event_set):
@@ -600,11 +599,11 @@ def template_responded_existence(trace, event_set):
 
     if event_1 in trace:
         if event_2 in trace:
-            return min(len(trace[event_1]), len(trace[event_2])), False
+            return min(len(trace[event_1]), len(trace[event_2]))
         else:
-            return -1, False
+            return -1
 
-    return 0, True  # 0, if vacuity condition
+    return 0  # 0, if vacuity condition
 
 
 def template_succession(trace, event_set) -> Tuple[int, bool]:
@@ -623,10 +622,10 @@ def template_succession(trace, event_set) -> Tuple[int, bool]:
     event_2 = event_set[1]
 
     if event_1 in trace and not event_2 in trace:
-        return -1, False
+        return -1
 
     if event_2 in trace and not event_1 in trace:
-        return -1, False
+        return -1
 
     if event_1 in trace and event_2 in trace:
         # First position of A
@@ -644,12 +643,12 @@ def template_succession(trace, event_set) -> Tuple[int, bool]:
         if first_pos_event_1 < first_pos_event_2 and last_pos_event_1 < last_pos_event_2:
             # todo: check frequency!
             count = min(len(trace[event_1]), len(trace[event_2]))
-            return count, False
+            return count
         else:
-            return -1, False
+            return -1
 
     # todo: vacuity condition!
-    return 0, True
+    return 0
 
 
 # Does order matter in template?

@@ -1,10 +1,5 @@
-import numpy as np
-import pandas as pd
-from opyenxes.data_in.XUniversalParser import XUniversalParser
 from opyenxes.model import XAttributeBoolean, XAttributeLiteral, XAttributeTimestamp, XAttributeDiscrete, XAttributeContinuous
 import dateparser
-import datetime
-import itertools
 
 def get_attribute_type(val):
     if isinstance(val, XAttributeLiteral.XAttributeLiteral):
@@ -73,6 +68,9 @@ class TracePositional:
                 payload = EventPayload(event.get_attributes().items())
                 self.events.append(Event(event_name, payload))
 
+    def __contains__(self, key):
+        return self.hasEvent(key)
+
     def getStringTrace(self):
         l = [None] * self.length
         for label in self.positional_events:
@@ -86,10 +84,22 @@ class TracePositional:
         else:
             return self.positional_events[label]
 
+    def hasPos(self, label, pos):
+        if label not in self.positional_events:
+            return False
+        else:
+            return pos in self.positional_events[label]
+
     def addEventAtPositionalTrace(self, label, pos):
         if label not in self.positional_events:
             self.positional_events[label] = list()
         self.positional_events[label].append(pos)
+
+    def hasEvent(self, label):
+        if label not in self.positional_events:
+            return False
+        else:
+            return len(self.positional_events[label])>0
 
     def eventCount(self, label):
         if label not in self.positional_events:
@@ -125,71 +135,45 @@ class Log:
     def getIthTrace(self, i):
         return self.traces[i]
 
-    def IA_baseline_embedding(self, shared_activities=None, label=0):
-        if shared_activities is None:
-            shared_activities = self.unique_events
-        train_data = list()
-        clazz = [label] * self.getNTraces()
-        for i in range(self.getNTraces()):
-            trace = self.getIthTrace(i)
-            clazz.append(label)
-            train_data.append(list(map(lambda x : trace.eventCount(x), shared_activities)))
-        np_train_data = np.array(train_data)
-        train_df = pd.DataFrame(np_train_data)
-        train_df.columns = shared_activities
-        train_df["Class"] = clazz
-        return train_df
 
-    def DatalessTracewise_embedding(self, maxTraceLength=-1, shared_activities=None, label=0):
-        if shared_activities is None:
-            shared_activities = self.unique_events
-        if maxTraceLength == -1:
-            maxTraceLength = self.max_length
-        beta = dict()
-        train_data = list()
-        clazz = [label] * self.getNTraces()
-        for idx, x in enumerate(shared_activities):
-            beta[x] = idx
-        for i in range(self.getNTraces()):
-            space = [0] * len(maxTraceLength)
-            for idx, x in enumerate(self.getIthTrace(i).getStringTrace()):
-                space[idx] = beta[x]
-            train_data.append(space)
-        np_train_data = np.array(train_data)
-        train_df = pd.DataFrame(np_train_data)
-        train_df.columns = list(map(lambda x: str(x), range(maxTraceLength)))
-        train_df["Class"] = clazz
-        return train_df
+from opyenxes.data_in.XUniversalParser import XUniversalParser
+from opyenxes.data_out.XesXmlSerializer import XesXmlSerializer
+from opyenxes.factory.XFactory import XFactory
+import os
 
-    def Correlation_embedding(self, shared_activities=None,  lambda_=0.9,label=0):
-        if shared_activities is None:
-            shared_activities = self.unique_events
-        embedding_space = list(shared_activities) + list(map(lambda x: x[0]+"-"+x[1], itertools.product(shared_activities, shared_activities)))
-        embedding_name_to_offset = dict()
-        train_data = list()
-        clazz = [label] * self.getNTraces()
-        for idx, x in enumerate(embedding_space):
-            embedding_name_to_offset[x] = idx
-        for i in range(self.getNTraces()):
-            space = [0] * len(embedding_space)
-            trace = self.getIthTrace(i).getStringTrace()
-            space[embedding_name_to_offset[trace[0]]] = 1
-            for j, y in enumerate(trace):
-                k = j
-                for z in trace[j:]:
-                    spaceIdx = embedding_name_to_offset[y+"-"+z]
-                    space[spaceIdx] = space[spaceIdx] + pow(lambda_, k-j+1)
-                    k = k+1
-            train_data.append(space)
-        np_train_data = np.array(train_data)
-        train_df = pd.DataFrame(np_train_data)
-        train_df.columns = embedding_space
-        train_df["Class"] = clazz
-        return train_df
+def legacy_read_XES_log(path, ithLog = 0):
+    with open(path) as log_file:
+        return XUniversalParser().parse(log_file)[ithLog]
 
+def legacy_mkdirs(path):
+    from pathlib import Path
+    Path(path).mkdir(parents=True, exist_ok=True)
 
+def legacy_extractLogCopy(log):
+    new_log = XFactory.create_log(log.get_attributes().clone())
+    new_log.get_extensions().update(log.get_extensions())
+    new_log.__globalTraceAttributes = []
+    new_log.__globalTraceAttributes.extend(log.get_global_trace_attributes())
+    new_log.__globalEventAttributes = []
+    new_log.__globalEventAttributes.extend(log.get_global_event_attributes())
+    return new_log
 
-
-
-
-
+def legacy_split_log(readPath,log_file_tagged,outputPath):
+    toRead = os.path.join(readPath, log_file_tagged)
+    assert os.path.isfile(toRead)
+    log = legacy_read_XES_log(toRead)
+    negLog = legacy_extractLogCopy(log)
+    posLog = legacy_extractLogCopy(log)
+    for trace in log:
+        if trace.get_attributes()["Label"].get_value() == "1":
+            posLog.append(trace)
+        elif trace.get_attributes()["Label"].get_value() == "0":
+            negLog.append(trace)
+        else:
+            assert False
+    output_file = os.path.join(outputPath, )
+    legacy_mkdirs(output_file)
+    with open(os.path.join(output_file, log_file_tagged[:-4]+"_true_true.xes"), "w") as file:
+        XesXmlSerializer().serialize(posLog, file)
+    with open(os.path.join(output_file, log_file_tagged[:-4]+"_false_false.xes"), "w") as file:
+        XesXmlSerializer().serialize(negLog, file)
