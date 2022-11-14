@@ -7,6 +7,8 @@ from embeddings.Embeddings import Embedding
 from scikitutils import trainer
 
 # Press the green button in the gutter to run the script.
+from scikitutils.trainer import get_classifier_configuration_from_file
+
 if __name__ == '__main__':
     # Log.legacy_split_log("/home/giacomo/PycharmProjects/trace_learning/data","bpi20D_decl2_1.xes","/home/giacomo/PycharmProjects/trace_learning/data/training")
     # Log.legacy_split_log("/home/giacomo/PycharmProjects/trace_learning/data","bpi20D_decl2_2.xes","/home/giacomo/PycharmProjects/trace_learning/data/testing")
@@ -34,9 +36,9 @@ if __name__ == '__main__':
     # tr.to_csv("/home/giacomo/PycharmProjects/trace_learning/data/training_e_dDecl.csv", index=False)
     # te.to_csv("/home/giacomo/PycharmProjects/trace_learning/data/testing_e_dDecl.csv", index=False)
 
-    tr,te = e.Payload_embedding()
-    tr.to_csv("/home/giacomo/PycharmProjects/trace_learning/data/training_e_Payload.csv", index=False)
-    te.to_csv("/home/giacomo/PycharmProjects/trace_learning/data/testing_e_Payload.csv", index=False)
+    tr,te = e.DeclareWithData_embedding(get_classifier_configuration_from_file("/home/giacomo/PycharmProjects/trace_learning/learner.yaml"))
+    # tr.to_csv("/home/giacomo/PycharmProjects/trace_learning/data/training_e_Payload.csv", index=False)
+    # te.to_csv("/home/giacomo/PycharmProjects/trace_learning/data/testing_e_Payload.csv", index=False)
 
     #l = Log.Log("/home/giacomo/projects/knobab/data/testing/bpic_2011/data/10/log.xes", withData=True)
     #embedding = l.Correlation_embedding(l.getEventSet(), 1)

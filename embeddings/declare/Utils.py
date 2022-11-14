@@ -8,12 +8,30 @@ from dataloading.Log import TracePositional, Log
 class DeclareConstruct(ABC):
     def __init__(self, name):
         self.name = name
+        self.fulfillments = None
+        self.violations = None
+        self.isRun = False
+        self.results = None
 
     @abstractmethod
     def __call__(self, arg):
         pass
 
-    def toArray(self, log1, log2):
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.__dict__.update(self.__dict__)
+        return result
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            setattr(result, k, deepcopy(v, memo))
+        return result
+
+    def toArrayAndVF(self, log1, log2):
         assert isinstance(log1, Log)
         assert isinstance(log2, Log)
         ls = []
@@ -21,11 +39,20 @@ class DeclareConstruct(ABC):
            ls.append( self.__call__(log1.getIthTrace(i)))
         for i in range(log2.getNTraces()):
            ls.append( self.__call__(log2.getIthTrace(i)))
-        return pd.array(ls, dtype=pd.SparseDtype("int", 0))
+        self.fulfillments =  []
+        self.violations = []
+        self.results = []
+        for x,y,z in ls:
+            self.results.append(x)
+            self.fulfillments.append(y)
+            self.violations.append(z)
+        self.isRun = True
+        return pd.array(self.results, dtype=pd.SparseDtype("int", 0))
 
 class DeclareUnary(DeclareConstruct):
-    def __init__(self, name, n, arg1):
+    def __init__(self, name, n, arg1, supportFV):
         super().__init__(name)
+        self.supportFV = supportFV
         self.n = n
         self.arg1 = arg1
 
@@ -58,8 +85,9 @@ class DeclareUnary(DeclareConstruct):
 
 
 class DeclareBinary(DeclareConstruct):
-    def __init__(self, name, arg1, arg2):
+    def __init__(self, name, arg1, arg2, supportFV):
         super().__init__(name)
+        self.supportFV = supportFV
         self.arg1 = arg1
         self.arg2 = arg2
 

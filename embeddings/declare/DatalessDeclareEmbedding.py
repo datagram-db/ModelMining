@@ -72,7 +72,8 @@ class DeclareDevMining:
             candidates = self.ddcl.instantiateDeclares(candidates)
         all_results = {}
         for x in candidates:
-            constraint_result = x.toArray(logPos, logNeg)
+            # Now, this also stores the fulfills and violations for each clause!
+            constraint_result = x.toArrayAndVF(logPos, logNeg)
             fulfill_norm = 0
             fulfill_dev = 0
             N = 0

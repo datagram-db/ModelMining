@@ -1,9 +1,12 @@
 import itertools
+from copy import deepcopy
 
 import numpy as np
 import pandas as pd
 
-from dataloading.Log import Log
+from dataloading.Log import Log, dict_union
+from embeddings.declare.DataDeclareEmbedding import forEachRunCandidate
+from scikitutils.trainer import from_hyperparameters_instantiate_model
 
 
 def IA_baseline_embedding(self, shared_activities=None, label=0):
@@ -73,13 +76,35 @@ def Correlation_embedding(self, shared_activities=None, label=0, lambda_=0.9):
     train_df = train_df.fillna(0)
     return train_df, embedding_space
 
+def extractPayloadEmbedding(logPos : Log, logNeg : Log, ignoreFields : set[str], values = None):
+    if values is None:
+        values = dict_union(logPos.collectDistinctValues(ignoreFields), logNeg.collectDistinctValues(ignoreFields))
+    dfPos = logPos.collectValuesForPayloadEmbedding(values, ignoreFields)
+    dfNeg = logNeg.collectValuesForPayloadEmbedding(values, ignoreFields)
+    ## Dimension referring to the trace length
+    trace_lengthPos = []
+    trace_lengthNeg = []
+    for i in range(logPos.getNTraces()):
+        trace = logPos.getIthTrace(i)
+        trace_lengthPos.append(trace.length)
+    for i in range(logNeg.getNTraces()):
+        trace = logPos.getIthTrace(i)
+        trace_lengthNeg.append(trace.length)
+    dfPos["@len(trace)"] = trace_lengthPos
+    dfNeg["@len(trace)"] = trace_lengthNeg
+    training = pd.concat([dfPos, dfNeg], ignore_index=True)
+    training = training.fillna(0)
+    return training, values
+
 
 class Embedding:
-    def __init__(self, posLogTr, negLogTr, posLogTe, negLogTe):
+    def __init__(self, posLogTr:Log, negLogTr:Log, posLogTe:Log, negLogTe:Log):
         self.posTr = posLogTr
         self.negTr = negLogTr
         self.posTe = posLogTe
         self.negTe = negLogTe
+        self.trainingCandidates = None
+        self.testingCandidates = None
         assert isinstance(self.posTr, Log)
         assert isinstance(self.negTr, Log)
 
@@ -118,19 +143,45 @@ class Embedding:
         return training, testing
 
     def DeclareDataless_embedding(self, filterCandidates=True, candidate_threshold=0.1, constraint_threshold=0.1):
-        from embeddings.declare.DeclareEmbedding import DeclareDevMining
+        from embeddings.declare.DatalessDeclareEmbedding import DeclareDevMining
         obj = DeclareDevMining()
-        training, candidates = obj.run( self.posTr, self.negTr, candidates=None, filterCandidates=filterCandidates,
-             candidate_threshold=candidate_threshold, constraint_threshold=constraint_threshold)
-        testing, _ = obj.run( self.posTe, self.negTe, candidates=candidates, filterCandidates=filterCandidates,
-             candidate_threshold=candidate_threshold, constraint_threshold=constraint_threshold)
+        training, self.trainingCandidates = obj.run(self.posTr, self.negTr, candidates=None, filterCandidates=filterCandidates,
+                                                    candidate_threshold=candidate_threshold, constraint_threshold=constraint_threshold)
+        testing, self.testingCandidates = obj.run(self.posTe, self.negTe, candidates=deepcopy(self.trainingCandidates), filterCandidates=filterCandidates,
+                             candidate_threshold=candidate_threshold, constraint_threshold=constraint_threshold)
         return training, testing
 
     def Payload_embedding(self, ignoreKeys = None):
-        from embeddings.PayloadEmbedding import extractEmbedding
-        training, candidates = extractEmbedding(self.posTr, self.negTr, ignoreKeys, None)
-        testing, _ = extractEmbedding(self.posTe, self.negTe, ignoreKeys, candidates)
+        training, candidates = extractPayloadEmbedding(self.posTr, self.negTr, ignoreKeys, None)
+        testing, _ = extractPayloadEmbedding(self.posTe, self.negTe, ignoreKeys, candidates)
         return training, testing
+
+    def DeclareWithData_embedding(self, conflist: list[from_hyperparameters_instantiate_model], filterCandidates=True, candidate_threshold=0.7, constraint_threshold=0.7, minScore = 0.8):
+        dTrain = {}
+        dTest = {}
+        classifier = {}
+        if (self.trainingCandidates is None):
+            self.DeclareDataless_embedding(filterCandidates, candidate_threshold, constraint_threshold)
+        for (trC, teC) in zip(self.trainingCandidates, self.testingCandidates):
+            if not trC.supportFV:
+                continue
+            tup = forEachRunCandidate(trC, teC, self.posTr, self.negTr, self.posTe, self.negTe, conflist, minScore)
+            if tup is None:
+                continue
+            trainClass, testClass, treeString = tup
+            k = str(trC)+":Data"
+            dTrain[k] = trainClass
+            dTest[k] = testClass
+            classifier[k] = treeString
+
+        dTrain["Class"] = [1]*self.posTr.getNTraces() + [0]*self.negTr.getNTraces()
+        dTest["Class"] = [1] * self.posTe.getNTraces() + [0] * self.negTe.getNTraces()
+        return pd.DataFrame(dTrain), pd.DataFrame(dTest), classifier
+
+
+
+
+
 
 
 

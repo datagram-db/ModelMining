@@ -1,3 +1,4 @@
+from copy import deepcopy
 from datetime import datetime
 from collections import Counter
 import ciso8601 as ciso8601
@@ -161,11 +162,37 @@ class TracePositional:
             self.keyType[k] =  max(typeInferOf, key=typeInferOf.get)
 
     def payloadKeySet(self):
-        if self.keys is not None:
-            return self.keys
-        else:
+        if self.keys is None:
             return set()
+        else:
+            return self.keys
 
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.__dict__.update(self.__dict__)
+        return result
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            setattr(result, k, deepcopy(v, memo))
+        return result
+
+    def projectWith(self, lstEvents : list[int]):
+        this = deepcopy(self)
+        eS = set(lstEvents)
+        removeK = set()
+        for k in this.positional_events:
+            kS = set(this.positional_events[k]) - eS
+            if len(kS) == 0:
+                removeK.add(k)
+            else:
+                this.positional_events = list(kS)
+        for k in removeK:
+            this.positional_events.pop(k)
 
     def __contains__(self, key):
         return self.hasEvent(key)
@@ -225,17 +252,26 @@ class TracePositional:
             result[k] = values
         return result
 
-    def collectValuesForPayloadEmbedding(self, withTypeCast : dict[str,str], keys=None, occurrence = None):
+    def collectValuesForPayloadEmbedding(self, withTypeCast : dict[str,str],
+                                         keys=None,
+                                         occurrence = None,
+                                         preserveEvents = None,
+                                         keepTraceLenth = True):
         d = dict()
         if keys is None:
             keys = self.keys
-        d[TRACE_LENGTH] = self.length
+        if preserveEvents is None:
+            preserveEvents = set(range(self.length))
+        if keepTraceLenth:
+            d[TRACE_LENGTH] = self.length
         for k in keys:
             values = list()
             N = 0
             if self.events is not None:
                 N = len(self.events)
             for idx, e in enumerate(self.events):
+                if idx not in preserveEvents:
+                    continue
                 if e.hasKey(k):
                     val = typecast(withTypeCast[k], e.getValue(k))
                     d["@"+e.activityLabel+"."+k] = val
@@ -248,16 +284,17 @@ class TracePositional:
                 d["@min("+k+")"] = min(values)
                 d["@max("+k+")"] = max(values)
             counter = Counter(values)
-            if occurrence is None or k not in occurrence:
-                for instance in counter:
-                    d["@count("+k+"="+str(instance)+")"] = counter[instance]
-            elif k in occurrence:
-                values = set.union(occurrence[k], set(counter.keys()))
-                for value in values:
-                    if value in occurrence:
-                        d["@count(" + k + "=" + str(value) + ")"] = counter[value]
-                    else:
-                        d["@count(" + k + "=" + str(value) + ")"] = 0
+            if keepTraceLenth:
+                if occurrence is None or k not in occurrence:
+                    for instance in counter:
+                        d["@count("+k+"="+str(instance)+")"] = counter[instance]
+                elif k in occurrence:
+                    values = set.union(occurrence[k], set(counter.keys()))
+                    for value in values:
+                        if value in occurrence:
+                            d["@count(" + k + "=" + str(value) + ")"] = counter[value]
+                        else:
+                            d["@count(" + k + "=" + str(value) + ")"] = 0
         return d
 
 
@@ -322,14 +359,24 @@ class Log:
             d = dict_union(d, trace.collectDistinctValues(self.keyType, self.keys))
         return d
 
-    def collectValuesForPayloadEmbedding(self, distinct_values : dict, ignoreKeys = None):
+    def collectValuesForPayloadEmbedding(self,
+                                         distinct_values : dict,
+                                         ignoreKeys = None,
+                                         preserveEvents=None,
+                                         keepTraceLen = True,
+                                         setNAToZero = True
+                                         ):
         if ignoreKeys is None:
             ignoreKeys = set()
         if distinct_values is None or (len(distinct_values) == 0):
             distinct_values = self.collectDistinctValues(ignoreKeys)
+        if preserveEvents is None:
+            preserveEvents = [list(range(x.length)) for x in self.traces]
         keys = self.keys - ignoreKeys
-        df = pd.DataFrame(map(lambda x : x.collectValuesForPayloadEmbedding(self.keyType, keys, distinct_values), self.traces))
-        df = df.fillna(0)
+        traceToEventsToPreserve = zip(self.traces, preserveEvents)
+        df = pd.DataFrame(map(lambda x: x[0].collectValuesForPayloadEmbedding(self.keyType, keys, distinct_values, x[1], keepTraceLen), traceToEventsToPreserve))
+        if setNAToZero:
+            df = df.fillna(0)
         return df
 
 
