@@ -683,29 +683,33 @@ class DatalessDeclare:
                 ls.extend([Init(dc.args[0]),
              Exists(1,dc.args[0]),
              Absence(1,dc.args[0]),
-             Absence(2,dc.args[0]),
-             Absence(3,dc.args[0]),
-             Exactly(1,dc.args[0]),
-             Exactly(2,dc.args[0]),
-             Exactly(3,dc.args[0])])
+             Init(dc.args[0]),
+             End(dc.args[0])
+             # Absence(2,dc.args[0]),
+             # Absence(3,dc.args[0]),
+             # Exactly(1,dc.args[0]),
+             # Exactly(2,dc.args[0]),
+             # Exactly(3,dc.args[0])]
+                #
+                ])
             elif len(dc.args)==2:
                 ls.extend([ExclChoice(dc.args[0], dc.args[1]),
                            Choice(dc.args[0], dc.args[1]),
-                           AltPrecedence(dc.args[0], dc.args[1]),
-                           AltSuccession(dc.args[0], dc.args[1]),
-                           AltResponse(dc.args[0], dc.args[1]),
+                           # AltPrecedence(dc.args[0], dc.args[1]),
+                           # AltSuccession(dc.args[0], dc.args[1]),
+                           # AltResponse(dc.args[0], dc.args[1]),
                            ChainPrecedence(dc.args[0], dc.args[1]),
                            ChainResponse(dc.args[0], dc.args[1]),
-                           ChainSuccession(dc.args[0], dc.args[1]),
-                           NotChainSuccession(dc.args[0], dc.args[1]),
+                           # ChainSuccession(dc.args[0], dc.args[1]),
+                           # NotChainSuccession(dc.args[0], dc.args[1]),
                            NotSuccession(dc.args[0], dc.args[1]),
                            RespExistence(dc.args[0], dc.args[1]),
                            Response(dc.args[0], dc.args[1]),
                            Succession(dc.args[0], dc.args[1]),
                            Precedence(dc.args[0], dc.args[1]),
-                NotRespExistence(dc.args[0], dc.args[1]),
-                NotChainResponse(dc.args[0], dc.args[1]),
-                NotResponse(dc.args[0], dc.args[1]),
-                NotPrecedence(dc.args[0], dc.args[1])
+                # NotRespExistence(dc.args[0], dc.args[1]),
+                # NotChainResponse(dc.args[0], dc.args[1]),
+                # NotResponse(dc.args[0], dc.args[1]),
+                # NotPrecedence(dc.args[0], dc.args[1])
                            ])
         return ls

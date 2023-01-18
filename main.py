@@ -20,17 +20,17 @@ if __name__ == '__main__':
                   withData=True)
 
     e = Embedding(trP, trN, teP, teN)
-    tr,te = e.IA_baseline_embedding()
-    tr.to_csv("/home/giacomo/PycharmProjects/trace_learning/data/training_e_IA.csv", index=False)
-    te.to_csv("/home/giacomo/PycharmProjects/trace_learning/data/testing_e_IA.csv", index=False)
-
-    tr,te = e.DatalessTracewise_embedding()
-    tr.to_csv("/home/giacomo/PycharmProjects/trace_learning/data/training_e_Sam.csv", index=False)
-    te.to_csv("/home/giacomo/PycharmProjects/trace_learning/data/testing_e_Sam.csv", index=False)
-
-    tr,te = e.Correlation_embedding()
-    tr.to_csv("/home/giacomo/PycharmProjects/trace_learning/data/training_e_ICPM.csv", index=False)
-    te.to_csv("/home/giacomo/PycharmProjects/trace_learning/data/testing_e_ICPM.csv", index=False)
+    # tr,te = e.IA_baseline_embedding()
+    # tr.to_csv("/home/giacomo/PycharmProjects/trace_learning/data/training_e_IA.csv", index=False)
+    # te.to_csv("/home/giacomo/PycharmProjects/trace_learning/data/testing_e_IA.csv", index=False)
+    #
+    # tr,te = e.DatalessTracewise_embedding()
+    # tr.to_csv("/home/giacomo/PycharmProjects/trace_learning/data/training_e_Sam.csv", index=False)
+    # te.to_csv("/home/giacomo/PycharmProjects/trace_learning/data/testing_e_Sam.csv", index=False)
+    #
+    # tr,te = e.Correlation_embedding()
+    # tr.to_csv("/home/giacomo/PycharmProjects/trace_learning/data/training_e_ICPM.csv", index=False)
+    # te.to_csv("/home/giacomo/PycharmProjects/trace_learning/data/testing_e_ICPM.csv", index=False)
 
     tr,te = e.DeclareDataless_embedding()
     tr.to_csv("/home/giacomo/PycharmProjects/trace_learning/data/training_e_dDecl.csv", index=False)

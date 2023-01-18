@@ -421,3 +421,5 @@ def legacy_split_log(readPath,log_file_tagged,outputPath):
         XesXmlSerializer().serialize(posLog, file)
     with open(os.path.join(output_file, log_file_tagged[:-4]+"_false_false.xes"), "w") as file:
         XesXmlSerializer().serialize(negLog, file)
+
+

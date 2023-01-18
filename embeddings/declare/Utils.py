@@ -33,12 +33,13 @@ class DeclareConstruct(ABC):
 
     def toArrayAndVF(self, log1, log2):
         assert isinstance(log1, Log)
-        assert isinstance(log2, Log)
+        # assert isinstance(log2, Log)
         ls = []
         for i in range(log1.getNTraces()):
            ls.append( self.__call__(log1.getIthTrace(i)))
-        for i in range(log2.getNTraces()):
-           ls.append( self.__call__(log2.getIthTrace(i)))
+        if log2 is not None:
+            for i in range(log2.getNTraces()):
+               ls.append( self.__call__(log2.getIthTrace(i)))
         self.fulfillments =  []
         self.violations = []
         self.results = []
