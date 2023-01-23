@@ -131,7 +131,10 @@ class TracePositional:
     def __init__(self, trace, withData=False):
         self.declareTypeOf = {}
         trace_attribs = trace.get_attributes()
-        self.trace_name = trace_attribs["concept:name"].get_value()
+        if "concept:name" in trace_attribs:
+            self.trace_name = trace_attribs["concept:name"].get_value()
+        else:
+            self.trace_name = "None"
         self.positional_events = {}
         self.events = []
         self.length = 0
