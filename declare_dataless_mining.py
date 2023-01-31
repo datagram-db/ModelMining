@@ -47,20 +47,20 @@ def DeclareDataless_mining(log_path, filterCandidates=True, candidate_threshold=
         sum = training.sum(axis=1)
         print(sum)
 
-        # sum1 = training.sum(axis=0)
-        # sum1 /= len(sum.index)
-        # # sum1 = sum1[sum1 == 1]
+        sum1 = training.sum(axis=0)
+        sum1 /= len(sum.index)
+        # sum1 = sum1[sum1 == 1]
         # print(sum1)
         #
-        # with open("/home/sam/Documents/Repositories/CodeBases/ModelMining/mined_clauses.csv", 'a',
-        #           encoding='UTF8') as f1:
-        #     writer1 = csv.writer(f1)
-        #
-        #     if f1.tell() == 0:
-        #         writer1.writerow(['algorithm', 'clause', 'support'])
-        #
-        #     for result in sum1.index:
-        #         writer1.writerow(['ADM_S', result, sum1[result]])
+        with open("/home/sam/Documents/Repositories/CodeBases/ModelMining/mined_clauses.csv", 'a',
+                   encoding='UTF8') as f1:
+             writer1 = csv.writer(f1)
+        
+             if f1.tell() == 0:
+                 writer1.writerow(['algorithm', 'clause', 'support'])
+        
+             for result in sum1.index:
+                 writer1.writerow(['ADM_S', result, sum1[result]])
 
 
 if __name__ == '__main__':
