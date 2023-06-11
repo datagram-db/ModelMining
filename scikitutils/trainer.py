@@ -142,6 +142,8 @@ class trainer:
             return (self.dtLS[idx].learner,maxVal)
 
     def train_all(self, loading_data_time, embedding_extract_time, support, experimentName, filename = None):
+        classifiers = []
+        from scikitutils.dt_printer import get_rules
         for conf in self.dtLS:
             tofit = conf.gen()
             t1F = time.time()
@@ -151,6 +153,7 @@ class trainer:
             t3F = time.time()
             learningTime = t2F - t1F
             classificationTime = t3F - t2F
+            classifiers.append(get_rules(conf.learner, self.training.X.columns, conf.learner.classes_))
             micro_precision = precision_score(y_pred, self.testing.Y, average='micro')
             macro_precision = precision_score(y_pred, self.testing.Y, average='macro')
             per_class_precision = precision_score(y_pred, self.testing.Y, average=None)
@@ -158,6 +161,8 @@ class trainer:
             self.results.append(trainer_results(micro_precision,macro_precision,per_class_precision,precision,recall,thresholds,learningTime,classificationTime,loading_data_time,embedding_extract_time,support,experimentName))
         if filename is not None:
             resultsToCSVFile(self.results, filename)
+            with open(filename+'_classifiers.txt', 'w') as f:
+                f.writelines(classifiers)
 
 def trainFromConfiguration(posnegTr, posnegTe, dele, conf, benchmark_file):
     trainer(posnegTr, dele, posnegTe, dele, get_classifier_configuration_from_file(conf))
