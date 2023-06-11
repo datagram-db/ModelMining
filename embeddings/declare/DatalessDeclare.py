@@ -702,7 +702,7 @@ class DatalessDeclare:
                            ChainResponse(dc.args[0], dc.args[1]),
                            # ChainSuccession(dc.args[0], dc.args[1]),
                            # NotChainSuccession(dc.args[0], dc.args[1]),
-                           NotSuccession(dc.args[0], dc.args[1]),
+                           # NotSuccession(dc.args[0], dc.args[1]),
                            RespExistence(dc.args[0], dc.args[1]),
                            Response(dc.args[0], dc.args[1]),
                            Succession(dc.args[0], dc.args[1]),

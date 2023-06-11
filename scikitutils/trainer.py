@@ -68,7 +68,15 @@ class trainer_results:
                  recall,
                  threshold,
                  training_time,
-                 testing_time):
+                 testing_time,
+                 loading_data_time,
+                 embedding_extract_time,
+                 support,
+                 experimentName):
+        self.experimentName = experimentName
+        self.support = support
+        self.loading_data_time = loading_data_time
+        self.embedding_extract_time = embedding_extract_time
         self.testing_time = testing_time
         self.training_time = training_time
         self.threshold = threshold
@@ -133,7 +141,7 @@ class trainer:
         else:
             return (self.dtLS[idx].learner,maxVal)
 
-    def train_all(self, filename = None):
+    def train_all(self, loading_data_time, embedding_extract_time, support, experimentName, filename = None):
         for conf in self.dtLS:
             tofit = conf.gen()
             t1F = time.time()
@@ -147,7 +155,7 @@ class trainer:
             macro_precision = precision_score(y_pred, self.testing.Y, average='macro')
             per_class_precision = precision_score(y_pred, self.testing.Y, average=None)
             precision, recall, thresholds = precision_recall_curve(self.testing.Y, y_pred)
-            self.results.append(trainer_results(micro_precision,macro_precision,per_class_precision,precision,recall,thresholds,learningTime,classificationTime))
+            self.results.append(trainer_results(micro_precision,macro_precision,per_class_precision,precision,recall,thresholds,learningTime,classificationTime,loading_data_time,embedding_extract_time,support,experimentName))
         if filename is not None:
             resultsToCSVFile(self.results, filename)
 

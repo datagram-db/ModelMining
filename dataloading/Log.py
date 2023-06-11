@@ -259,7 +259,8 @@ class TracePositional:
                                          keys=None,
                                          occurrence = None,
                                          preserveEvents = None,
-                                         keepTraceLenth = True):
+                                         keepTraceLenth = True,
+                                         otherValues=False):
         d = dict()
         if keys is None:
             keys = self.keys
@@ -278,16 +279,17 @@ class TracePositional:
                 if e.hasKey(k):
                     val = typecast(withTypeCast[k], e.getValue(k))
                     d["@"+e.activityLabel+"."+k] = val
-                    if idx == 0:
-                        d["@first("+k+")"] = val
                     values.append(val)
-                    if idx == N:
-                        d["@last("+k+")"] = val
-            if len(values)>0:
+                    if otherValues:
+                        if idx == 0:
+                            d["@first("+k+")"] = val
+                        if idx == N:
+                            d["@last("+k+")"] = val
+            if otherValues and (len(values)>0):
                 d["@min("+k+")"] = min(values)
                 d["@max("+k+")"] = max(values)
             counter = Counter(values)
-            if keepTraceLenth:
+            if otherValues and keepTraceLenth:
                 if occurrence is None or k not in occurrence:
                     for instance in counter:
                         d["@count("+k+"="+str(instance)+")"] = counter[instance]
@@ -367,7 +369,8 @@ class Log:
                                          ignoreKeys = None,
                                          preserveEvents=None,
                                          keepTraceLen = True,
-                                         setNAToZero = True
+                                         setNAToZero = True,
+                                         otherValues=False
                                          ):
         if ignoreKeys is None:
             ignoreKeys = set()
@@ -377,7 +380,7 @@ class Log:
             preserveEvents = [list(range(x.length)) for x in self.traces]
         keys = self.keys - ignoreKeys
         traceToEventsToPreserve = zip(self.traces, preserveEvents)
-        df = pd.DataFrame(map(lambda x: x[0].collectValuesForPayloadEmbedding(self.keyType, keys, distinct_values, x[1], keepTraceLen), traceToEventsToPreserve))
+        df = pd.DataFrame(map(lambda x: x[0].collectValuesForPayloadEmbedding(self.keyType, keys, distinct_values, x[1], keepTraceLen, otherValues), traceToEventsToPreserve))
         if setNAToZero:
             df = df.fillna(0)
         return df

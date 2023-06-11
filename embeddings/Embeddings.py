@@ -76,7 +76,10 @@ def Correlation_embedding(self, shared_activities=None, label=0, lambda_=0.9):
     train_df = train_df.fillna(0)
     return train_df, embedding_space
 
-def extractPayloadEmbedding(logPos : Log, logNeg : Log, ignoreFields : set[str], values = None):
+def extractPayloadEmbedding(logPos : Log,
+                            logNeg : Log,
+                            ignoreFields :
+                            set[str], values = None):
     if values is None:
         values = dict_union(logPos.collectDistinctValues(ignoreFields), logNeg.collectDistinctValues(ignoreFields))
     dfPos = logPos.collectValuesForPayloadEmbedding(values, ignoreFields)
@@ -156,7 +159,12 @@ class Embedding:
         testing, _ = extractPayloadEmbedding(self.posTe, self.negTe, ignoreKeys, candidates)
         return training, testing
 
-    def DeclareWithData_embedding(self, conflist: list[from_hyperparameters_instantiate_model], filterCandidates=True, candidate_threshold=0.7, constraint_threshold=0.7, minScore = 0.8):
+    def DeclareWithData_embedding(self, conflist: list[from_hyperparameters_instantiate_model],
+                                        filterCandidates=True,
+                                        candidate_threshold=0.7,
+                                        constraint_threshold=0.7,
+                                        minScore = 0.8,
+                                        allValues = False):
         dTrain = {}
         dTest = {}
         classifier = {}
@@ -165,11 +173,11 @@ class Embedding:
         for (trC, teC) in zip(self.trainingCandidates, self.testingCandidates):
             if not trC.supportFV:
                 continue
-            tup = forEachRunCandidate(trC, teC, self.posTr, self.negTr, self.posTe, self.negTe, conflist, minScore)
+            tup = forEachRunCandidate(trC, teC, self.posTr, self.negTr, self.posTe, self.negTe, conflist, minScore, allValues)
             if tup is None:
                 continue
             trainClass, testClass, treeString = tup
-            k = str(trC)+":Data"
+            k = str(trC)+":"+treeString
             dTrain[k] = trainClass
             dTest[k] = testClass
             classifier[k] = treeString

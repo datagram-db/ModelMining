@@ -3,8 +3,10 @@ import pandas as pd
 
 from dataloading.Log import Log, dict_union
 from embeddings.declare.Utils import DeclareConstruct
-from scikitutils.dt_printer import export_text2
+from scikitutils.dt_printer import export_text2, get_rules
+from scikitutils.fisher import fisher_calculation
 from scikitutils.trainer import from_hyperparameters_instantiate_model, trainer, trainer_precision
+from skfeature.function.similarity_based import fisher_score
 
 
 def forEachRunCandidate(runTrainClause : DeclareConstruct,
@@ -14,7 +16,8 @@ def forEachRunCandidate(runTrainClause : DeclareConstruct,
                         testLogPos : Log,
                         testLogNeg : Log,
                         conflist : list[from_hyperparameters_instantiate_model],
-                        minScore : float):
+                        minScore : float,
+                        otherValues :bool = False):
     assert runTrainClause.isRun
     assert runTestClause.isRun
     from scikitutils.InputData import one_hot_encoding
@@ -26,26 +29,30 @@ def forEachRunCandidate(runTrainClause : DeclareConstruct,
     toKeep2 = runTestClause.fulfillments
 
     ## Fitting in the training data
-    trepos1 = trainLogPos.collectValuesForPayloadEmbedding(values, None, toKeep1, False, False)
+    trepos1 = trainLogPos.collectValuesForPayloadEmbedding(values, None, toKeep1, False, False, otherValues)
     # trepos1_ = trepos1.dropna(axis=0, how='all')
     nrow_trepos1 = len(trepos1.index)
-    treneg1 = trainLogNeg.collectValuesForPayloadEmbedding(values, None, toKeep1, False, False)
+    treneg1 = trainLogNeg.collectValuesForPayloadEmbedding(values, None, toKeep1, False, False, otherValues)
     # treneg1_ = treneg1.dropna(axis=0, how='all')
     nrow_treneg1 = len(treneg1.index)
     a1 = pd.concat([trepos1, treneg1], ignore_index=True)
     a1 = a1.assign(Class=[1] * nrow_trepos1+[-1] * nrow_treneg1)
     e1 = pandasToEmbedding(a1.dropna(axis=0, how='all'))
 
+
+
     ## Similar approach for the testing one
-    trepos2 = testLogPos.collectValuesForPayloadEmbedding(values, None, toKeep2, False, False)
+    trepos2 = testLogPos.collectValuesForPayloadEmbedding(values, None, toKeep2, False, False, otherValues)
     # trepos2_ = trepos2.dropna(axis=0, how='all')
     nrow_trepos2 = len(trepos2.index)
-    treneg2 = testLogNeg.collectValuesForPayloadEmbedding(values, None, toKeep2, False, False)
+    treneg2 = testLogNeg.collectValuesForPayloadEmbedding(values, None, toKeep2, False, False, otherValues)
     # treneg2_ = treneg2.dropna(axis=0, how='all')
     nrow_treneg2 = len(treneg2.index)
     a2 = pd.concat([trepos2, treneg2], ignore_index=True)
     a2 = a2.assign(Class=[1] * nrow_trepos2+[-1] * nrow_treneg2)
     e2 = pandasToEmbedding(a2)    ## Using the same hot encoding on both
+
+
     na1 = e1.dropna()
     na2 = e2.dropna()
     if len(na1.X.index) == 0 or len(na2.X.index) ==0:
@@ -71,7 +78,7 @@ def forEachRunCandidate(runTrainClause : DeclareConstruct,
     for idx, x in enumerate(toKeep2):
         if len(x)==0:
             y_predTr[idx] = 0
-    return (y_predTe.tolist(), y_predTr.tolist(), export_text2(classifier))
+    return (y_predTe.tolist(), y_predTr.tolist(), get_rules(classifier, na1.X.columns, classifier.classes_, -1))
 
 
 
