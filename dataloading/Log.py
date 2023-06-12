@@ -1,3 +1,4 @@
+import random
 from copy import deepcopy
 from datetime import datetime
 from collections import Counter
@@ -105,19 +106,19 @@ class Event:
 
     def getValueType(self, key):
         if self.eventpayload is None:
-            return None
+            return "continuous"
         elif key in self.eventpayload.trace_data:
             return self.eventpayload.attribute_type[key]
         else:
-            return None
+            return "continuous"
 
     def getValue(self, key):
         if self.eventpayload is None:
-            return None
+            return 0.0
         elif key in self.eventpayload.trace_data:
             return self.eventpayload.trace_data[key]
         else:
-            return None
+            return 0.0
 
     def hasKey(self, k):
         if self.eventpayload is None:
@@ -238,7 +239,7 @@ class TracePositional:
 
     def getValueType(self, k):
         if k not in self.keyType:
-            return None
+            return "continuous"
         else:
             return self.keyType[k]
 
@@ -325,9 +326,16 @@ class Log:
                     self.unique_events.add(extract_attributes(event)["concept:name"])
         for k in self.keys:
             typeInferOf = {type: 0 for type in types}
+            value_is_found = False
             for e in self.traces:
-                typeInferOf[e.getValueType(k)] = typeInferOf[e.getValueType(k)] + 1
-            self.keyType[k] = max(typeInferOf, key=typeInferOf.get)
+                t = e.getValueType(k)
+                if t is not None:
+                    typeInferOf[t] = typeInferOf[t] + 1
+                    value_is_found = True
+            if value_is_found:
+                self.keyType[k] = max(typeInferOf, key=typeInferOf.get)
+            else:
+                self.keyType[k] = "continuous"
 
     def getEventSet(self):
         return self.unique_events
@@ -360,8 +368,20 @@ class Log:
         if ignoreKeys is None:
             ignoreKeys = set()
         d = {k : set() for k in self.keys if k not in ignoreKeys}
-        for trace in self.traces:
-            d = dict_union(d, trace.collectDistinctValues(self.keyType, self.keys))
+        if ignoreKeys is None:
+            for trace in self.traces:
+                d = dict_union(d, trace.collectDistinctValues(self.keyType, self.keys))
+        else:
+            keyType = dict()
+            keys = set()
+            for k in self.keyType:
+                if k not in ignoreKeys:
+                    keyType[k] = self.keyType[k]
+            for k in self.keys:
+                if k not in ignoreKeys:
+                    keys.add(k)
+            for trace in self.traces:
+                d = dict_union(d, trace.collectDistinctValues(keyType, keys))
         return d
 
     def collectValuesForPayloadEmbedding(self,
@@ -428,4 +448,28 @@ def legacy_split_log(readPath,log_file_tagged,outputPath):
     with open(os.path.join(output_file, log_file_tagged[:-4]+"_false_false.xes"), "w") as file:
         XesXmlSerializer().serialize(negLog, file)
 
+def legacy_n_traces(log):
+    return len(log)
 
+def legacy_split_log(log, posLog, negLog, clazz, clazz_listpos = None, clazz_listneg = None, sample=0.7):
+    N = len(log)
+    sample = int(sample * len(log))
+    i = 0
+    for random_trace in legacy_log_shuffle(log):
+        if i<sample:
+            posLog.append(random_trace)
+            if clazz_listpos is not None:
+                clazz_listpos.append(clazz)
+        else:
+            negLog.append(random_trace)
+            if clazz_listneg is not None:
+                clazz_listneg.append(clazz)
+        i = i+1
+
+def legagy_dump_log(posLog, log):
+    with open(log, "w") as file:
+        XesXmlSerializer().serialize(posLog, file)
+
+def legacy_log_shuffle(log):
+    random.shuffle(log)
+    return log

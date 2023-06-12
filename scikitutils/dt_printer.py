@@ -183,6 +183,8 @@ def get_rules(tree, feature_names, class_names, toExclude = None):
             l = np.argmax(classes)
             # rule += f"class: {class_names[l]} (proba: {np.round(100.0 * classes[l] / np.sum(classes), 2)}%)"
         rule += f" | based on {path[-1][1]:,} samples"
-        if (toExclude is not None) (l is not None) and (class_names is not None) and (not (class_names[l] == toExclude)):
+        if (toExclude is None):
+            rules += [rule]
+        elif (l is not None) and (class_names is not None) and (not (class_names[l] == toExclude)):
             rules += [rule]
     return " || ".join(rules)

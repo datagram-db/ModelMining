@@ -17,22 +17,23 @@ def forEachRunCandidate(runTrainClause : DeclareConstruct,
                         testLogNeg : Log,
                         conflist : list[from_hyperparameters_instantiate_model],
                         minScore : float,
-                        otherValues :bool = False):
+                        otherValues :bool = False,
+                        ignoreKeys : set = None):
     assert runTrainClause.isRun
     assert runTestClause.isRun
     from scikitutils.InputData import one_hot_encoding
     from scikitutils.InputData import pandasToEmbedding
     # First have to find all locations of fulfillments
 
-    values = dict_union(trainLogPos.collectDistinctValues(), trainLogNeg.collectDistinctValues())
+    values = dict_union(trainLogPos.collectDistinctValues(ignoreKeys), trainLogNeg.collectDistinctValues(ignoreKeys))
     toKeep1 = runTrainClause.fulfillments
     toKeep2 = runTestClause.fulfillments
 
     ## Fitting in the training data
-    trepos1 = trainLogPos.collectValuesForPayloadEmbedding(values, None, toKeep1, False, False, otherValues)
+    trepos1 = trainLogPos.collectValuesForPayloadEmbedding(values, ignoreKeys, toKeep1, False, False, otherValues)
     # trepos1_ = trepos1.dropna(axis=0, how='all')
     nrow_trepos1 = len(trepos1.index)
-    treneg1 = trainLogNeg.collectValuesForPayloadEmbedding(values, None, toKeep1, False, False, otherValues)
+    treneg1 = trainLogNeg.collectValuesForPayloadEmbedding(values, ignoreKeys, toKeep1, False, False, otherValues)
     # treneg1_ = treneg1.dropna(axis=0, how='all')
     nrow_treneg1 = len(treneg1.index)
     a1 = pd.concat([trepos1, treneg1], ignore_index=True)
@@ -67,7 +68,7 @@ def forEachRunCandidate(runTrainClause : DeclareConstruct,
     if score < minScore:
         return None
 
-    print("Returning: " +str(runTrainClause)+":Data")
+    # print("Returning: " +str(runTrainClause)+":Data")
     e1.X[np.isnan(e1.X)] = 0
     e2.X[np.isnan(e2.X)] = 0
     y_predTe = classifier.predict(e1.X[list(classifier.feature_names_in_)])

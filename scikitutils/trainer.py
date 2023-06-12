@@ -42,7 +42,7 @@ class decision_tree_hyperparameters(from_hyperparameters_instantiate_model):
         self.splitter = splitter
         self.criterion = criterion
 
-    def __init__(self, d : dict):
+    def dict_init(self, d : dict):
         if (d["type"] == "scikit_decision_tree"):
             self.ccp_alpha = d["ccp_alpha"]
             self.class_weight = d["class_weight"]
@@ -93,7 +93,9 @@ def trainer_factory_method(d : dict):
     if "type" in d:
         type = d["type"]
         if (type == "scikit_decision_tree"):
-            return decision_tree_hyperparameters(d)
+            obj = decision_tree_hyperparameters()
+            obj.dict_init(d)
+            return obj
         else:
             return None
     else:
@@ -109,7 +111,7 @@ def resultsToCSVFile(r : list[trainer_results], filename):
     pd.DataFrame(map(lambda x : x.__dict__, r)).to_csv(filename, index=False, mode='a', header=not os.path.exists(filename))
 
 class trainer:
-    def __init__(self, fileTr,
+    def init_after(self, fileTr,
                        deleTr,
                        fileT,
                        deleT,
@@ -141,7 +143,7 @@ class trainer:
         else:
             return (self.dtLS[idx].learner,maxVal)
 
-    def train_all(self, loading_data_time, embedding_extract_time, support, experimentName, filename = None):
+    def train_all(self, loading_data_time=0.0, embedding_extract_time=0.0, support=.0, experimentName=.0, filename = None):
         classifiers = []
         from scikitutils.dt_printer import get_rules
         for conf in self.dtLS:
@@ -165,5 +167,6 @@ class trainer:
                 f.writelines(classifiers)
 
 def trainFromConfiguration(posnegTr, posnegTe, dele, conf, benchmark_file):
-    trainer(posnegTr, dele, posnegTe, dele, get_classifier_configuration_from_file(conf))
+    t = trainer(None, None, None, False)
+    t.init_after(posnegTr, dele, posnegTe, dele, get_classifier_configuration_from_file(conf))
     trainer.train_all(benchmark_file)

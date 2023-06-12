@@ -164,7 +164,8 @@ class Embedding:
                                         candidate_threshold=0.7,
                                         constraint_threshold=0.7,
                                         minScore = 0.8,
-                                        allValues = False):
+                                        allValues = False,
+                                  ignoreKeys = None):
         dTrain = {}
         dTest = {}
         classifier = {}
@@ -173,7 +174,7 @@ class Embedding:
         for (trC, teC) in zip(self.trainingCandidates, self.testingCandidates):
             if not trC.supportFV:
                 continue
-            tup = forEachRunCandidate(trC, teC, self.posTr, self.negTr, self.posTe, self.negTe, conflist, minScore, allValues)
+            tup = forEachRunCandidate(trC, teC, self.posTr, self.negTr, self.posTe, self.negTe, conflist, minScore, allValues, ignoreKeys)
             if tup is None:
                 continue
             trainClass, testClass, treeString = tup
