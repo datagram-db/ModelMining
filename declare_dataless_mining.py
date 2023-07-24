@@ -86,6 +86,7 @@ if __name__ == '__main__':
                                output_file=args.output_file, iteration_num=i)
 
 
+
 # from dataloading.Log import Log
 # import sys
 #
@@ -118,3 +119,4 @@ if __name__ == '__main__':
 # if __name__ == '__main__':
 #     args = sys.argv[1:]
 #     DeclareDataless_mining("/home/giacomo/Scaricati/synthetic_logs(1)/10_10_10.xes")
+
