@@ -277,7 +277,7 @@ class AltSuccession(DeclareBinary):
 
 class ChainPrecedence(DeclareBinary):
     def __init__(self, arg1="", arg2=""):
-        super().__init__("ChainPrecedence", arg1, arg2, True)
+        super().__init__("ChainPrecedence", arg2, arg1, True)
 
     def __call__(self, trace : TracePositional):
         assert isinstance(trace, TracePositional)
@@ -366,7 +366,7 @@ class Surround(DeclareBinary):
     def __init__(self, arg1="", arg2=""):
         super().__init__("Surround", arg1, arg2, False)
         self.chainresponse = ChainResponse(arg1, arg2)
-        self.chainprecedence = ChainResponse(arg2, arg1)
+        self.chainprecedence = ChainPrecedence(arg2, arg1)
 
     def __call__(self, trace):
         resp, _, _ = self.chainresponse(trace)
@@ -474,7 +474,7 @@ class Response(DeclareBinary):
 
 class Precedence(DeclareBinary):
     def __init__(self, arg1="", arg2=""):
-        super().__init__("Precedence", arg1, arg2, True)
+        super().__init__("Precedence", arg2, arg1, True)
 
     def __call__(self, trace):
         assert isinstance(trace, TracePositional)
@@ -735,14 +735,14 @@ class DatalessDeclare:
                            # AltResponse(dc.args[0], dc.args[1]),
                            ChainPrecedence(dc.args[0], dc.args[1]),
                            ChainResponse(dc.args[0], dc.args[1]),
-                           ChainSuccession(dc.args[0], dc.args[1]),
+                           # ChainSuccession(dc.args[0], dc.args[1]),
                            # NotChainSuccession(dc.args[0], dc.args[1]),
                            # NotSuccession(dc.args[0], dc.args[1]),
                            RespExistence(dc.args[0], dc.args[1]),
                            Response(dc.args[0], dc.args[1]),
-                           Succession(dc.args[0], dc.args[1]),
+                           # Succession(dc.args[0], dc.args[1]),
                            Precedence(dc.args[0], dc.args[1]),
-                           Surround(dc.args[0], dc.args[1]),
+                           # Surround(dc.args[0], dc.args[1]),
                            CoExistence(dc.args[0], dc.args[1])
                 # NotRespExistence(dc.args[0], dc.args[1]),
                 # NotChainResponse(dc.args[0], dc.args[1]),

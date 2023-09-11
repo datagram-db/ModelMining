@@ -4,6 +4,8 @@ from opyenxes.id.XIDFactory import XIDFactory
 from opyenxes.data_out.XesXmlSerializer import XesXmlSerializer
 import random
 
+
+
 def convert(x,y):
     file1 = open(x, 'r')
 
@@ -25,5 +27,5 @@ def convert(x,y):
         XesXmlSerializer().serialize(log, f)
 
 if __name__ == "__main__":
-    for x in ["10_10_1000.","15_15_1000.","20_20_1000.","25_25_1000.","30_30_1000."]:
+    for x in ["all.tab_729.","all.tab_6552."]:
         convert(x+"tab",x+"xes")

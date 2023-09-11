@@ -131,33 +131,41 @@ class Event:
 class TracePositional:
     def __init__(self, trace, withData=False):
         self.declareTypeOf = {}
-        trace_attribs = trace.get_attributes()
-        if "concept:name" in trace_attribs:
-            self.trace_name = trace_attribs["concept:name"].get_value()
-        else:
-            self.trace_name = "None"
         self.positional_events = {}
         self.events = []
         self.length = 0
         self.keyType = dict()
-        if withData:
-            payload = EventPayload(trace_attribs.items())
-            event_name = "__trace_payload"
-            e = Event(event_name, payload)
-            self.events.append(e)
-            self.keys = e.payloadKeySet()
-        else:
+        if isinstance(trace, list):
+            self.trace_name = "None"
+            withData=False
+            for pos, event in enumerate(trace):
+                self.length = self.length + 1
+                self.addEventAtPositionalTrace(event, pos)
             self.keys = set()
-        for pos, event in enumerate(trace):
-            self.length = self.length + 1
-            event_attribs = extract_attributes(event)
-            event_name = event_attribs["concept:name"]
-            self.addEventAtPositionalTrace(event_name, pos)
+        else:
+            trace_attribs = trace.get_attributes()
+            if "concept:name" in trace_attribs:
+                self.trace_name = trace_attribs["concept:name"].get_value()
+            else:
+                self.trace_name = "None"
             if withData:
-                payload = EventPayload(event.get_attributes().items())
+                payload = EventPayload(trace_attribs.items())
+                event_name = "__trace_payload"
                 e = Event(event_name, payload)
-                self.keys = set.union(self.keys, e.payloadKeySet())
                 self.events.append(e)
+                self.keys = e.payloadKeySet()
+            else:
+                self.keys = set()
+            for pos, event in enumerate(trace):
+                self.length = self.length + 1
+                event_attribs = extract_attributes(event)
+                event_name = event_attribs["concept:name"]
+                self.addEventAtPositionalTrace(event_name, pos)
+                if withData:
+                    payload = EventPayload(event.get_attributes().items())
+                    e = Event(event_name, payload)
+                    self.keys = set.union(self.keys, e.payloadKeySet())
+                    self.events.append(e)
         for k in self.keys:
             typeInferOf = {type: 0 for type in types}
             for e in self.events:
@@ -307,13 +315,19 @@ class TracePositional:
 
 
 class Log:
-    def __init__(self, path, id=0, withData=False):
+    def __init__(self, path, id=0, withData=False, isTab=False):
         self.path = path
         log = None
         self.traces = []
         self.max_length = -1
-        with open(self.path) as log_file:
-            log= XUniversalParser().parse(log_file)[id]
+        if isTab:
+            log = []
+            with open(path, 'r') as file1:
+                for t in file1:
+                    log.append(t[:-1].split("\t"))
+        else:
+            with open(self.path) as log_file:
+                log= XUniversalParser().parse(log_file)[id]
         self.unique_events = set()
         self.keys = set()
         self.keyType = dict()
@@ -323,6 +337,9 @@ class Log:
             self.max_length = max(self.max_length, tp.length)
             self.traces.append(tp)
             for event in trace:
+                if isTab:
+                    self.unique_events.add(event)
+                else:
                     self.unique_events.add(extract_attributes(event)["concept:name"])
         for k in self.keys:
             typeInferOf = {type: 0 for type in types}
